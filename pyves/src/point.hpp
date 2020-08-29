@@ -15,7 +15,13 @@ struct Point{
     T z = {0};
 
     Point() {}
-    Point(T _x, T _y, T _z) : x(_x), y(_y), z(_z)  {}
+
+    template<typename _T>
+    Point(_T _x, _T _y, _T _z) : x(_x), y(_y), z(_z)  {}
+
+    template<typename _T>
+    Point(const Point<_T>& _o) : x(_o.x), y(_o.y), z(_o.z)  {}
+
     virtual ~Point() = default;
 
     inline constexpr std::string repr() const
@@ -57,6 +63,10 @@ void declare_point(py::module &m, std::string typestr)
     py::class_<Class>(m, pyclass_name.c_str(), py::buffer_protocol(), py::dynamic_attr())
         .def(py::init<>())
         .def(py::init<T,T,T>())
+        .def(py::init<Point<int>>())
+        .def(py::init<Point<long>>())
+        .def(py::init<Point<float>>())
+        .def(py::init<Point<double>>())
         .def(py::self + py::self)
         .def(py::self - py::self)
         .def(py::self += py::self)
@@ -71,8 +81,8 @@ void declare_point(py::module &m, std::string typestr)
 
 inline void bind_point(py::module &m) 
 {
-    declare_point<float>(m, "f");
-    declare_point<double>(m, "d");
     declare_point<int>(m, "i");
     declare_point<long>(m, "l");
+    declare_point<float>(m, "f");
+    declare_point<double>(m, "d");
 }

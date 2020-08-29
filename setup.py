@@ -59,6 +59,10 @@ class CMakeBuild(build_ext):
             os.makedirs(self.build_temp)
         subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
+        print()
+        print("----------------------------------------------------------------------")
+        print("Python tests")
+        print()
 
 
 
@@ -86,7 +90,7 @@ class CatchTestCommand(TestCommand):
 
 
 
-__version__ = '0.0.1'
+__version__ = '0.1.1'
 
 setup(
     name='pyves',

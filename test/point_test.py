@@ -2,6 +2,14 @@ import unittest
 import pyves
 
 class MainTest(unittest.TestCase):
+    def test_construction(self):
+        p1 = pyves.Pointi(1,1,1)
+        p2 = pyves.Pointf(4,2,3)
+        p3 = pyves.Pointi(p2)
+        p4 = pyves.Pointi(p1)
+
+
+
     def test_operator_plus(self):
         p1 = pyves.Pointi(1,1,1)
         p2 = pyves.Pointi(4,2,3)
