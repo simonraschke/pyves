@@ -1,0 +1,8 @@
+[submodule "pybind11"]
+	path = lib/pybind11
+	url = https://github.com/pybind/pybind11.git
+    branch = master
+[submodule "catch"]
+	path = lib/catch
+	url = https://github.com/catchorg/Catch2.git
+	branch = master
