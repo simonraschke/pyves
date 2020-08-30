@@ -9,5 +9,5 @@ PYBIND11_MODULE(_pyves, m)
     bind_point(m);
     // bind_position(m);
     // bind_orientation(m);
-    bind_particle(m);
+    _pyves::bind_particle(m);
 }
