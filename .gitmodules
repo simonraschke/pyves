@@ -6,3 +6,7 @@
 	path = lib/catch
 	url = https://github.com/catchorg/Catch2.git
 	branch = master
+[submodule "eigen"]
+	path = lib/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+	branch = master

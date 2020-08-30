@@ -1,16 +1,19 @@
 #pragma once
 
 #include "type_name.hpp"
-#include "point.hpp"
+// #include "point.hpp"
 #include <pybind11/pybind11.h>
+#include <Eigen/Core>
 
 namespace py = pybind11;
 
 
 
 template<typename T>
-struct Position : public Point<T>
+struct Position //: public Point<T>
 {
+    Eigen::Array<T,3,1> coords;
+
     Position(): Point<T>()
     {
         ;

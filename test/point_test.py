@@ -1,12 +1,14 @@
 import unittest
 import pyves
 
+
+
 class MainTest(unittest.TestCase):
     def test_construction(self):
         p1 = pyves.Pointi(1,1,1)
         p2 = pyves.Pointf(4,2,3)
         p3 = pyves.Pointi(p2)
-        p4 = pyves.Pointi(p1)
+        p4 = pyves.Pointf(p1)
 
 
 
@@ -72,6 +74,7 @@ class MainTest(unittest.TestCase):
         p2 = pyves.Pointd(4,2,3)
         self.assertAlmostEqual(p1.dot(p2), 1.2*4 + 1.3*2 + 1.4*3)
         self.assertAlmostEqual(p2.dot(p1), 1.2*4 + 1.3*2 + 1.4*3)
+
 
 
 if __name__ == '__main__':

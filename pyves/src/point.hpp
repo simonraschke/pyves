@@ -24,7 +24,7 @@ struct Point{
 
     virtual ~Point() = default;
 
-    inline constexpr std::string repr() const
+    inline std::string repr() const
     {
         return std::string("<Point<") + type_name<T>() + "> at " + std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z) + ">" ;
     }
@@ -48,6 +48,11 @@ struct Point{
     }
     
     inline T dot(const Point<T>& other) const
+    {
+        return x*other.x + y*other.y + z*other.z;
+    }
+    
+    inline T cross(const Point<T>& other) const
     {
         return x*other.x + y*other.y + z*other.z;
     }
