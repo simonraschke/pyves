@@ -1,3 +1,5 @@
+#pragma once
+
 #include "definitions.hpp"
 #include "type_name.hpp"
 #include <Eigen/Core>
@@ -49,7 +51,7 @@ namespace _pyves
 
     inline void bind_particle(py::module& m) 
     {
-        py::class_<Particle>(m, "Particle")
+        py::class_<Particle>(m, "Particle", py::dynamic_attr())
             .def(py::init<>())
             .def(py::init<Particle>())
             .def(py::init<CARTESIAN, CARTESIAN>())

@@ -1,6 +1,16 @@
 #pragma once
 
-#define REAL float
+#if __has_include(<Eigen/Core>)
+#include <Eigen/Core>
+#elif __has_include(<eigen3/Eigen/Core>)
+#include <eigen3/Eigen/Core>
+#endif
+
+namespace _pyves
+{
+    typedef float REAL;
+    typedef Eigen::Matrix<REAL, 3, 1> CARTESIAN;
+}
 
 constexpr const double PI_4  = 0.785398163397448309616;
 constexpr const double PI_2  = 1.57079632679489661923;
@@ -23,13 +33,6 @@ constexpr const double TWOPI = 3.14159265358979323846*2;
 // #define vesCRITICAL(x) {std::cerr << "[ERROR] "<< __FILE__ <<":" << __LINE__ << "  "; do { std::cerr << x; } while (0); std::cerr <<" raising SIGABRT\n"; std::exit(SIGABRT);}
 
 
-#if __has_include(<Eigen/Core>)
-#include <Eigen/Core>
-#elif __has_include(<eigen3/Eigen/Core>)
-#include <eigen3/Eigen/Core>
-#endif
-
-#define CARTESIAN Eigen::Array<REAL, 3, 1>
 //-------------------Eigen::IOFormat( prec, flag,                 coeffSep, rowSep, rowPre, rowSuf, matPre, matSuf )
 #define ROWFORMAT    Eigen::IOFormat( 3,    Eigen::DontAlignCols, ", ",     " ",    " ",    "",     " ",    " " )
 #define PYTHONFORMAT Eigen::IOFormat( 4,    0,                    ", ",     "\n",   "[",    "]",    "[",    "]" )

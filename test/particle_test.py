@@ -36,6 +36,12 @@ class MainTest(unittest.TestCase):
         self.assertAlmostEqual(p5.position[1], p5.y())
         self.assertAlmostEqual(p5.position[2], p5.z())
 
+        p6 = pyves.Particle()
+        p6.position = [1,2,3]
+        self.assertAlmostEqual(p6.position[0], 1)
+        self.assertAlmostEqual(p6.position[1], 2)
+        self.assertAlmostEqual(p6.position[2], 3)
+
 
     # def test_operator_plus(self):
 
