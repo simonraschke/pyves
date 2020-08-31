@@ -10,6 +10,8 @@ namespace _pyves
 {
     typedef float REAL;
     typedef Eigen::Matrix<REAL, 3, 1> CARTESIAN;
+    typedef Eigen::Ref<CARTESIAN> CARTESIAN_REF;
+    typedef const Eigen::Ref<const CARTESIAN>& CARTESIAN_CREF;
 }
 
 constexpr const double PI_4  = 0.785398163397448309616;

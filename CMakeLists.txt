@@ -24,7 +24,7 @@ file(GLOB TEST_FILES ${TEST_DIR}/*.cpp)
 
 add_subdirectory(lib/catch)
 include_directories(lib/catch/single_include/catch2)
-add_executable("${PROJECT_NAME}_test" ${TEST_FILES})
+add_executable("${PROJECT_NAME}_test" ${TEST_FILES} pyves/src/random.cpp)
 target_compile_options("${PROJECT_NAME}_test" PRIVATE -fmax-errors=3)
 target_link_libraries("${PROJECT_NAME}_test" Catch2::Catch2)
 
@@ -34,7 +34,7 @@ include_directories(lib/eigen)
 include_directories(lib/tbb/include)
 include_directories(lib/pybind11/include)
 
-file( GLOB SOURCES ${SOURCE_DIR}/*.cpp)
+file(GLOB SOURCES ${SOURCE_DIR}/*.cpp)
 pybind11_add_module(_pyves ${SOURCES})
 target_compile_options(_pyves PRIVATE -Wall -Wextra -Wpedantic -fmax-errors=3)
 target_link_libraries(_pyves PRIVATE tbb)

@@ -54,7 +54,7 @@ namespace _pyves
         py::class_<Particle>(m, "Particle", py::dynamic_attr())
             .def(py::init<>())
             .def(py::init<Particle>())
-            .def(py::init<CARTESIAN, CARTESIAN>())
+            .def(py::init<CARTESIAN_CREF, CARTESIAN_CREF>())
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def_readwrite("position", &Particle::position)
