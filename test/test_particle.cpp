@@ -41,6 +41,7 @@ TEST_CASE("Particle Member Test")
     }
 
 
+
     SECTION("operators")
     {
         Particle p1(CARTESIAN(1,1,1), CARTESIAN(1,0,0));
@@ -50,6 +51,7 @@ TEST_CASE("Particle Member Test")
         CHECK_FALSE(p1 == p2);
         CHECK_FALSE(p1 != p1);
     }
+
 
 
     SECTION("simple additions")
@@ -72,6 +74,7 @@ TEST_CASE("Particle Member Test")
         CHECK(p3.position(1) == Approx(static_cast<REAL>(1)));
         CHECK(p3.position(2) == Approx(static_cast<REAL>(3.1)));
     }
+
 
 
     SECTION("direct x,y,z, ux,uy,uz access")
