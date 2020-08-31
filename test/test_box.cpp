@@ -26,6 +26,7 @@ TEST_CASE("Box Constructor Test")
 }
 
 
+
 TEST_CASE("Box Simple Method Test")
 {
     Box<PERIODIC::ON> box1;
@@ -50,6 +51,7 @@ TEST_CASE("Box Simple Method Test")
     
     CHECK((box2.getCenter()-CARTESIAN(10,5,7.5)).cwiseAbs().isApprox(CARTESIAN::Zero()));
 }
+
 
 
 TEST_CASE("Box PBC / NoPBC Test")

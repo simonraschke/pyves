@@ -382,6 +382,7 @@ namespace _pyves
             .def_readonly("z", &Class::z)
             .def("setz", &Class::setLengthZ)
             .def("center", &Class::getCenter)
+            .def("volume", &Class::getVolume)
             .def("distanceVector", &Class::distanceVector)
             .def("distanceVectorParticle", &Class::distanceVectorParticle)
             .def("distance", &Class::distance)
