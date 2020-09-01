@@ -34,24 +34,26 @@ class MainTest(unittest.TestCase):
         box3 = pyves.BoxPBC([10,15,20])
         box4 = pyves.BoxPBC(np.array([10,15,20]))
 
-        box1.setx(7)
+        # print()
+        # print(pyves.BoxPBC.setx.__dict__)
+        box1.x = 7
         self.assertAlmostEqual(box1.x, 7)
 
-        box1.sety(3)
+        box1.y = 3
         self.assertAlmostEqual(box1.y, 3)
 
-        box1.setz(6)
+        box1.z = 6
         self.assertAlmostEqual(box1.z, 6)
 
-        self.assertAlmostEqual(box1.volume(), 7*3*6)
-        self.assertAlmostEqual(box2.volume(), 20*10*15)
-        self.assertAlmostEqual(box3.volume(), 10*15*20)
+        self.assertAlmostEqual(box1.volume, 7*3*6)
+        self.assertAlmostEqual(box2.volume, 20*10*15)
+        self.assertAlmostEqual(box3.volume, 10*15*20)
 
-        self.assertAlmostEqual(np.linalg.norm(box2.center()-np.array([10,5,7.5])), 0)
+        self.assertAlmostEqual(np.linalg.norm(box2.center-np.array([10,5,7.5])), 0)
 
 
 
-    def test_simple_methods(self):
+    def test_PBC_NoPBC_methods(self):
         boxPBC = pyves.BoxPBC(10,10,10)
         boxNoPBC = pyves.BoxNoPBC([10,10,10])
 

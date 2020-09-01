@@ -80,15 +80,15 @@ TEST_CASE("Particle Member Test")
     SECTION("direct x,y,z, ux,uy,uz access")
     {
         Particle p;
-        CHECK(p.x() == Approx(static_cast<REAL>(0)).margin(1e-7));
-        CHECK(p.y() == Approx(static_cast<REAL>(0)).margin(1e-7));
-        CHECK(p.z() == Approx(static_cast<REAL>(0)).margin(1e-7));
-        p.x() = 1;
-        p.y() = 2.2;
-        p.z() = -1.3;
-        CHECK(p.x() == Approx(static_cast<REAL>(1)));
-        CHECK(p.y() == Approx(static_cast<REAL>(2.2)));
-        CHECK(p.z() == Approx(static_cast<REAL>(-1.3)));
+        CHECK(p.getx() == Approx(static_cast<REAL>(0)).margin(1e-7));
+        CHECK(p.gety() == Approx(static_cast<REAL>(0)).margin(1e-7));
+        CHECK(p.getz() == Approx(static_cast<REAL>(0)).margin(1e-7));
+        p.setx(1);
+        p.sety(2.2);
+        p.setz(-1.3);
+        CHECK(p.getx() == Approx(static_cast<REAL>(1)));
+        CHECK(p.gety() == Approx(static_cast<REAL>(2.2)));
+        CHECK(p.getz() == Approx(static_cast<REAL>(-1.3)));
         CHECK(p.position(0) == Approx(static_cast<REAL>(1)));
         CHECK(p.position(1) == Approx(static_cast<REAL>(2.2)));
         CHECK(p.position(2) == Approx(static_cast<REAL>(-1.3)));

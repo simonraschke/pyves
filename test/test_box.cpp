@@ -10,19 +10,19 @@ using namespace _pyves;
 TEST_CASE("Box Constructor Test")
 {
     Box<PERIODIC::ON> box1;
-    CHECK(box1.x == Approx(static_cast<REAL>(0)));
-    CHECK(box1.y == Approx(static_cast<REAL>(0)));
-    CHECK(box1.z == Approx(static_cast<REAL>(0)));
+    CHECK(box1.getLengthX()== Approx(static_cast<REAL>(0)));
+    CHECK(box1.getLengthY()== Approx(static_cast<REAL>(0)));
+    CHECK(box1.getLengthZ() == Approx(static_cast<REAL>(0)));
 
     Box<PERIODIC::ON> box2(20,10,15);
-    CHECK(box2.x == Approx(static_cast<REAL>(20)));
-    CHECK(box2.y == Approx(static_cast<REAL>(10)));
-    CHECK(box2.z == Approx(static_cast<REAL>(15)));
+    CHECK(box2.getLengthX()== Approx(static_cast<REAL>(20)));
+    CHECK(box2.getLengthY()== Approx(static_cast<REAL>(10)));
+    CHECK(box2.getLengthZ() == Approx(static_cast<REAL>(15)));
 
     Box<PERIODIC::ON> box3(CARTESIAN(10,15,20));
-    CHECK(box3.x == Approx(static_cast<REAL>(10)));
-    CHECK(box3.y == Approx(static_cast<REAL>(15)));
-    CHECK(box3.z == Approx(static_cast<REAL>(20)));
+    CHECK(box3.getLengthX()== Approx(static_cast<REAL>(10)));
+    CHECK(box3.getLengthY()== Approx(static_cast<REAL>(15)));
+    CHECK(box3.getLengthZ() == Approx(static_cast<REAL>(20)));
 }
 
 
@@ -34,15 +34,12 @@ TEST_CASE("Box Simple Method Test")
     Box<PERIODIC::ON> box3(CARTESIAN(10,15,20));
 
     box1.setLengthX(7);
-    CHECK(box1.x == Approx(static_cast<REAL>(7)));
     CHECK(box1.getLengthX() == Approx(static_cast<REAL>(7)));
 
     box1.setLengthY(3);
-    CHECK(box1.y == Approx(static_cast<REAL>(3)));
     CHECK(box1.getLengthY() == Approx(static_cast<REAL>(3)));
 
     box1.setLengthZ(6);
-    CHECK(box1.z == Approx(static_cast<REAL>(6)));
     CHECK(box1.getLengthZ() == Approx(static_cast<REAL>(6)));
 
     CHECK(box1.getVolume() == Approx(static_cast<REAL>(7*3*6)));

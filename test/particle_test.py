@@ -7,7 +7,16 @@ import numpy as np
 class MainTest(unittest.TestCase):
     def test_construction(self):
         p1 = pyves.Particle()
+        p1.x = 1
+        self.assertAlmostEqual(p1.x, 1)
+
         p2 = pyves.Particle(p1)
+        self.assertAlmostEqual(p2.x, 1)
+
+        p2.x = 2
+        self.assertAlmostEqual(p1.x, 1)
+        self.assertAlmostEqual(p2.x, 2)
+
         p3 = pyves.Particle([1,1,1], np.array([1,0,0]))
 
     def test_operators(self):
@@ -29,12 +38,18 @@ class MainTest(unittest.TestCase):
         self.assertAlmostEqual(p5.position[0], 1)
         self.assertAlmostEqual(p5.position[1], 1)
         self.assertAlmostEqual(p5.position[2], 1)
-        self.assertAlmostEqual(p5.x(), 1)
-        self.assertAlmostEqual(p5.y(), 1)
-        self.assertAlmostEqual(p5.z(), 1)
-        self.assertAlmostEqual(p5.position[0], p5.x())
-        self.assertAlmostEqual(p5.position[1], p5.y())
-        self.assertAlmostEqual(p5.position[2], p5.z())
+        self.assertAlmostEqual(p5.x, 1)
+        self.assertAlmostEqual(p5.y, 1)
+        self.assertAlmostEqual(p5.z, 1)
+        self.assertAlmostEqual(p5.position[0], p5.x)
+        self.assertAlmostEqual(p5.position[1], p5.y)
+        self.assertAlmostEqual(p5.position[2], p5.z)
+        self.assertAlmostEqual(p3.position[0], 0)
+        self.assertAlmostEqual(p3.position[1], 0)
+        self.assertAlmostEqual(p3.position[2], 0)
+        self.assertAlmostEqual(p3.x, 0)
+        self.assertAlmostEqual(p3.y, 0)
+        self.assertAlmostEqual(p3.z, 0)
 
         p6 = pyves.Particle()
         p6.position = [1,2,3]

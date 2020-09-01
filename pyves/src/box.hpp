@@ -42,7 +42,7 @@ namespace _pyves
     class Box
     {
     public:
-        Box() {};
+        Box() = default;
         Box(REAL, REAL, REAL);
         Box(CARTESIAN_CREF);
 
@@ -111,7 +111,8 @@ namespace _pyves
         void check_for_aligned_box_setup();
 
         CARTESIAN randomPointInside() const;
-
+    
+    protected:
         REAL x {0};
         REAL y {0};
         REAL z {0};
@@ -375,14 +376,11 @@ namespace _pyves
             .def(py::init<>())
             .def(py::init<REAL,REAL,REAL>())
             .def(py::init<CARTESIAN_CREF>())
-            .def_readonly("x", &Class::x)
-            .def("setx", &Class::setLengthX)
-            .def_readonly("y", &Class::y)
-            .def("sety", &Class::setLengthY)
-            .def_readonly("z", &Class::z)
-            .def("setz", &Class::setLengthZ)
-            .def("center", &Class::getCenter)
-            .def("volume", &Class::getVolume)
+            .def_property("x", &Class::getLengthX, &Class::setLengthX)
+            .def_property("y", &Class::getLengthY, &Class::setLengthY)
+            .def_property("z", &Class::getLengthZ, &Class::setLengthZ)
+            .def_property_readonly("center", &Class::getCenter)
+            .def_property_readonly("volume", &Class::getVolume)
             .def("distanceVector", &Class::distanceVector)
             .def("distanceVectorParticle", &Class::distanceVectorParticle)
             .def("distance", &Class::distance)
