@@ -9,17 +9,17 @@ using namespace _pyves;
 
 TEST_CASE("Box Constructor Test")
 {
-    Box<PERIODIC::ON> box1;
+    Box<PBC::ON> box1;
     CHECK(box1.getLengthX()== Approx(static_cast<REAL>(0)));
     CHECK(box1.getLengthY()== Approx(static_cast<REAL>(0)));
     CHECK(box1.getLengthZ() == Approx(static_cast<REAL>(0)));
 
-    Box<PERIODIC::ON> box2(20,10,15);
+    Box<PBC::ON> box2(20,10,15);
     CHECK(box2.getLengthX()== Approx(static_cast<REAL>(20)));
     CHECK(box2.getLengthY()== Approx(static_cast<REAL>(10)));
     CHECK(box2.getLengthZ() == Approx(static_cast<REAL>(15)));
 
-    Box<PERIODIC::ON> box3(CARTESIAN(10,15,20));
+    Box<PBC::ON> box3(CARTESIAN(10,15,20));
     CHECK(box3.getLengthX()== Approx(static_cast<REAL>(10)));
     CHECK(box3.getLengthY()== Approx(static_cast<REAL>(15)));
     CHECK(box3.getLengthZ() == Approx(static_cast<REAL>(20)));
@@ -29,9 +29,9 @@ TEST_CASE("Box Constructor Test")
 
 TEST_CASE("Box Simple Method Test")
 {
-    Box<PERIODIC::ON> box1;
-    Box<PERIODIC::ON> box2(20,10,15);
-    Box<PERIODIC::ON> box3(CARTESIAN(10,15,20));
+    Box<PBC::ON> box1;
+    Box<PBC::ON> box2(20,10,15);
+    Box<PBC::ON> box3(CARTESIAN(10,15,20));
 
     box1.setLengthX(7);
     CHECK(box1.getLengthX() == Approx(static_cast<REAL>(7)));
@@ -53,8 +53,8 @@ TEST_CASE("Box Simple Method Test")
 
 TEST_CASE("Box PBC / NoPBC Test")
 {
-    Box<PERIODIC::ON> boxPBC(10,10,10);
-    Box<PERIODIC::OFF> boxNoPBC(CARTESIAN(10,10,10));
+    Box<PBC::ON> boxPBC(10,10,10);
+    Box<PBC::OFF> boxNoPBC(CARTESIAN(10,10,10));
 
     CHECK(boxPBC.distanceVector(CARTESIAN(0,0,0), CARTESIAN(1,1,1)).cwiseAbs().isApprox(CARTESIAN(1,1,1)));
     CHECK(boxPBC.distanceVector(CARTESIAN(0,0,0), CARTESIAN(11,11,11)).cwiseAbs().isApprox(CARTESIAN(1,1,1)));

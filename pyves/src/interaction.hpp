@@ -12,7 +12,7 @@ namespace py = pybind11;
 
 namespace _pyves
 {
-    template<PERIODIC P>
+    template<PBC P>
     REAL interaction(const Particle& p1, const Particle& p2, const Box<P>& box, REAL cutoff)
     {
         
@@ -67,8 +67,8 @@ namespace _pyves
 
     inline void bind_interaction(py::module& m) 
     {
-        m.def("interaction", &interaction<PERIODIC::ON>);
-        m.def("interaction", &interaction<PERIODIC::OFF>);
-        // m.def("interaction",  [](const Particle& p1, const Particle& p2, const Box<PERIODIC::ON>& box) { return interaction(p1, p2, box);});
+        m.def("interaction", &interaction<PBC::ON>);
+        m.def("interaction", &interaction<PBC::OFF>);
+        // m.def("interaction",  [](const Particle& p1, const Particle& p2, const Box<PBC::ON>& box) { return interaction(p1, p2, box);});
     }
 }

@@ -17,13 +17,13 @@ namespace py = pybind11;
 
 namespace _pyves 
 {
-    enum class PERIODIC : bool 
+    enum class PBC : bool 
     { 
         ON=true, 
         OFF=false}
     ;
 
-    template<PERIODIC P> class Box;
+    template<PBC P> class Box;
 
     struct Particle;
 }
@@ -34,11 +34,11 @@ namespace _pyves
 // represents a box from 0 to x,x,z
 // is ParameterDependentComponent
 //
-// may eiter be PERIODIC::ON to calculate with periodic boundary conditions
-// or may be PERIODIC::OFF to caclulate without periodic boundary conditions
+// may eiter be PBC::ON to calculate with PBC boundary conditions
+// or may be PBC::OFF to caclulate without PBC boundary conditions
 namespace _pyves
 {
-    template<PERIODIC P>
+    template<PBC P>
     class Box
     {
     public:
@@ -63,7 +63,7 @@ namespace _pyves
         CARTESIAN getCenter() const;
 
         // calcaulates the distance vector of two Particles
-        // depending on PERIODIC ON or OFF
+        // depending on PBC ON or OFF
         // called from anywhere else
         CARTESIAN distanceVector(CARTESIAN_CREF, CARTESIAN_CREF) const;
         // implementation for Particle base class. calls CARTESIAN version
@@ -97,7 +97,7 @@ namespace _pyves
         CARTESIAN scaleToBoxForVMD(const Particle&) const;
 
         // checks if bounding_box contains coordinates
-        // if PERIODIC::ON calls scaleToBox before
+        // if PBC::ON calls scaleToBox before
         bool contains(CARTESIAN_CREF) const;
         // implementation for Particle base class. calls CARTESIAN version
         bool containsParticle(const Particle&) const;
@@ -123,7 +123,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     Box<P>::Box(REAL _x, REAL _y, REAL _z)
         : x(_x)
         , y(_y)
@@ -136,7 +136,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     Box<P>::Box(CARTESIAN_CREF _c)
         : x(_c[0])
         , y(_c[1])
@@ -148,7 +148,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     void Box<P>::setLengthX(REAL l)
     {
         x = l;
@@ -157,7 +157,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     void Box<P>::setLengthY(REAL l)
     {
         y = l;
@@ -166,7 +166,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     void Box<P>::setLengthZ(REAL l)
     {
         z = l;
@@ -175,7 +175,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     REAL Box<P>::getLengthX() const
     {
         return x;
@@ -183,7 +183,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     REAL Box<P>::getLengthY() const
     {
         return y;
@@ -191,7 +191,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     REAL Box<P>::getLengthZ() const
     {
         return z;
@@ -199,7 +199,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     REAL Box<P>::getVolume() const
     {
         return bounding_box->volume();
@@ -207,7 +207,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     CARTESIAN Box<P>::getCenter() const
     {
         return bounding_box->center();
@@ -215,7 +215,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     void Box<P>::check_for_aligned_box_setup()
     {
         bounding_box.reset(nullptr);
@@ -226,7 +226,7 @@ namespace _pyves
 
 
     template<>
-    inline CARTESIAN Box<PERIODIC::ON>::distanceVector(CARTESIAN_CREF c1, CARTESIAN_CREF c2) const
+    inline CARTESIAN Box<PBC::ON>::distanceVector(CARTESIAN_CREF c1, CARTESIAN_CREF c2) const
     {
         CARTESIAN distance_CARTESIAN = c2-c1;
         distance_CARTESIAN(0) = distance_CARTESIAN(0) - x * std::round(static_cast<REAL>(distance_CARTESIAN(0)/(x)));
@@ -238,14 +238,14 @@ namespace _pyves
 
 
     template<>
-    inline CARTESIAN Box<PERIODIC::OFF>::distanceVector(CARTESIAN_CREF c1, CARTESIAN_CREF c2) const
+    inline CARTESIAN Box<PBC::OFF>::distanceVector(CARTESIAN_CREF c1, CARTESIAN_CREF c2) const
     {
         return (c2-c1);
     }
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     inline CARTESIAN Box<P>::distanceVectorParticle(const Particle& p1, const Particle& p2) const
     {
         return distanceVector(p1.position,p2.position);
@@ -253,7 +253,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     inline REAL Box<P>::squaredDistance(CARTESIAN_CREF c1, CARTESIAN_CREF c2) const 
     {
         return distanceVector(c1,c2).squaredNorm();
@@ -261,7 +261,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     inline REAL Box<P>::squaredDistanceParticle(const Particle& p1, const Particle& p2) const 
     {
         return squaredDistance(p1.position,p2.position);
@@ -269,7 +269,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     inline REAL Box<P>::distance(CARTESIAN_CREF c1, CARTESIAN_CREF c2) const 
     {
         return std::sqrt(squaredDistance(c1,c2));
@@ -277,7 +277,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     inline REAL Box<P>::distanceParticle(const Particle& p1, const Particle& p2) const 
     {
         return distance(p1.position,p2.position);
@@ -285,7 +285,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     CARTESIAN Box<P>::scaleToBox(CARTESIAN c) const 
     {
         while( c(0) > x ) c(0) -= x;
@@ -300,7 +300,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     CARTESIAN Box<P>::scaleToBoxParticle(const Particle& p) const 
     {
         return scaleToBox(p.position);
@@ -308,7 +308,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     CARTESIAN Box<P>::scaleToBoxForVMD(CARTESIAN c) const 
     {
         c(0) = c(0) - x * std::round(c(0)/(x));
@@ -319,7 +319,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     CARTESIAN Box<P>::scaleToBoxForVMD(const Particle& p) const 
     {
         return scaleToBoxForVMD(p.position);
@@ -328,7 +328,7 @@ namespace _pyves
 
 
     template<>
-    inline bool Box<PERIODIC::ON>::contains(CARTESIAN_CREF c) const 
+    inline bool Box<PBC::ON>::contains(CARTESIAN_CREF c) const 
     {
         assert(bounding_box);
         return bounding_box->contains(scaleToBox(c));
@@ -337,7 +337,7 @@ namespace _pyves
 
 
     template<>
-    inline bool Box<PERIODIC::OFF>::contains(CARTESIAN_CREF c) const 
+    inline bool Box<PBC::OFF>::contains(CARTESIAN_CREF c) const 
     {
         assert(bounding_box);
         return bounding_box->contains(c);
@@ -345,7 +345,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     inline bool Box<P>::containsParticle(const Particle& p) const 
     {
         return contains(p.position);
@@ -353,7 +353,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     inline CARTESIAN Box<P>::randomPointInside() const 
     {
         return CARTESIAN
@@ -366,7 +366,7 @@ namespace _pyves
 
 
 
-    template<PERIODIC P>
+    template<PBC P>
     void declare_box(py::module& m, std::string typestr)
     {
         // using rvp = py::return_value_policy;
@@ -398,7 +398,7 @@ namespace _pyves
     
     inline void bind_box(py::module& m)
     {
-        declare_box<PERIODIC::ON>(m, "PBC");
-        declare_box<PERIODIC::OFF>(m, "NoPBC");
+        declare_box<PBC::ON>(m, "PBC");
+        declare_box<PBC::OFF>(m, "NoPBC");
     }
 } // namespace _pyves

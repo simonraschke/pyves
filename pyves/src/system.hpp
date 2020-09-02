@@ -9,7 +9,7 @@ namespace _pyves
 {
     struct System
     {
-        Box<PERIODIC::ON> box;
+        Box<PBC::ON> box;
         Parameters prms;
         // particles
         // cells
