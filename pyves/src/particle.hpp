@@ -50,7 +50,7 @@ namespace _pyves
         inline bool operator==(const Particle& other) const { return std::addressof(*this) == std::addressof(other); };
         inline bool operator!=(const Particle& other) const { return std::addressof(*this) != std::addressof(other); };
         
-        inline std::string repr()
+        inline std::string repr() const
         {
             return 
                 std::string("<Particle ") + name + " (REAL=" + type_name<REAL>() + 

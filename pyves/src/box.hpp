@@ -1,18 +1,18 @@
 #pragma once
 
+#include "definitions.hpp"
 #include "particle.hpp"
 #include "random.hpp"
 #include <memory>
-
 #include <Eigen/Geometry>
 
 #include <pybind11/pybind11.h>
+namespace py = pybind11;
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations" // hurts, but is necessary
 #include <pybind11/eigen.h>
 #pragma GCC diagnostic pop
 
-namespace py = pybind11;
 
 
 namespace _pyves 
