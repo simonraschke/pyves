@@ -72,6 +72,7 @@ namespace _pyves
                 .def(py::init<Class>())
                 .def_readwrite("trajectory_path", &Class::trajectory_path)
                 .def_readwrite("forcefield_path", &Class::forcefield_path)
+                .def_readwrite("time_delta", &Class::time_delta)
                 ;
         }
 
@@ -86,11 +87,11 @@ namespace _pyves
             REAL boxx = NaN_t<REAL>()();
             REAL boxy = NaN_t<REAL>()();
             REAL boxz = NaN_t<REAL>()();
-            std::size_t time_max = NaN_t<std::size_t>()();
             REAL translation_min = NaN_t<REAL>()();
             REAL translation_max = NaN_t<REAL>()();
             REAL rotation_min = NaN_t<REAL>()();
             REAL rotation_max = NaN_t<REAL>()();
+            std::size_t time_max = NaN_t<std::size_t>()();
         };
 
 
@@ -102,6 +103,14 @@ namespace _pyves
                 .def(py::init<>())
                 .def(py::init<Class>())
                 .def_readwrite("temperature", &Class::temperature)
+                .def_readwrite("boxx", &Class::boxx)
+                .def_readwrite("boxy", &Class::boxy)
+                .def_readwrite("boxz", &Class::boxz)
+                .def_readwrite("translation_min", &Class::translation_min)
+                .def_readwrite("translation_max", &Class::translation_max)
+                .def_readwrite("rotation_min", &Class::rotation_min)
+                .def_readwrite("rotation_max", &Class::rotation_max)
+                .def_readwrite("time_max", &Class::time_max)
                 ;
         }
     }

@@ -56,8 +56,8 @@ TEST_CASE("Particle Member Test")
 
     SECTION("simple additions")
     {
-        Particle p1(CARTESIAN(1,1,1), CARTESIAN(1,0,0));
-        Particle p2(CARTESIAN(2,-2,0.1), CARTESIAN(1,0,0));
+        Particle p1(CARTESIAN(1,1,1), CARTESIAN(8,0,0));
+        Particle p2(CARTESIAN(2,-2,0.1), CARTESIAN(2,0,0));
         Particle p3;
         p3.position = p1.position + p2.position;
         CHECK(p3.position(0) == Approx(static_cast<REAL>(3)));
@@ -73,6 +73,13 @@ TEST_CASE("Particle Member Test")
         CHECK(p3.position(0) == Approx(static_cast<REAL>(5)));
         CHECK(p3.position(1) == Approx(static_cast<REAL>(1)));
         CHECK(p3.position(2) == Approx(static_cast<REAL>(3.1)));
+        
+        CHECK(p1.getux() == Approx(1));
+        CHECK(p1.getuy() == Approx(0));
+        CHECK(p1.getuz() == Approx(0));
+        CHECK(p2.getux() == Approx(1));
+        CHECK(p2.getuy() == Approx(0));
+        CHECK(p2.getuz() == Approx(0));
     }
 
 
@@ -92,5 +99,9 @@ TEST_CASE("Particle Member Test")
         CHECK(p.position(0) == Approx(static_cast<REAL>(1)));
         CHECK(p.position(1) == Approx(static_cast<REAL>(2.2)));
         CHECK(p.position(2) == Approx(static_cast<REAL>(-1.3)));
+        p.setOrientation(CARTESIAN(2.2345234,0,0));
+        CHECK(p.getux() == Approx(1));
+        CHECK(p.getuy() == Approx(0));
+        CHECK(p.getuz() == Approx(0));
     }
 }

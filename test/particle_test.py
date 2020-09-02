@@ -53,9 +53,13 @@ class MainTest(unittest.TestCase):
 
         p6 = pyves.Particle()
         p6.position = [1,2,3]
+        p6.orientation = [45.1239874,0,0]
         self.assertAlmostEqual(p6.position[0], 1)
         self.assertAlmostEqual(p6.position[1], 2)
         self.assertAlmostEqual(p6.position[2], 3)
+        self.assertAlmostEqual(p6.orientation[0], 1)
+        self.assertAlmostEqual(p6.orientation[1], 0)
+        self.assertAlmostEqual(p6.orientation[2], 0)
 
 
     # def test_operator_plus(self):

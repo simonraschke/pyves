@@ -1,3 +1,4 @@
+#include "definitions.hpp"
 #include "parameters.hpp"
 #include "particle.hpp"
 #include "system.hpp"

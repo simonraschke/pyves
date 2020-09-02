@@ -30,27 +30,23 @@ namespace _pyves
         r2 *= mean_sigma*mean_sigma;
         // std::cout << "r2 " << r2 << std::endl;
 
-        const REAL r6 = r2*r2*r2;
-        // std::cout << "r6 " << r6 << std::endl;
-
         distance_vec.normalize();
-        const CARTESIAN p1_orien_kappa = p1.orientation*p1.kappa/2;
+        const CARTESIAN p1_orien_kappa = p1.orientation.normalized()*p1.kappa/2;
         // std::cout << "p1_orien_kappa " << p1_orien_kappa.format(ROWFORMAT) << std::endl;
-        const CARTESIAN p2_orien_kappa = p2.orientation*p2.kappa/2;
+        const CARTESIAN p2_orien_kappa = p2.orientation.normalized()*p2.kappa/2;
         // std::cout << "p2_orien_kappa " << p2_orien_kappa.format(ROWFORMAT) << std::endl;
 
         // const REAL mean_kappa = (p1.kappa+p2.kappa)/2;
-        const REAL mean_epsilon = (p1.epsilon+p2.epsilon)/2;
 
         const Eigen::AngleAxis<REAL> rotation1 (p1.gamma, CARTESIAN::UnitZ());
         const Eigen::AngleAxis<REAL> rotation2 (p2.gamma, -CARTESIAN::UnitZ());
         const REAL a  = (-(rotation1*(CARTESIAN::UnitY()*p1.kappa/2)) + CARTESIAN::UnitX() + (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
-        // std::cout << "a  " << a << std::endl;
         const REAL b  = (  rotation1*(CARTESIAN::UnitY()*p1.kappa/2)  + CARTESIAN::UnitX() - (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
-        // std::cout << "b  " << b << std::endl;
         const REAL c1 = (-(rotation1*(CARTESIAN::UnitY()*p1.kappa/2)) + CARTESIAN::UnitX() - (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
-        // std::cout << "c1 " << c1 << std::endl;
         const REAL c2 = (  rotation1*(CARTESIAN::UnitY()*p1.kappa/2)  + CARTESIAN::UnitX() + (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
+        // std::cout << "a  " << a << std::endl;
+        // std::cout << "b  " << b << std::endl;
+        // std::cout << "c1 " << c1 << std::endl;
         // std::cout << "c2 " << c2<< std::endl;
         const REAL chi = static_cast<REAL>(
               std::pow(CARTESIAN( -p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - a,  2)
@@ -59,6 +55,9 @@ namespace _pyves
             + std::pow(CARTESIAN(  p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - c2, 2));
             
         // std::cout << "chi " << chi << std::endl;
+        const REAL mean_epsilon = (p1.epsilon+p2.epsilon)/2;
+        const REAL r6 = r2*r2*r2;
+        // std::cout << "r6 " << r6 << std::endl;
         
         return 4.f*mean_epsilon*(r6*r6 - (1.f-chi)*r6);
     }
