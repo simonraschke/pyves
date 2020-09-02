@@ -1,5 +1,4 @@
 #pragma once
-#include "definitions.hpp"
 #include "box.hpp"
 #include "parameters.hpp"
 #include "particle.hpp"
@@ -8,20 +7,21 @@
 namespace py = pybind11;
 
 #include <pybind11/stl.h>
-#include <pybind11/buffer_info.h>
+#include <pybind11/stl_bind.h>
 #include <vector>
+#include <numeric>
 
-PYBIND11_MAKE_OPAQUE(std::vector<_pyves::Particle, std::allocator<_pyves::Particle>>);
-
-using ParticleContainer = std::vector<_pyves::Particle, std::allocator<_pyves::Particle>>;
+PYBIND11_MAKE_OPAQUE(std::vector<_pyves::Particle>)
 
 namespace _pyves
 {
+    typedef std::vector<_pyves::Particle> ParticleContainer;
+    
     struct System
     {
         Box<PBC::ON> box;
         Parameters prms;
-        ParticleContainer particles;
+        ParticleContainer particles = {};
         // cells
         // 
         
@@ -33,11 +33,29 @@ namespace _pyves
 
     inline void bind_system(py::module& m)
     {
+	    pybind11::bind_vector<ParticleContainer>( m, "ParticleContainer" )
+            .def(py::init<>())
+            .def("clear", &ParticleContainer::clear)
+            .def("pop_back", &ParticleContainer::pop_back)
+            .def("__len__", [](const ParticleContainer& v) { return v.size(); })
+            .def("__iter__", [](ParticleContainer& v) 
+            {
+                return py::make_iterator(std::begin(v), std::end(v));
+            }, py::keep_alive<0, 1>())
+            .def("__repr__", [](const ParticleContainer& v) {
+                return "ParticleContainer\n[\n"
+                    + std::accumulate(std::begin(v), std::end(v), std::string(""), [](std::string s, const Particle& p) 
+                    { 
+                        return s+"\t"+p.repr()+",\n";
+                    })
+                    + "]";
+            })
+            ;
+
         py::class_<System>(m, "System", py::dynamic_attr())
             .def(py::init<>())
             .def_readwrite("prms", &System::prms)
             .def_readwrite("particles", &System::particles)
             ;
-        // py::bind_vector<std::vector<Particle>>(m, "System.particles");
     }
 }

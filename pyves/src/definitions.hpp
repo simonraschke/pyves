@@ -1,10 +1,6 @@
 #pragma once
 
-#if __has_include(<Eigen/Core>)
 #include <Eigen/Core>
-#elif __has_include(<eigen3/Eigen/Core>)
-#include <eigen3/Eigen/Core>
-#endif
 
 namespace _pyves
 {
@@ -17,14 +13,7 @@ namespace _pyves
     constexpr const double PI_2  = 1.57079632679489661923;
     constexpr const double PI    = 3.14159265358979323846;
     constexpr const double TWOPI = 3.14159265358979323846*2;
-
-    // struct Particle;
 }
-
-// #include <pybind11/stl.h>
-// #include <vector>
-
-// PYBIND11_MAKE_OPAQUE(std::vector<_pyves::Particle>)
 
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
