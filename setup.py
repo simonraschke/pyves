@@ -56,7 +56,6 @@ class CMakeBuild(build_ext):
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
             build_args += ['--', '-j']
-        print(build_args)
 
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
@@ -107,7 +106,7 @@ setup(
     version=__version__,
     author='Simon Raschke',
     author_email='',
-    url='',
+    url='https://github.com/simonraschke/pyves.git',
     description='vesicle python bindings',
     long_description='',
     packages=find_packages(),

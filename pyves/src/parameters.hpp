@@ -52,29 +52,29 @@ namespace _pyves
 
 
 
-        //
-        // IO PARAMETER SET
-        //
-        struct IOParameters
-        {
-            std::filesystem::path trajectory_path = ".";
-            std::filesystem::path forcefield_path = ".";
-            REAL time_delta = NaN_t<REAL>()();
-        };
+        // //
+        // // IO PARAMETER SET
+        // //
+        // struct IOParameters
+        // {
+        //     std::filesystem::path trajectory_path = ".";
+        //     std::filesystem::path forcefield_path = ".";
+        //     REAL time_delta = NaN_t<REAL>()();
+        // };
 
 
 
-        inline void bind_io_parameters(py::module& m)
-        {                
-            using Class = IOParameters;
-            py::class_<Class>(m, "IOParameters", py::dynamic_attr())
-                .def(py::init<>())
-                .def(py::init<Class>())
-                .def_readwrite("trajectory_path", &Class::trajectory_path)
-                .def_readwrite("forcefield_path", &Class::forcefield_path)
-                .def_readwrite("time_delta", &Class::time_delta)
-                ;
-        }
+        // inline void bind_io_parameters(py::module& m)
+        // {                
+        //     using Class = IOParameters;
+        //     py::class_<Class>(m, "IOParameters", py::dynamic_attr())
+        //         .def(py::init<>())
+        //         .def(py::init<Class>())
+        //         .def_readwrite("trajectory_path", &Class::trajectory_path)
+        //         .def_readwrite("forcefield_path", &Class::forcefield_path)
+        //         .def_readwrite("time_delta", &Class::time_delta)
+        //         ;
+        // }
 
 
 
@@ -120,7 +120,7 @@ namespace _pyves
     struct Parameters
     {
         __detail::HardwareParameters hardware;
-        __detail::IOParameters io;
+        // __detail::IOParameters io;
         __detail::SystemParameters system;
     };
 
@@ -129,7 +129,7 @@ namespace _pyves
     inline void bind_parameters(py::module& m)
     {
         __detail::bind_hardware_parameters(m);
-        __detail::bind_io_parameters(m);
+        // __detail::bind_io_parameters(m);
         __detail::bind_system_parameters(m);
 
         using Class = Parameters;

@@ -5,7 +5,7 @@ import numpy as np
 
 
 class MainTest(unittest.TestCase):
-    def test_construction(self):
+    def test_particle_container(self):
         cont = pyves.ParticleContainer()
         self.assertEqual(len(cont), 0)
         cont.append(pyves.Particle([1,1,1], [1,0,0]))
@@ -15,6 +15,19 @@ class MainTest(unittest.TestCase):
         self.assertEqual(len(cont), 4)
         cont[0].x = 2
         self.assertAlmostEqual(cont[0].x, 2)
+
+
+
+    def test_system_integrity(self):
+        sys = pyves.System()
+        self.assertEqual(len(sys.particles), 0)
+        sys.particles.append(pyves.Particle([1,1,1], [1,0,0], sigma=1, kappa=1, eps=1, name="TEST", gamma=0))
+        sys.particles.append(pyves.Particle([1,1,1], [1,0,0], sigma=1, kappa=1, eps=1, name="TEST", gamma=0))
+        sys.particles.append(pyves.Particle([1,1,1], [1,0,0], sigma=1, kappa=1, eps=1, name="TEST", gamma=0))
+        self.assertEqual(len(sys.particles), 3)
+        sys.particles[0].x = 2
+        self.assertAlmostEqual(sys.particles[0].x, 2)
+        self.assertTrue(sys.assertIntegrity())
 
 
 

@@ -2,6 +2,7 @@
 #include "box.hpp"
 #include "parameters.hpp"
 #include "particle.hpp"
+#include "utility.hpp"
 
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
@@ -25,7 +26,7 @@ namespace _pyves
         // cells
         // 
         
-
+        void prepare_simulation();
         bool assertIntegrity() const;
     };
 
@@ -56,6 +57,16 @@ namespace _pyves
             .def(py::init<>())
             .def_readwrite("prms", &System::prms)
             .def_readwrite("particles", &System::particles)
+            .def("assertIntegrity", &System::assertIntegrity)
             ;
+    }
+
+
+
+    bool System::assertIntegrity() const
+    {
+        return all(
+            std::all_of(std::begin(particles), std::end(particles), [](const auto& p) { return p.assertIntegrity(); })
+        );
     }
 }

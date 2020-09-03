@@ -25,7 +25,7 @@ file(GLOB TEST_FILES ${TEST_DIR}/*.cpp)
 add_subdirectory(lib/catch)
 include_directories(lib/catch/single_include/catch2)
 add_executable("${PROJECT_NAME}_test" ${TEST_FILES} pyves/src/random.cpp)
-target_compile_options("${PROJECT_NAME}_test" PRIVATE -Wall -Wextra -Wpedantic -fmax-errors=3)
+target_compile_options("${PROJECT_NAME}_test" PRIVATE -ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=3)
 target_link_libraries("${PROJECT_NAME}_test" Catch2::Catch2)
 
 add_subdirectory(lib/pybind11)
