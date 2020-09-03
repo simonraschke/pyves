@@ -23,10 +23,12 @@ class MainTest(unittest.TestCase):
         self.assertEqual(len(sys.particles), 0)
         sys.particles.append(pyves.Particle([1,1,1], [1,0,0], sigma=1, kappa=1, eps=1, name="TEST", gamma=0))
         sys.particles.append(pyves.Particle([1,1,1], [1,0,0], sigma=1, kappa=1, eps=1, name="TEST", gamma=0))
-        sys.particles.append(pyves.Particle([1,1,1], [1,0,0], sigma=1, kappa=1, eps=1, name="TEST", gamma=0))
+        sys.particles.append(pyves.Particle([1,1,1], [1,0,0], sigma=np.nan, kappa=1, eps=1, name="TEST", gamma=0))
         self.assertEqual(len(sys.particles), 3)
         sys.particles[0].x = 2
         self.assertAlmostEqual(sys.particles[0].x, 2)
+        self.assertFalse(sys.assertIntegrity())
+        sys.particles[2].sigma = 1
         self.assertTrue(sys.assertIntegrity())
 
 

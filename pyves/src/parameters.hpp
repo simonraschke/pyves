@@ -1,7 +1,6 @@
 #pragma once
 
 #include "definitions.hpp"
-#include "type_name.hpp"
 #include <limits>
 #include <Eigen/Core>
 #include <filesystem>
@@ -40,7 +39,7 @@ namespace _pyves
 
 
         inline void bind_hardware_parameters(py::module& m)
-        {                
+        {
             using Class = HardwareParameters;
             py::class_<Class>(m, "HardwareParameters", py::dynamic_attr())
                 .def(py::init<>())

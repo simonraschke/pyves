@@ -1,11 +1,14 @@
 #pragma once
 
 #include "definitions.hpp"
-#include "type_name.hpp"
 #include "utility.hpp"
 #include <limits>
+#include <exception>
 #include <cmath>
 #include <Eigen/Core>
+#if __cplusplus >= 202000L
+    #include <format>
+#endif
 
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
@@ -16,9 +19,25 @@
 
 namespace py = pybind11;
 
+#include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
+#include <vector>
 
 namespace _pyves
 {
+    struct Particle;   
+    typedef std::vector<std::reference_wrapper<Particle>> ParticleRefContainer;
+}
+
+
+
+PYBIND11_MAKE_OPAQUE(std::vector<std::reference_wrapper<_pyves::Particle>>)
+
+
+
+namespace _pyves
+{
+        
     struct Particle
     {
         CARTESIAN position;
@@ -55,6 +74,8 @@ namespace _pyves
         inline bool assertIntegrity() const
         {
             return all(
+                all(std::isfinite(position[0]), std::isfinite(position[1]), std::isfinite(position[2])),
+                all(std::isfinite(orientation[0]), std::isfinite(orientation[1]), std::isfinite(orientation[2])),
                 std::isfinite(sigma),
                 std::isfinite(epsilon),
                 std::isfinite(kappa),
@@ -73,11 +94,45 @@ namespace _pyves
                 std::to_string(getux()) + "|" + std::to_string(getuy()) + "|" + std::to_string(getuz()) + 
                 ") direction>";
         }  
+        
+        inline std::string detailed_repr() const
+        {
+            return 
+                std::string("<Particle ") + name + " (REAL=" + type_name<REAL>() + 
+                ") at (" + 
+                std::to_string(getx()) + "|" + std::to_string(gety()) + "|" + std::to_string(getz()) + 
+                ") in (" + 
+                std::to_string(getux()) + "|" + std::to_string(getuy()) + "|" + std::to_string(getuz()) + 
+            #if __cplusplus <= 201703L
+                string_format(") direction with sigma=%f eps=%f kappa=%f gamma=%f >", sigma, epsilon, kappa, gamma);
+            #else
+                std::format(") direction with sigma={} eps={} kappa={} gamma={} >", sigma, epsilon, kappa, gamma);
+            #endif
+        }  
     };
+
 
 
     inline void bind_particle(py::module& m) 
     {
+        
+        py::bind_vector<ParticleRefContainer>( m, "ParticleRefContainer" )
+            .def(py::init<>())
+            .def("__len__", [](const ParticleRefContainer& v) { return v.size(); })
+            .def("__iter__", [](ParticleRefContainer& v) 
+            {
+                return py::make_iterator(std::begin(v), std::end(v));
+            }, py::keep_alive<0, 1>())
+            .def("__repr__", [](const ParticleRefContainer& v) {
+                return "ParticleRefContainer\n[\n"
+                    + std::accumulate(std::begin(v), std::end(v), std::string(""), [](std::string s, const Particle& p) 
+                    { 
+                        return s+"\t"+p.repr()+",\n";
+                    })
+                    + "]";
+            })
+            ;
+        
         py::class_<Particle>(m, "Particle", py::dynamic_attr())
             .def(py::init<>())
             .def(py::init<Particle>())
@@ -99,8 +154,6 @@ namespace _pyves
             .def_property_readonly("ux", &Particle::getux)
             .def_property_readonly("uy", &Particle::getuy)
             .def_property_readonly("uz", &Particle::getuz)
-
-
             .def("__repr__", &Particle::repr);
             ;
     }
@@ -115,6 +168,7 @@ namespace _pyves
     }
 
     
+
     inline Particle::Particle(CARTESIAN_CREF pos, CARTESIAN_CREF orien, REAL sigma, REAL eps, REAL kappa, REAL gamma, std::string name)
         : position(pos)
         , orientation(orien.normalized())
@@ -124,7 +178,9 @@ namespace _pyves
         , gamma(gamma)
         , name(name)
     {
-
+        // if(!assertIntegrity())
+        // {
+        //     throw std::logic_error(std::string("Particle should be completely initialized, but is not: ")+detailed_repr());
+        // }
     }
-
 }

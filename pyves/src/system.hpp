@@ -2,6 +2,7 @@
 #include "box.hpp"
 #include "parameters.hpp"
 #include "particle.hpp"
+#include "cell.hpp"
 #include "utility.hpp"
 
 #include <pybind11/pybind11.h>
@@ -34,10 +35,10 @@ namespace _pyves
 
     inline void bind_system(py::module& m)
     {
-	    pybind11::bind_vector<ParticleContainer>( m, "ParticleContainer" )
+	    py::bind_vector<ParticleContainer>( m, "ParticleContainer" )
             .def(py::init<>())
-            .def("clear", &ParticleContainer::clear)
-            .def("pop_back", &ParticleContainer::pop_back)
+            // .def("clear", &ParticleContainer::clear)
+            // .def("pop_back", &ParticleContainer::pop_back)
             .def("__len__", [](const ParticleContainer& v) { return v.size(); })
             .def("__iter__", [](ParticleContainer& v) 
             {
