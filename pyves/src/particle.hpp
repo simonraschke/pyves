@@ -86,23 +86,15 @@ namespace _pyves
         
         inline std::string repr() const
         {
-            return 
-                std::string("<Particle ") + name + " (REAL=" + type_name<REAL>() + 
-                ") at (" + 
-                std::to_string(getx()) + "|" + std::to_string(gety()) + "|" + std::to_string(getz()) + 
-                ") in (" + 
-                std::to_string(getux()) + "|" + std::to_string(getuy()) + "|" + std::to_string(getuz()) + 
-                ") direction>";
+            std::stringstream ss;
+            ss  << "<Particle " << name << " (REAL=" << type_name<REAL>() << ") at " << position.format(VECTORFORMAT)
+                << " in " << orientation.format(VECTORFORMAT) << " direction>";
+            return ss.str();
         }  
         
         inline std::string detailed_repr() const
         {
-            return 
-                std::string("<Particle ") + name + " (REAL=" + type_name<REAL>() + 
-                ") at (" + 
-                std::to_string(getx()) + "|" + std::to_string(gety()) + "|" + std::to_string(getz()) + 
-                ") in (" + 
-                std::to_string(getux()) + "|" + std::to_string(getuy()) + "|" + std::to_string(getuz()) + 
+            return repr() + 
             #if __cplusplus <= 201703L
                 string_format(") direction with sigma=%f eps=%f kappa=%f gamma=%f >", sigma, epsilon, kappa, gamma);
             #else

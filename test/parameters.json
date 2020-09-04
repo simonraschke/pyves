@@ -22,10 +22,18 @@
     "control" : 
     {
         "time_delta" : 100,
-        "num_particles": 
+        "particles" :
         {
-            "A" : 100,
-            "B" : 100
+            "A" : 
+            {
+                "number" : 100,
+                "dist" : "random"
+            },
+            "B" : 
+            {
+                "number" : 100,
+                "dist" : "random"
+            }
         },
         "cell_min_size" : 4.0
     }

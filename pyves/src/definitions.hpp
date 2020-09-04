@@ -34,6 +34,7 @@ namespace _pyves
 //-------------------Eigen::IOFormat( prec, flag,                 coeffSep, rowSep, rowPre, rowSuf, matPre, matSuf )
 #define ROWFORMAT    Eigen::IOFormat( 3,    Eigen::DontAlignCols, ", ",     " ",    " ",    "",     " ",    " " )
 #define PYTHONFORMAT Eigen::IOFormat( 4,    0,                    ", ",     "\n",   "[",    "]",    "[",    "]" )
+#define VECTORFORMAT Eigen::IOFormat( 3,    Eigen::DontAlignCols, "|",      "|",    "",     "",     "(",    ")" )
 
 
 

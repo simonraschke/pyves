@@ -2,7 +2,7 @@
 
 #include "definitions.hpp"
 #include "box.hpp"
-#include "observer_ptr.hpp"
+#include "particle.hpp"
 #include <atomic>
 #include <memory>
 #include <Eigen/Geometry>
@@ -43,8 +43,7 @@ struct _pyves::Cell
     Eigen::AlignedBox<REAL,3> bounding_box;
 
     CellRefContainer proximity;
-
-
+    ParticleRefContainer particles;
 
     Cell(CARTESIAN_CREF min, CARTESIAN_CREF max)
         // :  bounding_box(std::make_unique<decltype(bounding_box)::element_type>(min-CellBoundOffset, max+CellBoundOffset))
@@ -108,10 +107,10 @@ struct _pyves::Cell
 
 
 
-    // inline void addToProximity(Cell& other)
-    // {
-    //     proximity.push_back(std::ref(other));
-    // }
+    inline bool contains(const Particle& p) const
+    {
+        return bounding_box.contains(p.position);
+    }
 
 
 
@@ -124,10 +123,9 @@ struct _pyves::Cell
 
     inline std::string repr() const
     {
-        return std::string("<Cell from (") +
-            std::to_string(bounding_box.min()(0)) + "|" + std::to_string(bounding_box.min()(1)) + "|" + std::to_string(bounding_box.min()(2)) + 
-            ") to (" + 
-            std::to_string(bounding_box.max()(0)) + "|" + std::to_string(bounding_box.max()(1)) + "|" + std::to_string(bounding_box.max()(2)) + ")>" ;
+        std::stringstream ss;
+        ss  << "<Cell from " << bounding_box.min().format(VECTORFORMAT) << " to " << bounding_box.max().format(VECTORFORMAT) << ">";
+        return ss.str();
     }
 };
 
@@ -184,12 +182,13 @@ namespace _pyves
         py::class_<Cell>(m, "Cell", py::dynamic_attr())
             .def(py::init<CARTESIAN_CREF,CARTESIAN_CREF>(), py::arg("min"), py::arg("max"))
             .def_readonly("bounding_box", &Cell::bounding_box)
-            // .def_property_readonly("bounding_box", [](const Cell& c){ return c.bounding_box.get(); }, py::return_value_policy::reference_internal)
-            // .def_readonly("proximity", &Cell::proximity)            
-            // .def_property("proximity", &Cell::proximity, [](Cell& i, Cell& j ) { i.addToProximity(j); }, py::return_value_policy::reference_internal)
             .def_readwrite("proximity", &Cell::proximity, py::return_value_policy::reference_internal)
-            .def_property("min", [](const Cell& c){ return c.bounding_box.min(); }, [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.min() = v - CellBoundOffset; }, py::return_value_policy::reference_internal)
-            .def_property("max", [](const Cell& c){ return c.bounding_box.max(); }, [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.max() = v - CellBoundOffset; }, py::return_value_policy::reference_internal)
+            .def_readwrite("particles", &Cell::particles, py::return_value_policy::reference_internal)
+            .def_property("min", [](const Cell& c){ return c.bounding_box.min(); }, 
+                                 [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.min() = v - CellBoundOffset; }, py::return_value_policy::reference_internal)
+            .def_property("max", [](const Cell& c){ return c.bounding_box.max(); }, 
+                                 [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.max() = v - CellBoundOffset; }, py::return_value_policy::reference_internal)
+            .def("contains", &Cell::contains)
             .def("isNeighbourOf", &Cell::isNeighbourOf)
             .def("assertIntegrity", &Cell::assertIntegrity)
             .def("__repr__", &Cell::repr)

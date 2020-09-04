@@ -99,11 +99,11 @@ namespace _pyves
         std::string_view name, prefix, suffix;
     #ifdef __clang__
         name = __PRETTY_FUNCTION__;
-        prefix = "auto type_name() [T = ";
+        prefix = "auto _pyves::type_name() [T = ";
         suffix = "]";
     #elif defined(__GNUC__)
         name = __PRETTY_FUNCTION__;
-        prefix = "constexpr auto type_name() [with T = ";
+        prefix = "constexpr auto _pyves::type_name() [with T = ";
         suffix = "]";
     #elif defined(_MSC_VER)
         name = __FUNCSIG__;

@@ -39,7 +39,7 @@ class Controller(object):
             self.system.time_max = _prms["system"]["time_max"]
 
             self.time_delta = _prms["control"]["time_delta"]
-            self.num_particles = _prms["control"]["num_particles"]
+            self.particle_prms = _prms["control"]["particles"]
             self.cell_min_size = _prms["control"]["cell_min_size"]
 
 
@@ -50,17 +50,23 @@ class Controller(object):
 
 
     def prepareSimulation(self):
-        # Setup particles
-        assert( hasattr(self, "forcefield") )
-        for name, num in self.num_particles.items():
+        box_dims = np.array([self.system.box.x, self.system.box.y, self.system.box.z])
+
+        # distribute particles
+        for name, particle_prms in self.particle_prms.items():
             assert( name in self.forcefield )
-            pprms = self.forcefield[name]
-            for _ in range(num):
-                self.system.particles.append(_pyves.Particle([0,0,0], [1,0,0], 
-                    sigma=pprms["sigma"], kappa=pprms["kappa"], eps=pprms["epsilon"], gamma=pprms["gamma"], name=name))
+            particle_ff = self.forcefield[name]
+            if particle_prms["dist"] != "random":
+                raise NotImplementedError("no fixed distribution supported")
+            elif particle_prms["dist"] == "random":
+                for _ in range(particle_prms["number"]):
+                    self.system.particles.append(_pyves.Particle(np.random.rand(3)*box_dims, [1,0,0], 
+                        sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                    # repeat until particle is free
+                    while not self.system.particleIsFree(self.system.particles[-1], particle_ff["sigma"]):
+                        self.system.particles[-1].position = np.random.rand(3)*box_dims
         
         # Setup cells
-        box_dims = np.array([self.system.box.x, self.system.box.y, self.system.box.z])
         cells_per_dim = np.array(box_dims/self.cell_min_size).astype(int)
         cell_actual_size = box_dims/cells_per_dim
         for x in np.arange(0, box_dims[0], cell_actual_size[0]):
@@ -73,7 +79,14 @@ class Controller(object):
             for cj in self.system.cells:
                 if ci.isNeighbourOf(cj, self.system.box):
                     ci.proximity.append(cj)
-        for cell in self.system.cells:
-            assert( cell.assertIntegrity() )
         
+        # place particles in cells
+        cell_place_counter = 0
+        for particle in self.system.particles:
+            for cell in self.system.cells:
+                if cell.contains(particle):
+                    cell.particles.append(particle)
+                    cell_place_counter += 1
+                    break
+        assert(cell_place_counter == len(self.system.particles))
         assert(self.system.assertIntegrity())

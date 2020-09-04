@@ -36,7 +36,8 @@ namespace _pyves
         REAL rotation_min = make_nan<REAL>();
         REAL rotation_max = make_nan<REAL>();
         std::size_t time_max = make_nan<std::size_t>();
-    
+
+        bool particleIsFree(const Particle&, REAL cutoff);
         void prepare_simulation();
         bool assertIntegrity() const;
     };
@@ -99,8 +100,20 @@ namespace _pyves
             .def_readwrite("box", &System::box, py::return_value_policy::reference_internal)
             .def_readwrite("particles", &System::particles, py::return_value_policy::reference_internal)
             .def_readwrite("cells", &System::cells, py::return_value_policy::reference_internal)
+            .def("particleIsFree", &System::particleIsFree)
             .def("assertIntegrity", &System::assertIntegrity)
             ;
+    }
+
+
+    
+    bool System::particleIsFree(const Particle& subject, REAL cutoff)
+    {
+        const REAL cutoff_squared = cutoff*cutoff;
+        return std::all_of(std::begin(particles), std::end(particles), [&](const auto& p) 
+        { 
+            return subject == p ? true : box.squaredDistanceParticle(subject, p) > cutoff_squared; 
+        });
     }
 
 
