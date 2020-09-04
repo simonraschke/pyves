@@ -7,7 +7,6 @@
 #include <memory>
 #include <Eigen/Geometry>
 
-#include <tbb/>
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 
@@ -40,10 +39,12 @@ PYBIND11_MAKE_OPAQUE(_pyves::CellRefContainer)
 
 struct _pyves::Cell
 {
-    tbb::atomic<CellState> state {CellState::UNDEFINED};
+    std::atomic<CellState> state {CellState::UNDEFINED};
     Eigen::AlignedBox<REAL,3> bounding_box;
 
     CellRefContainer proximity;
+
+
 
     Cell(CARTESIAN_CREF min, CARTESIAN_CREF max)
         // :  bounding_box(std::make_unique<decltype(bounding_box)::element_type>(min-CellBoundOffset, max+CellBoundOffset))
@@ -51,13 +52,25 @@ struct _pyves::Cell
     {
     }
 
-    // Cell& operator=(const Cell &other)  
-    // { 
-    //     state = other.state.load();
-    //     bounding_box = other.bounding_box;
-    //     proximity = other.proximity;
-    //     return *this; 
-    // }
+
+
+    Cell(const Cell &other)  
+    { 
+        state = other.state.load();
+        bounding_box = other.bounding_box;
+        proximity = other.proximity;
+    }
+
+
+
+    Cell& operator=(const Cell &other)  
+    { 
+        state = other.state.load();
+        bounding_box = other.bounding_box;
+        proximity = other.proximity;
+        return *this; 
+    }
+
 
 
     inline bool operator==(const Cell& other) const 
@@ -95,9 +108,16 @@ struct _pyves::Cell
 
 
 
-    inline void addToProximity(Cell& other)
+    // inline void addToProximity(Cell& other)
+    // {
+    //     proximity.push_back(std::ref(other));
+    // }
+
+
+
+    inline bool assertIntegrity() const
     {
-        proximity.push_back(std::ref(other));
+        return proximity.size() == 26;
     }
 
 
@@ -165,10 +185,13 @@ namespace _pyves
             .def(py::init<CARTESIAN_CREF,CARTESIAN_CREF>(), py::arg("min"), py::arg("max"))
             .def_readonly("bounding_box", &Cell::bounding_box)
             // .def_property_readonly("bounding_box", [](const Cell& c){ return c.bounding_box.get(); }, py::return_value_policy::reference_internal)
-            .def_readonly("proximity", &Cell::proximity)
+            // .def_readonly("proximity", &Cell::proximity)            
+            // .def_property("proximity", &Cell::proximity, [](Cell& i, Cell& j ) { i.addToProximity(j); }, py::return_value_policy::reference_internal)
+            .def_readwrite("proximity", &Cell::proximity, py::return_value_policy::reference_internal)
             .def_property("min", [](const Cell& c){ return c.bounding_box.min(); }, [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.min() = v - CellBoundOffset; }, py::return_value_policy::reference_internal)
             .def_property("max", [](const Cell& c){ return c.bounding_box.max(); }, [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.max() = v - CellBoundOffset; }, py::return_value_policy::reference_internal)
             .def("isNeighbourOf", &Cell::isNeighbourOf)
+            .def("assertIntegrity", &Cell::assertIntegrity)
             .def("__repr__", &Cell::repr)
         ;
     }

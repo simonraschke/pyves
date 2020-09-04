@@ -1,6 +1,6 @@
 #pragma once
 #include "box.hpp"
-#include "parameters.hpp"
+// #include "parameters.hpp"
 #include "particle.hpp"
 #include "cell.hpp"
 #include "utility.hpp"
@@ -24,11 +24,19 @@ namespace _pyves
     struct System
     {
         Box<PBC::ON> box;
-        Parameters prms;
-        ParticleContainer particles = {};
-        CellContainer cells = {};
-        // 
-        
+        ParticleContainer particles;
+        CellContainer cells;
+    
+        std::size_t cores = make_nan<std::size_t>();
+        std::size_t threads = make_nan<std::size_t>();
+
+        REAL temperature = make_nan<REAL>();
+        REAL translation_min = make_nan<REAL>();
+        REAL translation_max = make_nan<REAL>();
+        REAL rotation_min = make_nan<REAL>();
+        REAL rotation_max = make_nan<REAL>();
+        std::size_t time_max = make_nan<std::size_t>();
+    
         void prepare_simulation();
         bool assertIntegrity() const;
     };
@@ -81,8 +89,16 @@ namespace _pyves
 
         py::class_<System>(m, "System", py::dynamic_attr())
             .def(py::init<>())
-            .def_readwrite("prms", &System::prms)
-            .def_readwrite("particles", &System::particles)
+            .def_readwrite("cores", &System::cores, py::return_value_policy::reference_internal)
+            .def_readwrite("threads", &System::threads, py::return_value_policy::reference_internal)
+            .def_readwrite("temperature", &System::temperature, py::return_value_policy::reference_internal)
+            .def_readwrite("translation_min", &System::translation_min, py::return_value_policy::reference_internal)
+            .def_readwrite("translation_max", &System::translation_max, py::return_value_policy::reference_internal)
+            .def_readwrite("rotation_min", &System::rotation_min, py::return_value_policy::reference_internal)
+            .def_readwrite("rotation_max", &System::rotation_max, py::return_value_policy::reference_internal)
+            .def_readwrite("box", &System::box, py::return_value_policy::reference_internal)
+            .def_readwrite("particles", &System::particles, py::return_value_policy::reference_internal)
+            .def_readwrite("cells", &System::cells, py::return_value_policy::reference_internal)
             .def("assertIntegrity", &System::assertIntegrity)
             ;
     }
@@ -92,7 +108,16 @@ namespace _pyves
     bool System::assertIntegrity() const
     {
         return all(
-            std::all_of(std::begin(particles), std::end(particles), [](const auto& p) { return p.assertIntegrity(); })
+            std::all_of(std::begin(particles), std::end(particles), [](const auto& p) { return p.assertIntegrity(); }),
+            std::all_of(std::begin(cells), std::end(cells), [](const auto& c) { return c.assertIntegrity(); }),
+            std::isfinite(cores),
+            std::isfinite(threads),
+            std::isfinite(temperature),
+            std::isfinite(translation_min),
+            std::isfinite(translation_max),
+            std::isfinite(rotation_min),
+            std::isfinite(rotation_max),
+            std::isfinite(time_max)
         );
     }
 }

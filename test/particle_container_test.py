@@ -29,7 +29,8 @@ class MainTest(unittest.TestCase):
         self.assertAlmostEqual(sys.particles[0].x, 2)
         self.assertFalse(sys.assertIntegrity())
         sys.particles[2].sigma = 1
-        self.assertTrue(sys.assertIntegrity())
+        for particle in sys.particles:
+            self.assertTrue(particle.assertIntegrity())
 
 
 

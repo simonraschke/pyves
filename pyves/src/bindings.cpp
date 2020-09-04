@@ -1,4 +1,4 @@
-#include "parameters.hpp"
+// #include "parameters.hpp"
 #include "particle.hpp"
 #include "cell.hpp"
 #include "system.hpp"
@@ -9,7 +9,6 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(_pyves, m)
 {
-    _pyves::bind_parameters(m);
     _pyves::bind_particle(m);
     _pyves::bind_box(m);
     _pyves::bind_cell(m);

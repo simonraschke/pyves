@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <limits>
 
 
 
@@ -38,7 +39,16 @@ namespace _pyves
         snprintf( buf.get(), size, format.c_str(), args ... );
         return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
     }
-        
+    
+    
+    
+    template<typename T>
+    constexpr auto make_nan() -> T 
+    { 
+        return std::numeric_limits<T>::signaling_NaN(); 
+    }
+
+
 
 #if __cplusplus < 201703L
 

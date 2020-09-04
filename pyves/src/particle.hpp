@@ -141,6 +141,7 @@ namespace _pyves
                  py::arg("pos"), py::arg("orien"), py::arg("sigma"), py::arg("eps"), py::arg("kappa"), py::arg("gamma"), py::arg("name"))
             .def(py::self == py::self)
             .def(py::self != py::self)
+            .def("assertIntegrity", &Particle::assertIntegrity)
             .def_readwrite("position", &Particle::position)
             .def_property("orientation", &Particle::getOrientation, &Particle::setOrientation)
             .def_readwrite("sigma", &Particle::sigma)

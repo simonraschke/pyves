@@ -37,11 +37,7 @@ class MainTest(unittest.TestCase):
         self.assertFalse(cell1.isNeighbourOf(cell5, box))
         box = pyves.BoxPBC(13,13,13)
         self.assertFalse(cell1.isNeighbourOf(cell3, box))
-        print()
-        print(cell1)
-        print(cell2)
-        print(cell3)
-        print()
+        
 
 
 

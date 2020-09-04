@@ -1,0 +1,32 @@
+{
+    "hardware" : 
+    {
+        "cores" : 2,
+        "threads" : 2
+    },
+    "system" : 
+    {
+        "temperature" : 0.23,
+        "box" : 
+        {
+            "x" : 30,
+            "y" : 22,
+            "z" : 25
+        },
+        "translation_min" : 0.01,
+        "translation_max" : 0.5,
+        "rotation_min" : 0.01,
+        "rotation_max" : 0.5,
+        "time_max" : 10000
+    },
+    "control" : 
+    {
+        "time_delta" : 100,
+        "num_particles": 
+        {
+            "A" : 100,
+            "B" : 100
+        },
+        "cell_min_size" : 4.0
+    }
+}

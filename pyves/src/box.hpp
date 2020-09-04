@@ -39,9 +39,8 @@ namespace _pyves
 namespace _pyves
 {
     template<PBC P>
-    class Box
+    struct Box
     {
-    public:
         Box() = default;
         Box(REAL, REAL, REAL);
         Box(CARTESIAN_CREF);
@@ -118,7 +117,9 @@ namespace _pyves
         REAL z {0};
 
     private:
-        std::unique_ptr<Eigen::AlignedBox<REAL,3>> bounding_box {nullptr};
+        using bounds_t = Eigen::AlignedBox<REAL,3>;
+        // std::unique_ptr<Eigen::AlignedBox<REAL,3>> bounding_box {nullptr};
+        bounds_t bounding_box;
     };
 
 
@@ -128,10 +129,11 @@ namespace _pyves
         : x(_x)
         , y(_y)
         , z(_z)
+        , bounding_box(CARTESIAN::Zero(), CARTESIAN(_x,_y,_z))
     {
-        bounding_box.reset(nullptr);
-        CARTESIAN vec (x,y,z);
-        bounding_box = std::make_unique<Eigen::AlignedBox<REAL,3>>( CARTESIAN::Zero(), vec );
+        // bounding_box.reset(nullptr);
+        // CARTESIAN vec (x,y,z);
+        // bounding_box = std::make_unique<Eigen::AlignedBox<REAL,3>>( CARTESIAN::Zero(), vec );
     }
 
 
@@ -141,9 +143,10 @@ namespace _pyves
         : x(_c[0])
         , y(_c[1])
         , z(_c[2])
+        , bounding_box(CARTESIAN::Zero(), _c)
     {
-        bounding_box.reset(nullptr);
-        bounding_box = std::make_unique<Eigen::AlignedBox<REAL,3>>( CARTESIAN::Zero(), _c );
+        // bounding_box.reset(nullptr);
+        // bounding_box = std::make_unique<Eigen::AlignedBox<REAL,3>>( CARTESIAN::Zero(), _c );
     }
 
 
@@ -202,7 +205,8 @@ namespace _pyves
     template<PBC P>
     REAL Box<P>::getVolume() const
     {
-        return bounding_box->volume();
+        // return bounding_box->volume();
+        return bounding_box.volume();
     }
 
 
@@ -210,7 +214,8 @@ namespace _pyves
     template<PBC P>
     CARTESIAN Box<P>::getCenter() const
     {
-        return bounding_box->center();
+        // return bounding_box->center();
+        return bounding_box.center();
     }
 
 
@@ -218,9 +223,10 @@ namespace _pyves
     template<PBC P>
     void Box<P>::check_for_aligned_box_setup()
     {
-        bounding_box.reset(nullptr);
-        CARTESIAN vec (x,y,z);
-        bounding_box = std::make_unique<Eigen::AlignedBox<REAL,3>>( CARTESIAN::Zero(), vec );
+        // bounding_box.reset(nullptr);
+        // CARTESIAN vec (x,y,z);
+        // bounding_box = std::make_unique<Eigen::AlignedBox<REAL,3>>( CARTESIAN::Zero(), vec );
+        bounding_box = bounds_t( CARTESIAN::Zero(), CARTESIAN(x,y,z) );
     }
 
 
@@ -330,8 +336,9 @@ namespace _pyves
     template<>
     inline bool Box<PBC::ON>::contains(CARTESIAN_CREF c) const 
     {
-        assert(bounding_box);
-        return bounding_box->contains(scaleToBox(c));
+        // assert(bounding_box);
+        // return bounding_box->contains(scaleToBox(c));
+        return bounding_box.contains(scaleToBox(c));
     }
 
 
@@ -339,8 +346,9 @@ namespace _pyves
     template<>
     inline bool Box<PBC::OFF>::contains(CARTESIAN_CREF c) const 
     {
-        assert(bounding_box);
-        return bounding_box->contains(c);
+        // assert(bounding_box);
+        // return bounding_box->contains(c);
+        return bounding_box.contains(c);
     }
 
 
@@ -392,7 +400,11 @@ namespace _pyves
             .def("contains", &Class::contains)
             .def("containsParticle", &Class::containsParticle)
             .def("randomPointInside", &Class::randomPointInside)
-            ;
+            // .def_readonly("min", [](const Class& b){ return b.bounding_box.min(); })
+            // .def_readonly("max", [](const Class& b){ return b.bounding_box.max(); })
+            // .def_readonly("min", &Class::bounding_box::min)
+            // .def_readonly("max", &Class::bounding_box::max)
+        ;
     }
 
     
