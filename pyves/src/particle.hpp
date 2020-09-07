@@ -115,6 +115,7 @@ namespace _pyves
             {
                 return py::make_iterator(std::begin(v), std::end(v));
             }, py::keep_alive<0, 1>())
+            .def("size", &ParticleRefContainer::size)
             .def("__repr__", [](const ParticleRefContainer& v) {
                 return "ParticleRefContainer\n[\n"
                     + std::accumulate(std::begin(v), std::end(v), std::string(""), [](std::string s, const Particle& p) 

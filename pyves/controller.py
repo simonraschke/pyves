@@ -32,10 +32,12 @@ class Controller(object):
             self.system.box.x = _prms["system"]["box"]["x"]
             self.system.box.y = _prms["system"]["box"]["y"]
             self.system.box.z = _prms["system"]["box"]["z"]
-            self.system.translation_min = _prms["system"]["translation_min"]
-            self.system.translation_max = _prms["system"]["translation_max"]
-            self.system.rotation_min = _prms["system"]["rotation_min"]
-            self.system.rotation_max = _prms["system"]["rotation_max"]
+            translation = _prms["system"]["translation"]
+            self.system.translation = _pyves.StepwidthAlignmentUnit()
+            self.system.translation.setup(translation["interval"], translation["min"], translation["max"], translation["target"])
+            rotation = _prms["system"]["rotation"]
+            self.system.rotation = _pyves.StepwidthAlignmentUnit()
+            self.system.rotation.setup(rotation["interval"], rotation["min"], rotation["max"], rotation["target"])
             self.system.time_max = _prms["system"]["time_max"]
 
             self.time_delta = _prms["control"]["time_delta"]
@@ -63,7 +65,7 @@ class Controller(object):
                     self.system.particles.append(_pyves.Particle(np.random.rand(3)*box_dims, [1,0,0], 
                         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
                     # repeat until particle is free
-                    while not self.system.particleIsFree(self.system.particles[-1], particle_ff["sigma"]):
+                    while not self.system.particleIsFree(self.system.particles[-1]):
                         self.system.particles[-1].position = np.random.rand(3)*box_dims
         
         # Setup cells
@@ -77,8 +79,11 @@ class Controller(object):
                     self.system.cells.append(_pyves.Cell(_min, _max))
         for ci in self.system.cells:
             for cj in self.system.cells:
+                if ci == cj:
+                    ci.region.append(cj)
                 if ci.isNeighbourOf(cj, self.system.box):
                     ci.proximity.append(cj)
+                    ci.region.append(cj)
         
         # place particles in cells
         cell_place_counter = 0
@@ -90,3 +95,9 @@ class Controller(object):
                     break
         assert(cell_place_counter == len(self.system.particles))
         assert(self.system.assertIntegrity())
+
+
+
+    def sample(self, steps:int):
+        for i in range(steps):
+            self.system.singleSimulationStep()

@@ -25,6 +25,8 @@ class MainTest(unittest.TestCase):
         self.assertEqual(len(control.system.particles), 200)
         self.assertEqual(len(control.system.cells), 5*6*7)
 
+        control.sample(3)
+
 
 
 if __name__ == '__main__':
