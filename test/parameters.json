@@ -7,7 +7,6 @@
     "system" : 
     {
         "temperature" : 0.23,
-        "time_max" : 10000,
         "box" : 
         {
             "x" : 20,
@@ -19,14 +18,14 @@
             "min" : 0.01,
             "max" : 0.5,
             "target" : 0.3,
-            "interval" : 100000
+            "interval" : 150
         },
         "rotation" :
         {
             "min" : 0.01,
             "max" : 0.5,
             "target" : 0.3,
-            "interval" : 100000
+            "interval" : 150
         },
         "interaction" : 
         {
@@ -36,6 +35,7 @@
     "control" : 
     {
         "time_delta" : 100,
+        "time_max" : 1000,
         "particles" :
         {
             "A" : 

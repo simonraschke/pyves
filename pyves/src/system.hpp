@@ -50,7 +50,7 @@ namespace _pyves
         std::mt19937_64 pseudo_engine{std::random_device{}()};
 
         REAL temperature = make_nan<REAL>();
-        std::size_t time_max = make_nan<std::size_t>();
+        // std::size_t time_max = make_nan<std::size_t>();
         std::mutex mutex;
 
         void setThreads(std::size_t);
@@ -61,6 +61,7 @@ namespace _pyves
         void cellStep(const Cell&);
         void shuffle();
         void singleSimulationStep();
+        void multipleSimulationSteps(const unsigned long);
         std::size_t numParticlesInCells() const;
 
         template<typename FUNCTOR> void cellBasedApplyFunctor(FUNCTOR&& func);
@@ -127,11 +128,12 @@ namespace _pyves
                         } );
                     }
                 }
-                using namespace std::chrono_literals;
-                std::this_thread::sleep_for(1ms);
+                // using namespace std::chrono_literals;
+                // std::this_thread::sleep_for(1ms);
             }
             // std::cout << "ran " << i << "\n";
         });
+        tg.wait();
         
         assert( allInState<CellState::FINISHED>() );
     }

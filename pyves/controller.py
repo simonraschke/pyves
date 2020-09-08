@@ -38,9 +38,10 @@ class Controller(object):
             rotation = _prms["system"]["rotation"]
             self.system.rotation = _pyves.StepwidthAlignmentUnit()
             self.system.rotation.setup(rotation["interval"], rotation["min"], rotation["max"], rotation["target"])
-            self.system.time_max = _prms["system"]["time_max"]
+            # self.system.time_max = _prms["system"]["time_max"]
 
             self.time_delta = _prms["control"]["time_delta"]
+            self.time_max = _prms["control"]["time_max"]
             self.particle_prms = _prms["control"]["particles"]
             self.cell_min_size = _prms["control"]["cell_min_size"]
 
@@ -105,8 +106,43 @@ class Controller(object):
     
 
 
-    def sample(self, steps:int):
-        # print(self.system.particles)
-        for i in range(steps):
-            self.system.assertIntegrity()
-            self.system.singleSimulationStep()
+    def sample(self, steps=None):
+        if isinstance(steps, int):
+            for i in range(steps):
+                self.system.assertIntegrity()
+                self.system.singleSimulationStep()
+        else:
+            self.time_actual = 0
+            sampling_time_points = np.arange(self.time_actual, self.time_max, self.time_delta)
+            for time_point in sampling_time_points:
+                assert(self.time_actual == time_point)
+                self.system.assertIntegrity()
+                self.system.multipleSimulationSteps(self.time_delta)
+                self.time_actual += self.time_delta
+                self.writeTrajectoryHDF()
+                # print(self.time_actual)
+
+
+
+    def writeTrajectoryHDF(self):
+        import pandas as pd
+        df = pd.DataFrame()
+        for particle in self.system.particles:
+            pos = self.system.box.scaleToBox(particle.position)
+            data = dict(
+                name = particle.name,
+                x = pos[0],
+                y = pos[1], 
+                z = pos[2],
+                ux = particle.ux,
+                uy = particle.uy,
+                uz = particle.uz,
+                sigma = particle.sigma,
+                epsilon = particle.epsilon,
+                kappa = particle.kappa,
+                gamma = particle.gamma
+            )
+
+            df = df.append(data, ignore_index=True, sort=False)
+        print(df.head(6))
+        print(df.info())

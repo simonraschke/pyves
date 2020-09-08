@@ -32,19 +32,11 @@ class MainTest(unittest.TestCase):
         self.assertEqual(control.system.numParticlesInCells(), 15)
         self.assertTrue(control.system.assertIntegrity())
 
-        for i in range(100):
-            self.assertEqual(control.system.numParticlesInCells(), 15)
-            control.sample(1)
-            self.assertEqual(control.system.numParticlesInCells(), 15)
-            # self.assertTrue(control.system.assertIntegrity(), f"in step {i+1}")
+        control.sample()
 
         for cell in control.system.cells:
-            # print("cell has ", len(cell.particles), "particles")
             for particle in cell.particles:
-                # print(particle, "in", cell)
                 assert(cell.contains(particle))
-        # print(control.system.translation.ratio())
-        # print(control.system.rotation.ratio())
 
 
 

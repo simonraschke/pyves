@@ -60,8 +60,7 @@ namespace _pyves
             std::all_of(std::begin(cells), std::end(cells), [](auto& c) { return c.assertIntegrity(); }),
             std::isfinite(cores),
             std::isfinite(threads),
-            std::isfinite(temperature),
-            std::isfinite(time_max)
+            std::isfinite(temperature)
         );
     }
 
@@ -74,8 +73,7 @@ namespace _pyves
         {
             tg.run_and_wait([&]
             {
-                tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
-                // std::for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+                tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell)
                 {
                     // std::cout << cell.repr() << "\n";
                     auto leavers = cell.particlesOutOfBounds(box);
@@ -104,53 +102,8 @@ namespace _pyves
                     cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
                     cell.shuffle(); 
                 });
-                // tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
-                // std::for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
-                // { 
-                    // auto leavers = cell.particlesOutOfBounds();
-                    // // const std::lock_guard<std::mutex> lock(mutex);
-                    // // std::cout << "cell " << cell.repr() << " has " << cell.particles.size() << " particles and " << leavers.size() << " leavers\n";
-                    // // for(Particle& l: leavers)
-                    // //     std::cout << "  leaver " << l.repr() << std::endl;
-                    
-                    // for(Particle& leaver : leavers)
-                    // {
-                    //     // std::cout << cell.repr() << "  " << leaver.repr() << "\n";
-                    //     bool was_added = false;
-                    //     for(Cell& proximity_cell : cell.proximity)
-                    //     {
-                    //         if(proximity_cell.contains(leaver))
-                    //         {
-                    //             proximity_cell.particles.push_back(std::ref(leaver));
-                    //             was_added = true;
-                    //         }
-                    //         if(was_added) 
-                    //         {
-                    //             break;
-                    //         }
-                    //     }
-                    //     // if(!was_added)
-                    //     // {
-                    //     //     throw std::logic_error("Particle out of bound was not added to another cell\n" + leaver.repr() +" and " + cell.repr());
-                    //     // }
-                    //     cell.particles.erase( std::remove_if(std::begin(cell.particles), std::end(cell.particles), [&](const Particle& to_compare)
-                    //     { 
-                    //         return leaver == to_compare;
-                    //     ;}), std::end(cell.particles) );
-                    // }
-                    // cell.state = CellState::IDLE;
-                    // cell.shuffle(); 
-                // });
             });
         });
-    }
-
-
-
-    void System::singleSimulationStep()
-    {
-        prepareSimulationStep();
-        cellBasedApplyFunctor([&](const auto& c){ cellStep(c);});
     }
 
 
@@ -264,6 +217,21 @@ namespace _pyves
 
 
 
+    void System::singleSimulationStep()
+    {
+        prepareSimulationStep();
+        cellBasedApplyFunctor([&](const auto& c){ cellStep(c);});
+    }
+
+
+
+    void System::multipleSimulationSteps(const unsigned long _max)
+    {
+        for(unsigned long step = 0; step < _max; ++step )
+        {
+            singleSimulationStep();
+        }
+    }
     
 
 
@@ -275,7 +243,6 @@ namespace _pyves
             tg.run_and_wait([&]
             {
                 tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
-                // std::for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
                 {
                     cell.shuffle(); 
                 });
@@ -345,6 +312,7 @@ namespace _pyves
             .def_readwrite("rotation", &System::rotation_alignment, py::return_value_policy::reference_internal)
             .def("assertIntegrity", &System::assertIntegrity)
             .def("singleSimulationStep", &System::singleSimulationStep)
+            .def("multipleSimulationSteps", &System::multipleSimulationSteps)
         ;
     }
 }
