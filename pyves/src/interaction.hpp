@@ -31,9 +31,11 @@ namespace _pyves
         // std::cout << "r2 " << r2 << std::endl;
 
         distance_vec.normalize();
-        const CARTESIAN p1_orien_kappa = p1.orientation.normalized()*p1.kappa/2;
+        const CARTESIAN p1_orien_kappa = p1.getOrientation().normalized()*p1.kappa/2;
+        // const CARTESIAN p1_orien_kappa = p1.orientation.normalized()*p1.kappa/2;
         // std::cout << "p1_orien_kappa " << p1_orien_kappa.format(ROWFORMAT) << std::endl;
-        const CARTESIAN p2_orien_kappa = p2.orientation.normalized()*p2.kappa/2;
+        const CARTESIAN p2_orien_kappa = p2.getOrientation().normalized()*p2.kappa/2;
+        // const CARTESIAN p2_orien_kappa = p2.orientation.normalized()*p2.kappa/2;
         // std::cout << "p2_orien_kappa " << p2_orien_kappa.format(ROWFORMAT) << std::endl;
 
         // const REAL mean_kappa = (p1.kappa+p2.kappa)/2;

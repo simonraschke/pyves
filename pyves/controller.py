@@ -62,7 +62,7 @@ class Controller(object):
                 raise NotImplementedError("no fixed distribution supported")
             elif particle_prms["dist"] == "random":
                 for _ in range(particle_prms["number"]):
-                    self.system.particles.append(_pyves.Particle(np.random.rand(3)*box_dims, [1,0,0], 
+                    self.system.particles.append(_pyves.Particle(np.random.rand(3)*box_dims, np.random.uniform(-1,1,3), 
                         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
                     # repeat until particle is free
                     while not self.system.particleIsFree(self.system.particles[-1]):
@@ -87,17 +87,26 @@ class Controller(object):
         
         # place particles in cells
         cell_place_counter = 0
-        for particle in self.system.particles:
-            for cell in self.system.cells:
-                if cell.contains(particle):
+        for i, particle in enumerate(self.system.particles):
+            for j, cell in enumerate(self.system.cells):
+                if cell.insideCellBounds(particle):
                     cell.particles.append(particle)
+                    # print(i, "to", j)
                     cell_place_counter += 1
                     break
         assert(cell_place_counter == len(self.system.particles))
         assert(self.system.assertIntegrity())
-
+        
+        # for cell in self.system.cells:
+        #     # print("cell has ", len(cell.particles), "particles")
+        #     for particle in cell.particles:
+        #         # print(particle, "in", cell)
+        #         assert(cell.contains(particle))
+    
 
 
     def sample(self, steps:int):
+        # print(self.system.particles)
         for i in range(steps):
+            self.system.assertIntegrity()
             self.system.singleSimulationStep()

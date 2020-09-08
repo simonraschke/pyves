@@ -2,7 +2,7 @@
     "hardware" : 
     {
         "cores" : 2,
-        "threads" : 2
+        "threads" : 4
     },
     "system" : 
     {
@@ -10,9 +10,9 @@
         "time_max" : 10000,
         "box" : 
         {
-            "x" : 30,
-            "y" : 22,
-            "z" : 25
+            "x" : 20,
+            "y" : 15.5,
+            "z" : 18.3
         },
         "translation" :
         {
@@ -40,15 +40,15 @@
         {
             "A" : 
             {
-                "number" : 100,
+                "number" : 5,
                 "dist" : "random"
             },
             "B" : 
             {
-                "number" : 100,
+                "number" : 10,
                 "dist" : "random"
             }
         },
-        "cell_min_size" : 4.0
+        "cell_min_size" : 3.5
     }
 }

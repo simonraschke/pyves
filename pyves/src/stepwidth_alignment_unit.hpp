@@ -23,6 +23,8 @@ public:
     void setup(std::size_t, REAL, REAL, REAL);
     void setup(std::size_t, REAL, REAL, REAL, REAL);
 
+    REAL getMin() const;
+    REAL getMax() const;
     REAL operator()() const;
     void accepted();
     void rejected();

@@ -5,6 +5,7 @@
 #include "particle.hpp"
 #include "interaction.hpp"
 #include <atomic>
+#include <shared_mutex>
 #include <memory>
 #include <Eigen/Geometry>
 
@@ -47,17 +48,23 @@ struct _pyves::Cell
     CellRefContainer region;
     ParticleRefContainer particles;
 
+    std::shared_mutex mutex;
 
     Cell(CARTESIAN_CREF min, CARTESIAN_CREF max);
     Cell(const Cell &other);
 
-    Cell& operator=(const Cell &other);
+    Cell& operator=(const Cell& other);
     bool operator==(const Cell& other) const;
 
+    void removeParticle(const Particle&);
+    bool try_add(Particle&, const Box<PBC::ON>&);
     bool isNeighbourOf(const Cell& other, const Box<PBC::ON>& b) const;
-    bool contains(const Particle& p) const;
-    bool assertIntegrity() const;
+    bool insideCellBounds(CARTESIAN_CREF p) const;
+    bool insideCellBounds(const Particle& p) const;
+    bool contains(const Particle& p);
+    bool assertIntegrity();
     void shuffle();
+    auto particlesOutOfBounds(const Box<PBC::ON>&) const -> std::deque<decltype(particles)::value_type>;
     REAL potentialEnergy(const Particle& p, const Box<PBC::ON>& b, REAL cutoff) const;
     
     template<CellState S> bool proximityAllInState() const;

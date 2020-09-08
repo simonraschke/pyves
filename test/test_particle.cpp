@@ -25,19 +25,20 @@ TEST_CASE("Particle Member Test")
         CHECK(p1.position(0) == Approx(static_cast<REAL>(   4)));
         CHECK(p1.position(1) == Approx(static_cast<REAL>( 3.2)));
         CHECK(p1.position(2) == Approx(static_cast<REAL>(-4.5)));
-        CHECK(p1.orientation(0) == Approx(static_cast<REAL>(1)));
-        CHECK(p1.orientation(1) == Approx(static_cast<REAL>(0)));
-        CHECK(p1.orientation(2) == Approx(static_cast<REAL>(0)));
+        CHECK(p1.getOrientation()(0) == Approx(static_cast<REAL>(1)));
+        CHECK(p1.getOrientation()(1) == Approx(static_cast<REAL>(0)));
+        CHECK(p1.getOrientation()(2) == Approx(static_cast<REAL>(0)));
 
-        p1.position = {1.2, -4, 3.1};
+        p1.position = CARTESIAN(1.2, -4, 3.1);
         CHECK(p1.position(0) == Approx(static_cast<REAL>(1.2)));
         CHECK(p1.position(1) == Approx(static_cast<REAL>( -4)));
         CHECK(p1.position(2) == Approx(static_cast<REAL>(3.1)));
 
-        p1.orientation = {-1,0,1};
-        CHECK(p1.orientation(0) == Approx(static_cast<REAL>(-1)));
-        CHECK(p1.orientation(1) == Approx(static_cast<REAL>( 0)));
-        CHECK(p1.orientation(2) == Approx(static_cast<REAL>( 1)));
+        p1.setOrientation(CARTESIAN(-1,0,1));
+        // p1.orientation = {-1,0,1};
+        CHECK(p1.getOrientation()(0) == Approx(static_cast<REAL>(-1/std::sqrt(2))));
+        CHECK(p1.getOrientation()(1) == Approx(static_cast<REAL>( 0)));
+        CHECK(p1.getOrientation()(2) == Approx(static_cast<REAL>( 1/std::sqrt(2))));
     }
 
 
@@ -60,16 +61,19 @@ TEST_CASE("Particle Member Test")
         Particle p2(CARTESIAN(2,-2,0.1), CARTESIAN(2,0,0));
         Particle p3;
         p3.position = p1.position + p2.position;
+        // p3.setPosition(p1.position + p2.position);
         CHECK(p3.position(0) == Approx(static_cast<REAL>(3)));
         CHECK(p3.position(1) == Approx(static_cast<REAL>(-1)));
         CHECK(p3.position(2) == Approx(static_cast<REAL>(1.1)));
 
         p3.position += p1.position;
+        // p3.setPosition(p3.position + p1.position);
         CHECK(p3.position(0) == Approx(static_cast<REAL>(4)));
         CHECK(p3.position(1) == Approx(static_cast<REAL>(0)));
         CHECK(p3.position(2) == Approx(static_cast<REAL>(2.1)));
 
         p3.position += CARTESIAN(1,1,1);
+        // p3.setPosition(p3.position + CARTESIAN(1,1,1));
         CHECK(p3.position(0) == Approx(static_cast<REAL>(5)));
         CHECK(p3.position(1) == Approx(static_cast<REAL>(1)));
         CHECK(p3.position(2) == Approx(static_cast<REAL>(3.1)));

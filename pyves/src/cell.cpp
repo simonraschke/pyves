@@ -31,7 +31,44 @@ namespace _pyves
 
     bool Cell::operator==(const Cell& other) const 
     { 
-        return std::addressof(*this) == std::addressof(other); 
+        return this == &other; 
+    }
+
+
+
+    void Cell::removeParticle(const Particle& to_remove)
+    {
+        std::lock_guard<std::shared_mutex> lock(mutex);
+        particles.erase( std::remove_if(std::begin(particles), std::end(particles), [&](const Particle& to_compare)
+        { 
+            return to_remove == to_compare;
+        ;}), std::end(particles));
+
+    }
+    
+
+
+    bool Cell::try_add(Particle& particle, const Box<PBC::ON>& box)
+    {
+        if(!contains(particle) && insideCellBounds(box.scaleToBox(CARTESIAN(particle.position))))
+        {   
+            // tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, true);
+            // data.emplace_back(nonstd::make_observer<particle_t>(particle));
+            // lock.release();
+            {
+                std::lock_guard<std::shared_mutex> lock(mutex);
+                particles.push_back(std::ref(particle));
+            }
+            // std::cout << "   "  << __func__ << "  Cell contains particle " << box.scaleToBox(CARTESIAN(particle.position)).format(VECTORFORMAT) << " after insertion " << std::boolalpha << contains(particle) << "\n";
+            assert(contains(particle));
+            return true;
+        }
+        else
+        {
+            // std::cout << "   "   << __func__ << "  Cell contains particle " << box.scaleToBox(CARTESIAN(particle.position)).format(VECTORFORMAT) << " after NO insertion " << std::boolalpha << contains(particle) << "\n";
+            assert(!contains(particle));
+            return false;
+        }
     }
 
 
@@ -64,18 +101,36 @@ namespace _pyves
 
 
 
-    bool Cell::contains(const Particle& p) const
+    bool Cell::insideCellBounds(const Particle& p) const
     {
         return bounding_box.contains(p.position);
     }
 
 
 
-    bool Cell::assertIntegrity() const
+    bool Cell::insideCellBounds(CARTESIAN_CREF c) const
     {
+        return bounding_box.contains(c);
+    }
+
+
+
+    bool Cell::contains(const Particle& p)
+    {
+        std::shared_lock<std::shared_mutex> lock(mutex);
+        return std::any_of(std::begin(particles), std::end(particles), [&](const Particle& other ){ return other == p; });
+    }
+
+
+
+    bool Cell::assertIntegrity()
+    {
+        std::shared_lock<std::shared_mutex> lock(mutex);
         return all(
             proximity.size() == 26,
-            region.size() == 27
+            region.size() == 27,
+            std::all_of(std::begin(particles), std::end(particles), [&](const Particle& p){ return contains(p); }),
+            std::all_of(std::begin(particles), std::end(particles), [&](const Particle& p){ return insideCellBounds(p); })
         );
     }
 
@@ -83,6 +138,7 @@ namespace _pyves
 
     void Cell::shuffle()
     {
+        std::lock_guard<std::shared_mutex> lock(mutex);
         std::shuffle(std::begin(particles), std::end(particles), std::mt19937_64(std::random_device{}()));
         std::shuffle(std::begin(proximity), std::end(proximity), std::mt19937_64(std::random_device{}()));
         std::shuffle(std::begin(region), std::end(region), std::mt19937_64(std::random_device{}()));
@@ -92,6 +148,7 @@ namespace _pyves
 
     REAL Cell::potentialEnergy(const Particle& particle, const Box<PBC::ON>& box, REAL cutoff) const
     {
+        // std::shared_lock<std::shared_mutex> lock(mutex);
         return std::accumulate(std::begin(region), std::end(region), REAL(0), [&](REAL __val, const Cell& cell)
         {
             return __val + std::accumulate(std::begin(cell.particles), std::end(cell.particles), REAL(0), [&](REAL _val, const Particle& compare)
@@ -99,6 +156,22 @@ namespace _pyves
                 return particle == compare ? _val : _val + interaction(particle, compare, box, cutoff);
             });
         });
+    }
+
+
+
+    auto Cell::particlesOutOfBounds(const Box<PBC::ON>& box) const -> std::deque<decltype(particles)::value_type>
+    {
+        // std::shared_lock<std::shared_mutex> lock(mutex);
+        std::deque<decltype(particles)::value_type> leavers;
+        for(Particle& particle : particles)
+        {
+            if(!insideCellBounds(box.scaleToBox(particle.position)))
+            {
+                leavers.push_back(std::ref(particle));
+            }
+        }
+        return leavers;
     }
 
 
@@ -170,6 +243,9 @@ namespace _pyves
                                  [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.min() = v - CellBoundOffset; }, py::return_value_policy::reference_internal)
             .def_property("max", [](const Cell& c){ return c.bounding_box.max(); }, 
                                  [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.max() = v - CellBoundOffset; }, py::return_value_policy::reference_internal)
+            .def("particlesOutOfBounds", &Cell::particlesOutOfBounds)
+            .def("insideCellBounds", static_cast<bool (Cell::*)(const Particle&) const>(&Cell::insideCellBounds))
+            .def("insideCellBounds", static_cast<bool (Cell::*)(CARTESIAN_CREF) const>(&Cell::insideCellBounds))
             .def("contains", &Cell::contains)
             .def("isNeighbourOf", &Cell::isNeighbourOf)
             .def("assertIntegrity", &Cell::assertIntegrity)

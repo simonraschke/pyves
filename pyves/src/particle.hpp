@@ -23,6 +23,8 @@ namespace py = pybind11;
 #include <pybind11/stl_bind.h>
 #include <vector>
 
+
+
 namespace _pyves
 {
     struct Particle;   
@@ -31,7 +33,7 @@ namespace _pyves
 
 
 
-PYBIND11_MAKE_OPAQUE(std::vector<std::reference_wrapper<_pyves::Particle>>)
+PYBIND11_MAKE_OPAQUE(_pyves::ParticleRefContainer)
 
 
 
@@ -40,8 +42,10 @@ namespace _pyves
         
     struct Particle
     {
+    // private:
         CARTESIAN position;
         CARTESIAN orientation;
+    // public:
         REAL sigma = std::numeric_limits<REAL>::signaling_NaN();
         REAL epsilon = std::numeric_limits<REAL>::signaling_NaN();
         REAL kappa = std::numeric_limits<REAL>::signaling_NaN();
@@ -65,11 +69,16 @@ namespace _pyves
         inline CARTESIAN::Scalar getuy() const { return orientation(1); }
         inline CARTESIAN::Scalar getuz() const { return orientation(2); }
 
+        // inline auto getPosition() const { return CARTESIAN_CREF(position); }
+        // inline void setPosition(CARTESIAN_CREF p) { std::cout << "PARTICLE WAS SET FROM " << position.format(VECTORFORMAT) << " TO "  << p.format(VECTORFORMAT) << "\n"; position = p; }
+
         inline auto getOrientation() const { return CARTESIAN_CREF(orientation); }
         inline void setOrientation(CARTESIAN_CREF v) { orientation = v; orientation.normalize(); }
 
-        inline bool operator==(const Particle& other) const { return std::addressof(*this) == std::addressof(other); };
-        inline bool operator!=(const Particle& other) const { return std::addressof(*this) != std::addressof(other); };
+        // inline bool operator==(const Particle& other) const { return std::addressof(*this) == std::addressof(other); };
+        // inline bool operator!=(const Particle& other) const { return std::addressof(*this) != std::addressof(other); };
+        inline bool operator==(const Particle& other) const { return this == &other; };
+        inline bool operator!=(const Particle& other) const { return !(this == &other); };
 
         inline bool assertIntegrity() const
         {
@@ -136,6 +145,7 @@ namespace _pyves
             .def(py::self != py::self)
             .def("assertIntegrity", &Particle::assertIntegrity)
             .def_readwrite("position", &Particle::position)
+            // .def_property("position", &Particle::getPosition, &Particle::setPosition)
             .def_property("orientation", &Particle::getOrientation, &Particle::setOrientation)
             .def_readwrite("sigma", &Particle::sigma)
             .def_readwrite("epsilon", &Particle::epsilon)

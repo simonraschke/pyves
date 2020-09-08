@@ -15,6 +15,9 @@ namespace py = pybind11;
 #include <vector>
 #include <random>
 #include <numeric>
+#include <chrono>
+#include <thread>
+#include <mutex>
 #include <tbb/task_arena.h>
 #include <tbb/parallel_for_each.h>
 #include <tbb/task_group.h>
@@ -33,7 +36,6 @@ namespace _pyves
     
 
 
-
     struct System
     {
         Box<PBC::ON> box;
@@ -49,15 +51,17 @@ namespace _pyves
 
         REAL temperature = make_nan<REAL>();
         std::size_t time_max = make_nan<std::size_t>();
+        std::mutex mutex;
 
         void setThreads(std::size_t);
         bool particleIsFree(const Particle&) const;
         bool particleIsFree(const Particle&, REAL cutoff) const;
-        // void prepare_simulation();
-        bool assertIntegrity() const;
+        void prepareSimulationStep();
+        bool assertIntegrity();
         void cellStep(const Cell&);
         void shuffle();
         void singleSimulationStep();
+        std::size_t numParticlesInCells() const;
 
         template<typename FUNCTOR> void cellBasedApplyFunctor(FUNCTOR&& func);
 
@@ -89,24 +93,27 @@ namespace _pyves
     template<typename FUNCTOR>
     void System::cellBasedApplyFunctor(FUNCTOR&& func)
     {
-        std::shuffle(std::begin(cells), std::end(cells), pseudo_engine);
+        // std::shuffle(std::begin(cells), std::end(cells), pseudo_engine);
         
-        std::cout << __PRETTY_FUNCTION__ << "\n";
+        std::vector<CellContainer::iterator> iterators(cells.size());
+        std::iota(std::begin(iterators), std::end(iterators), std::begin(cells));
+        std::shuffle(std::begin(iterators), std::end(iterators), pseudo_engine);
+        
         tbb::task_group tg;
         task_arena.execute([&]()
         {
-            std::cout << "task_arena execute" << "\n";
+            // std::atomic<std::size_t> i = 0;
             while(! (allCellsInState<CellState::FINISHED>()) )
             {
-                std::cout << "while" << "\n";
-                for(Cell& cell: cells)
+                // i++;
+                for(auto& cell_it: iterators)
                 {
-                    if( cell.regionNoneInState<CellState::BLOCKED>() && 
-                        cell.state == CellState::IDLE
+                    if( Cell& cell = *cell_it;
+                        cell.state == CellState::IDLE &&
+                        cell.regionNoneInState<CellState::BLOCKED>()
                     )
                     {
                         cell.state = CellState::BLOCKED;
-                        std::cout << cell.repr() << "\n";
                         
                         assert( cell.state == CellState::BLOCKED );
                         assert( cell.proximityNoneInState<CellState::BLOCKED>() );
@@ -120,7 +127,10 @@ namespace _pyves
                         } );
                     }
                 }
+                using namespace std::chrono_literals;
+                std::this_thread::sleep_for(1ms);
             }
+            // std::cout << "ran " << i << "\n";
         });
         
         assert( allInState<CellState::FINISHED>() );

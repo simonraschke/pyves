@@ -5,8 +5,17 @@ namespace _pyves
 {
     void System::setThreads(std::size_t num)
     {
+        threads = std::max(num, static_cast<std::size_t>(2));
         threads = num;
-        task_arena.initialize(threads);
+        if(threads == 1)
+        {
+            task_arena.initialize(threads, 1);
+        }
+        else
+        {
+            task_arena.initialize(threads);
+        }
+        
     }
 
 
@@ -36,11 +45,19 @@ namespace _pyves
 
 
 
-    bool System::assertIntegrity() const
+    std::size_t System::numParticlesInCells() const
+    {
+        return std::accumulate(std::begin(cells), std::end(cells), std::size_t(0), [](auto i, const Cell& c) { return i + c.particles.size(); });
+    }
+
+
+
+    bool System::assertIntegrity()
     {
         return all(
+            numParticlesInCells() == particles.size(),
             std::all_of(std::begin(particles), std::end(particles), [](const auto& p) { return p.assertIntegrity(); }),
-            std::all_of(std::begin(cells), std::end(cells), [](const auto& c) { return c.assertIntegrity(); }),
+            std::all_of(std::begin(cells), std::end(cells), [](auto& c) { return c.assertIntegrity(); }),
             std::isfinite(cores),
             std::isfinite(threads),
             std::isfinite(temperature),
@@ -50,8 +67,89 @@ namespace _pyves
 
 
 
+    void System::prepareSimulationStep()
+    {
+        tbb::task_group tg;
+        task_arena.execute([&]()
+        {
+            tg.run_and_wait([&]
+            {
+                tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+                // std::for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+                {
+                    // std::cout << cell.repr() << "\n";
+                    auto leavers = cell.particlesOutOfBounds(box);
+                    
+                    for(Particle& leaver : leavers)
+                    {
+                        bool was_added = false;
+                        // std::cout << cell.proximity.size() << "\n";
+                        for(Cell& proximity_cell : cell.proximity)
+                        {
+                            // std::cout << " " << proximity_cell.repr() << "\n";
+                            was_added = proximity_cell.try_add(leaver, box);
+                            if(was_added) 
+                            {
+                                break;
+                            }
+                        }
+                        if(!was_added)
+                        {
+                            throw std::logic_error("Particle out of bound was not added to another cell\n" + leaver.repr() +" and " + cell.repr());
+                        }
+                        assert(was_added);
+                        cell.removeParticle(leaver);
+                        assert(!cell.contains(leaver));
+                    }
+                    cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
+                    cell.shuffle(); 
+                });
+                // tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+                // std::for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+                // { 
+                    // auto leavers = cell.particlesOutOfBounds();
+                    // // const std::lock_guard<std::mutex> lock(mutex);
+                    // // std::cout << "cell " << cell.repr() << " has " << cell.particles.size() << " particles and " << leavers.size() << " leavers\n";
+                    // // for(Particle& l: leavers)
+                    // //     std::cout << "  leaver " << l.repr() << std::endl;
+                    
+                    // for(Particle& leaver : leavers)
+                    // {
+                    //     // std::cout << cell.repr() << "  " << leaver.repr() << "\n";
+                    //     bool was_added = false;
+                    //     for(Cell& proximity_cell : cell.proximity)
+                    //     {
+                    //         if(proximity_cell.contains(leaver))
+                    //         {
+                    //             proximity_cell.particles.push_back(std::ref(leaver));
+                    //             was_added = true;
+                    //         }
+                    //         if(was_added) 
+                    //         {
+                    //             break;
+                    //         }
+                    //     }
+                    //     // if(!was_added)
+                    //     // {
+                    //     //     throw std::logic_error("Particle out of bound was not added to another cell\n" + leaver.repr() +" and " + cell.repr());
+                    //     // }
+                    //     cell.particles.erase( std::remove_if(std::begin(cell.particles), std::end(cell.particles), [&](const Particle& to_compare)
+                    //     { 
+                    //         return leaver == to_compare;
+                    //     ;}), std::end(cell.particles) );
+                    // }
+                    // cell.state = CellState::IDLE;
+                    // cell.shuffle(); 
+                // });
+            });
+        });
+    }
+
+
+
     void System::singleSimulationStep()
-    {    
+    {
+        prepareSimulationStep();
         cellBasedApplyFunctor([&](const auto& c){ cellStep(c);});
     }
 
@@ -62,15 +160,16 @@ namespace _pyves
         // TODO:FIXME:TODO:FIXME: CAUTION: this function is exactly what it should look like.
         // do not change order or modify any function call
 
+        // std::cout << cell.repr() << "\n";
         REAL last_energy_value;
         REAL energy_after;
         std::uniform_real_distribution<REAL> dist_coords(-translation_alignment(),translation_alignment());
         std::uniform_real_distribution<REAL> dist_orientation(-rotation_alignment(),rotation_alignment());
-        CARTESIAN translation;
-        CARTESIAN orientation_before;
+        CARTESIAN translation;//(dist_coords(pseudo_engine), dist_coords(pseudo_engine), dist_coords(pseudo_engine));
+        CARTESIAN orientation_before;//(dist_coords(pseudo_engine), dist_coords(pseudo_engine), dist_coords(pseudo_engine));
 
         std::vector<ParticleRefContainer::const_iterator> iterators(cell.particles.size());
-        std::iota(std::begin(iterators), std::end(iterators), std::begin(cell.particles));
+        std::iota(std::begin(iterators), std::end(iterators), std::cbegin(cell.particles));
         std::shuffle(std::begin(iterators), std::end(iterators), pseudo_engine);
 
         for(const auto& iterator : iterators)
@@ -79,16 +178,23 @@ namespace _pyves
             
             // coordinates move
             {
-                translation = CARTESIAN
-                (
-                    dist_coords(pseudo_engine),
-                    dist_coords(pseudo_engine),
-                    dist_coords(pseudo_engine)
-                );
+                do
+                {
+                    translation = CARTESIAN
+                    (
+                        dist_coords(pseudo_engine),
+                        dist_coords(pseudo_engine),
+                        dist_coords(pseudo_engine)
+                    );
+                }
+                while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
                 last_energy_value = cell.potentialEnergy(particle, box, 3);
-                // if(particle->try_setCoordinates(particle->getCoordinates()+translation))
-                if(particle.position += translation; true)
+                // if(particle->try_setCoordinates(particle->getCoordinates()+translation)
+                // std::cout << particle.position.format(VECTORFORMAT) << "\n";
+                particle.position += translation;
+                // std::cout << particle.position.format(VECTORFORMAT) << "\n\n";
+                if(true)
                 {
                     energy_after = cell.potentialEnergy(particle, box, 3);
 
@@ -97,6 +203,7 @@ namespace _pyves
                     {
                         translation_alignment.rejected();
                         particle.position -= translation;
+                        // particle.position = particle.position - translation;
                     }
                     // acctance
                     else
@@ -122,30 +229,33 @@ namespace _pyves
                 random_vector = CARTESIAN::Random();
             }
 
-            // if( 
-            //     orientation_before = particle.orientation; 
-            //     particle->try_setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), random_vector) * particle->getOrientation())
-            // )
-            // {
-            //     energy_after = cell.potentialOfSingleParticle(*particle);
+            orientation_before = particle.orientation; 
+            particle.setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), random_vector) * particle.getOrientation());
 
-            //     // rejection
-            //     if(!acceptance.isValid(energy_after - last_energy_value))
-            //     {
-            //         sw_orientation.rejected();
-            //         particle->getOrientation() = orientation_before;
-            //     }
-            //     // acctance
-            //     else
-            //     {
-            //         sw_orientation.accepted();
-            //         last_energy_value = energy_after;
-            //     }
-            // }
-            // else
-            // {
-            //     sw_orientation.rejected();
-            // }
+            if( 
+                // particle->try_setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), random_vector) * particle->getOrientation())
+                true
+            )
+            {
+                energy_after = cell.potentialEnergy(particle, box, 3);
+
+                // rejection
+                if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
+                {
+                    rotation_alignment.rejected();
+                    particle.setOrientation(orientation_before);
+                }
+                // acctance
+                else
+                {
+                    rotation_alignment.accepted();
+                    last_energy_value = energy_after;
+                }
+            }
+            else
+            {
+                rotation_alignment.rejected();
+            }
         }
 
         // TODO:FIXME:TODO:FIXME: CAUTION: this function is exactly what it should look like.
@@ -160,10 +270,15 @@ namespace _pyves
     void System::shuffle()
     {
         tbb::task_group tg;
-        task_arena.execute([&]()
+        task_arena.execute([&]
         {
-            tg.run_and_wait([&]{
-                tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) { cell.shuffle(); });
+            tg.run_and_wait([&]
+            {
+                tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+                // std::for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+                {
+                    cell.shuffle(); 
+                });
             });
         });
     }
@@ -225,6 +340,7 @@ namespace _pyves
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&) const>(&System::particleIsFree))
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&, REAL) const>(&System::particleIsFree))
             .def("shuffle", &System::shuffle)
+            .def("numParticlesInCells", &System::numParticlesInCells)
             .def_readwrite("translation", &System::translation_alignment, py::return_value_policy::reference_internal)
             .def_readwrite("rotation", &System::rotation_alignment, py::return_value_policy::reference_internal)
             .def("assertIntegrity", &System::assertIntegrity)
