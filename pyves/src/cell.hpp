@@ -46,6 +46,7 @@ struct _pyves::Cell
 
     std::atomic<CellState> state {CellState::UNDEFINED};
     Eigen::AlignedBox<REAL,3> bounding_box;
+    Box<PBC::ON> box;
 
     CellRefContainer proximity;
     CellRefContainer region;
@@ -53,22 +54,22 @@ struct _pyves::Cell
 
     std::shared_mutex particles_access_mutex;
 
-    Cell(CARTESIAN_CREF min, CARTESIAN_CREF max);
+    Cell(CARTESIAN_CREF min, CARTESIAN_CREF max, const Box<PBC::ON>&);
     Cell(const Cell &other);
 
     Cell& operator=(const Cell& other);
     bool operator==(const Cell& other) const;
 
     void removeParticle(const Particle&);
-    bool try_add(Particle&, const Box<PBC::ON>&);
-    bool isNeighbourOf(const Cell& other, const Box<PBC::ON>& b) const;
+    bool try_add(Particle&);
+    bool isNeighbourOf(const Cell& other) const;
     bool insideCellBounds(CARTESIAN_CREF p) const;
     bool insideCellBounds(const Particle& p) const;
     bool contains(const Particle& p);
     bool assertIntegrity();
     void shuffle();
-    auto particlesOutOfBounds(const Box<PBC::ON>&) -> std::deque<decltype(particles)::value_type>;
-    REAL potentialEnergy(const Particle& p, const Box<PBC::ON>& b, REAL cutoff) const;
+    auto particlesOutOfBounds() -> std::deque<decltype(particles)::value_type>;
+    REAL potentialEnergy(const Particle& p, REAL cutoff) const;
     
     template<CellState S> bool proximityAllInState() const;
     template<CellState S> bool proximityNoneInState() const;

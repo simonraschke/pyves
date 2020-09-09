@@ -2,19 +2,21 @@
 
 namespace _pyves
 {    
-    Cell::Cell(CARTESIAN_CREF min, CARTESIAN_CREF max)
+    Cell::Cell(CARTESIAN_CREF min, CARTESIAN_CREF max, const Box<PBC::ON>& _box)
         // :  bounding_box(std::make_unique<decltype(bounding_box)::element_type>(min-CellBoundOffset, max+CellBoundOffset))
-        :  bounding_box(min-CellBoundOffset, max+CellBoundOffset)
+        : bounding_box(min-CellBoundOffset, max+CellBoundOffset)
+        , box(_box)
     {
     }
 
 
 
-    Cell::Cell(const Cell &other)  
+    Cell::Cell(const Cell& other)
     { 
         state = other.state.load();
         bounding_box = other.bounding_box;
         proximity = other.proximity;
+        box = other.box;
     }
 
 
@@ -24,6 +26,7 @@ namespace _pyves
         state = other.state.load();
         bounding_box = other.bounding_box;
         proximity = other.proximity;
+        box = other.box;
         return *this; 
     }
 
@@ -48,7 +51,7 @@ namespace _pyves
     
 
 
-    bool Cell::try_add(Particle& particle, const Box<PBC::ON>& box)
+    bool Cell::try_add(Particle& particle)
     {
         if(!contains(particle) && insideCellBounds(box.scaleToBox(CARTESIAN(particle.position))))
         {   
@@ -73,7 +76,7 @@ namespace _pyves
 
 
 
-    bool Cell::isNeighbourOf(const Cell& other, const Box<PBC::ON>& b) const
+    bool Cell::isNeighbourOf(const Cell& other) const
     {
         if(*this == other)
         {
@@ -85,7 +88,8 @@ namespace _pyves
         }
         else
         {
-            const CARTESIAN connection_vector = b.distanceVector(bounding_box.center(), other.bounding_box.center()).cwiseAbs();
+            // std::cout << box.getLengthX() << " "<<  box.getLengthY() << " "<<  box.getLengthZ() << "\n";
+            const CARTESIAN connection_vector = box.distanceVector(bounding_box.center(), other.bounding_box.center()).cwiseAbs();
             if(     (connection_vector(0) < bounding_box.sizes()(0) + 0.001) 
                 &&  (connection_vector(1) < bounding_box.sizes()(1) + 0.001) 
                 &&  (connection_vector(2) < bounding_box.sizes()(2) + 0.001))
@@ -103,7 +107,7 @@ namespace _pyves
 
     bool Cell::insideCellBounds(const Particle& p) const
     {
-        return bounding_box.contains(p.position);
+        return bounding_box.contains(box.scaleToBox(p.position));
     }
 
 
@@ -146,21 +150,7 @@ namespace _pyves
 
 
 
-    REAL Cell::potentialEnergy(const Particle& particle, const Box<PBC::ON>& box, REAL cutoff) const
-    {
-        // std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
-        return std::accumulate(std::begin(region), std::end(region), REAL(0), [&](REAL __val, const Cell& cell)
-        {
-            return __val + std::accumulate(std::begin(cell.particles), std::end(cell.particles), REAL(0), [&](REAL _val, const Particle& compare)
-            {
-                return particle == compare ? _val : _val + interaction(particle, compare, box, cutoff);
-            });
-        });
-    }
-
-
-
-    auto Cell::particlesOutOfBounds(const Box<PBC::ON>& box) -> std::deque<decltype(particles)::value_type>
+    auto Cell::particlesOutOfBounds() -> std::deque<decltype(particles)::value_type>
     {
         std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
         std::deque<decltype(particles)::value_type> leavers;
@@ -172,6 +162,20 @@ namespace _pyves
             }
         }
         return leavers;
+    }
+
+
+
+    REAL Cell::potentialEnergy(const Particle& particle, REAL cutoff) const
+    {
+        // std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
+        return std::accumulate(std::begin(region), std::end(region), REAL(0), [&](REAL __val, const Cell& cell)
+        {
+            return __val + std::accumulate(std::begin(cell.particles), std::end(cell.particles), REAL(0), [&](REAL _val, const Particle& compare)
+            {
+                return particle == compare ? _val : _val + interaction(particle, compare, box, cutoff);
+            });
+        });
     }
 
 
@@ -234,7 +238,7 @@ namespace _pyves
 
 
         py::class_<Cell>(m, "Cell", py::dynamic_attr())
-            .def(py::init<CARTESIAN_CREF,CARTESIAN_CREF>(), py::arg("min"), py::arg("max"))
+            .def(py::init<CARTESIAN_CREF, CARTESIAN_CREF, Box<PBC::ON>>(), py::arg("min"), py::arg("max"), py::arg("box"))
             .def_readonly("bounding_box", &Cell::bounding_box)
             .def_readwrite("proximity", &Cell::proximity, py::return_value_policy::reference_internal)
             .def_readwrite("region", &Cell::region, py::return_value_policy::reference_internal)

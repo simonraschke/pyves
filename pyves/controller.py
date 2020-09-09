@@ -110,13 +110,13 @@ class Controller(object):
                 for z in np.arange(0, box_dims[2], cell_actual_size[2]):
                     _min = np.array([x,y,z])
                     _max = np.array([x,y,z]) + cell_actual_size
-                    self.system.cells.append(_pyves.Cell(_min, _max))
+                    self.system.cells.append(_pyves.Cell(_min, _max, box=self.system.box))
 
         for ci in self.system.cells:
             for cj in self.system.cells:
                 if ci == cj:
                     ci.region.append(cj)
-                if ci.isNeighbourOf(cj, self.system.box):
+                if ci.isNeighbourOf(cj):
                     ci.proximity.append(cj)
                     ci.region.append(cj)
         
@@ -200,8 +200,9 @@ class Controller(object):
                 key = sorted([s for s in h5file.keys() if s.startswith("time")], key=lambda x:int(re.findall('(?<=time)\d+', x)[0]))[-1]
         else:
             key = self.input["key"]
+
         df = pd.read_hdf(path_or_buf=path, key=key)
-        print(df)
+        
         self.time_actual = int(re.findall('(?<=time)\d+', key)[0])
 
         for _, row in df.iterrows():
@@ -246,10 +247,11 @@ class Controller(object):
                 endtime = time.perf_counter()
                 print(
                     f"sampling to step {self.time_actual} took {endtime-starttime:.4f} s", " | ", 
-                    f"{(endtime-starttime)*1000*1000/len(self.system.particles)/self.time_delta:.4f} ns /particle/step", " | ", 
+                    f"{(endtime-starttime)*1000*1000/len(self.system.particles)/steps:.4f} ns /particle/step", " | ", 
                     end=""
                 )
             self.writeTrajectoryHDF(timestats=timestats)
+            if timestats: print()
             if SignalHandler.ProgramState is ProgramState.SHUTDOWN:
                 print("shutting down")
                 sys.exit(0)
@@ -283,7 +285,6 @@ class Controller(object):
         starttime = time.perf_counter()
 
         positions = np.array([self.system.box.scaleToBox(p.position) for p in self.system.particles])
-        print(np.max(positions, axis=0))
 
         df = pd.DataFrame(dict(
             name = [p.name for p in self.system.particles],

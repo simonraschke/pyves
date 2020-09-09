@@ -44,33 +44,26 @@ class MainTest(unittest.TestCase):
         for cell in control.system.cells:
             for particle in cell.particles:
                 self.assertTrue(cell.contains(particle))
-        
 
         control2 = pyves.Controller()
         control2.readForceField("test/forcefield.json")
         control2.readParameters("test/parameters.json")
-
         control2.prepareSimulation()
+
         box_dims = np.array([control.system.box.x, control.system.box.y, control.system.box.z])
         cells_per_dim = np.array(box_dims/control.cell_min_size).astype(int)
         self.assertEqual(len(control2.system.cells), np.cumprod(cells_per_dim)[-1])
 
         control2.sample(timestats=True)
+        control2.system.prepareSimulationStep()
+
         self.assertEqual(control2.system.numParticlesInCells(), 100)
         for i,p in enumerate(control2.system.particles):
             self.assertTrue(p.assertIntegrity(), f"particle {i}")
         for i,c in enumerate(control2.system.cells):
-            for j,p in enumerate(c.particles):
-                print()
-                print(c, p)
-                print(c.contains(p))
-                print(c.insideCellBounds(p))
             self.assertTrue(c.assertIntegrity(), f"cell {i}")
         
         self.assertTrue(control2.system.assertIntegrity())
-        # import pprint
-        # pprint.pprint(control.__dict__)
-        # print(pyves.interaction(control.system.particles[0], control.system.particles[1], control.system.box, 3))
 
 
 

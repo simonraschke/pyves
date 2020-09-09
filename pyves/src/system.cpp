@@ -76,7 +76,7 @@ namespace _pyves
                 tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell)
                 {
                     // std::cout << cell.repr() << "\n";
-                    auto leavers = cell.particlesOutOfBounds(box);
+                    auto leavers = cell.particlesOutOfBounds();
                     
                     for(Particle& leaver : leavers)
                     {
@@ -85,7 +85,7 @@ namespace _pyves
                         for(Cell& proximity_cell : cell.proximity)
                         {
                             // std::cout << " " << proximity_cell.repr() << "\n";
-                            was_added = proximity_cell.try_add(leaver, box);
+                            was_added = proximity_cell.try_add(leaver);
                             if(was_added) 
                             {
                                 break;
@@ -142,14 +142,14 @@ namespace _pyves
                 }
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
-                last_energy_value = cell.potentialEnergy(particle, box, 3);
+                last_energy_value = cell.potentialEnergy(particle, 3);
                 // if(particle->try_setCoordinates(particle->getCoordinates()+translation)
                 // std::cout << particle.position.format(VECTORFORMAT) << "\n";
                 particle.position += translation;
                 // std::cout << particle.position.format(VECTORFORMAT) << "\n\n";
                 if(true)
                 {
-                    energy_after = cell.potentialEnergy(particle, box, 3);
+                    energy_after = cell.potentialEnergy(particle, 3);
 
                     // rejection
                     if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -190,7 +190,7 @@ namespace _pyves
                 true
             )
             {
-                energy_after = cell.potentialEnergy(particle, box, 3);
+                energy_after = cell.potentialEnergy(particle, 3);
 
                 // rejection
                 if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -311,6 +311,7 @@ namespace _pyves
             .def_readwrite("translation", &System::translation_alignment, py::return_value_policy::reference_internal)
             .def_readwrite("rotation", &System::rotation_alignment, py::return_value_policy::reference_internal)
             .def("assertIntegrity", &System::assertIntegrity)
+            .def("prepareSimulationStep", &System::prepareSimulationStep)
             .def("singleSimulationStep", &System::singleSimulationStep)
             .def("multipleSimulationSteps", &System::multipleSimulationSteps)
         ;
