@@ -112,6 +112,15 @@ else:
 
 
 
+thelibFolder = os.path.dirname(os.path.realpath(__file__))
+requirementPath = thelibFolder + '/requirements.txt'
+requires = [] # Examples: ["gunicorn", "docutils>=0.3", "lxml==0.5a7"]
+if os.path.isfile(requirementPath):
+    with open(requirementPath) as f:
+        requires = f.read().splitlines()
+
+
+
 setup(
     name='pyves',
     version=verstr,
@@ -123,12 +132,16 @@ setup(
     packages=find_packages(),
     ext_modules=[CMakeExtension('pyves')],
     cmdclass=dict(build_ext=CMakeBuild, test=CatchTestCommand),
-    setup_requires=[
-        'pybind11==2.5.0',
-        "numpy",
-        "pandas",
-        "tables",
-        "h5py"
-    ],
+    setup_requires=requires,
+    install_requires=requires,
+    # setup_requires=[
+    #     'pybind11==2.5.0',
+    #     "numpy>=1.14",
+    #     "pandas>=1.0",
+    #     "tables",
+    #     "h5py",
+    #     "wheel"
+    # ],
+    python_requires='~=3.6',
     zip_safe=False,
 )
