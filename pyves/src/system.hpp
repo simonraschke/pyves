@@ -64,7 +64,7 @@ namespace _pyves
         void multipleSimulationSteps(const unsigned long);
         std::size_t numParticlesInCells() const;
 
-        template<typename FUNCTOR> void cellBasedApplyFunctor(FUNCTOR&& func);
+        template<typename FUNCTOR> void applyToCells(FUNCTOR&& func);
 
         template<CellState S> bool allCellsInState() const;
         template<CellState S> bool noCellsInState() const;
@@ -91,8 +91,8 @@ namespace _pyves
 
 
 
-    template<typename FUNCTOR>
-    void System::cellBasedApplyFunctor(FUNCTOR&& func)
+    template<typename FUNC>
+    void System::applyToCells(FUNC&& func)
     {
         // std::shuffle(std::begin(cells), std::end(cells), pseudo_engine);
         

@@ -1,12 +1,19 @@
 import json
+import os
+import sys
 import _pyves
 import numpy as np
+import pandas as pd
+import signal
+
+from .signal_handler import SignalHandler
 
 
 
 class Controller(object):
     def __init__(self) -> None:
         self.system = _pyves.System()
+        self.signal_handler = SignalHandler()
         return
 
 
@@ -38,12 +45,21 @@ class Controller(object):
             rotation = _prms["system"]["rotation"]
             self.system.rotation = _pyves.StepwidthAlignmentUnit()
             self.system.rotation.setup(rotation["interval"], rotation["min"], rotation["max"], rotation["target"])
-            # self.system.time_max = _prms["system"]["time_max"]
 
             self.time_delta = _prms["control"]["time_delta"]
             self.time_max = _prms["control"]["time_max"]
             self.particle_prms = _prms["control"]["particles"]
             self.cell_min_size = _prms["control"]["cell_min_size"]
+
+            self.output = _prms["output"]
+            self.input = _prms["input"]
+            # self.out_dir = _prms["output"]["dir"]
+            # self.out_filename = _prms["output"]["filename"]
+            # self.out_mode =_prms["output"]["mode"]
+
+            # self.in_dir = _prms["input"]["dir"]
+            # self.in_filename =_prms["input"]["filename"]
+            # self.in_key = _prms["input"]["key"]
 
 
 
@@ -66,9 +82,14 @@ class Controller(object):
                     self.system.particles.append(_pyves.Particle(np.random.rand(3)*box_dims, np.random.uniform(-1,1,3), 
                         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
                     # repeat until particle is free
+                    particle_try_set_count = 0
                     while not self.system.particleIsFree(self.system.particles[-1]):
+                        particle_try_set_count += 1
                         self.system.particles[-1].position = np.random.rand(3)*box_dims
-        
+                        if particle_try_set_count > 1e6:
+                            print(f"tried to set particle {particle_try_set_count} time. Aborting")
+                            sys.exit(signal.SIGKILL)
+
         # Setup cells
         cells_per_dim = np.array(box_dims/self.cell_min_size).astype(int)
         cell_actual_size = box_dims/cells_per_dim
@@ -98,19 +119,15 @@ class Controller(object):
         assert(cell_place_counter == len(self.system.particles))
         assert(self.system.assertIntegrity())
         
-        # for cell in self.system.cells:
-        #     # print("cell has ", len(cell.particles), "particles")
-        #     for particle in cell.particles:
-        #         # print(particle, "in", cell)
-        #         assert(cell.contains(particle))
-    
 
-
+        
     def sample(self, steps=None):
         if isinstance(steps, int):
             for i in range(steps):
                 self.system.assertIntegrity()
                 self.system.singleSimulationStep()
+            self.time_actual += steps
+            self.writeTrajectoryHDF() 
         else:
             self.time_actual = 0
             sampling_time_points = np.arange(self.time_actual, self.time_max, self.time_delta)
@@ -120,12 +137,10 @@ class Controller(object):
                 self.system.multipleSimulationSteps(self.time_delta)
                 self.time_actual += self.time_delta
                 self.writeTrajectoryHDF()
-                # print(self.time_actual)
 
 
 
-    def writeTrajectoryHDF(self):
-        import pandas as pd
+    def writeTrajectoryHDF(self, log=False):
         df = pd.DataFrame()
         for particle in self.system.particles:
             pos = self.system.box.scaleToBox(particle.position)
@@ -142,7 +157,17 @@ class Controller(object):
                 kappa = particle.kappa,
                 gamma = particle.gamma
             )
-
             df = df.append(data, ignore_index=True, sort=False)
-        print(df.head(6))
-        print(df.info())
+        df.to_hdf(
+            path_or_buf=os.path.join(self.output["dir"], self.output["filename"]),
+            key=f"/time{self.time_actual}",
+            mode="r+" if self.output["mode"] == "append" else "a",
+            append=True if self.output["mode"] == "append" else False,
+            format="table",
+            complevel=1,
+        )
+        if log:
+            print(df)
+            print(df.info())
+        # print(f"/time{self.time_actual} written")
+        

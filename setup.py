@@ -44,7 +44,7 @@ class CMakeBuild(build_ext):
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' +
                       extdir, '-DPYTHON_EXECUTABLE=' + sys.executable]
         print(self.debug)
-        cfg = 'Debug' if self.debug else 'Release'
+        cfg = 'Debug' if self.debug else 'RelWithDebInfo'
         build_args = ['--config', cfg]
 
         if platform.system() == "Windows":
@@ -99,11 +99,22 @@ class CatchTestCommand(TestCommand):
             shell=True)
 
 
-__version__ = '0.1.1'
+
+import re
+VERSIONFILE="pyves/_version.py"
+verstrline = open(VERSIONFILE, "rt").read()
+VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
+mo = re.search(VSRE, verstrline, re.M)
+if mo:
+    verstr = mo.group(1)
+else:
+    raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
+
+
 
 setup(
     name='pyves',
-    version=__version__,
+    version=verstr,
     author='Simon Raschke',
     author_email='',
     url='https://github.com/simonraschke/pyves.git',
@@ -112,6 +123,11 @@ setup(
     packages=find_packages(),
     ext_modules=[CMakeExtension('pyves')],
     cmdclass=dict(build_ext=CMakeBuild, test=CatchTestCommand),
-    setup_requires=['pybind11>=2.5.0'],
+    setup_requires=[
+        'pybind11==2.5.0',
+        "numpy",
+        "pandas",
+        "tables"
+    ],
     zip_safe=False,
 )

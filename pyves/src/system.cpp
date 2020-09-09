@@ -220,7 +220,7 @@ namespace _pyves
     void System::singleSimulationStep()
     {
         prepareSimulationStep();
-        cellBasedApplyFunctor([&](const auto& c){ cellStep(c);});
+        applyToCells([&](const auto& c){ cellStep(c);});
     }
 
 

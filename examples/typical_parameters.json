@@ -9,23 +9,23 @@
         "temperature" : 0.23,
         "box" : 
         {
-            "x" : 20,
-            "y" : 15.5,
-            "z" : 18.3
+            "x" : 30.0,
+            "y" : 30.0,
+            "z" : 30.0
         },
         "translation" :
         {
             "min" : 0.01,
-            "max" : 0.5,
+            "max" : 0.2,
             "target" : 0.3,
-            "interval" : 150
+            "interval" : 10000
         },
         "rotation" :
         {
             "min" : 0.01,
-            "max" : 0.5,
+            "max" : 0.2,
             "target" : 0.3,
-            "interval" : 150
+            "interval" : 10000
         },
         "interaction" : 
         {
@@ -34,27 +34,27 @@
     },
     "control" : 
     {
-        "time_delta" : 100,
-        "time_max" : 1000,
+        "time_delta" : 10000,
+        "time_max" : 100000,
         "particles" :
         {
-            "A" : 
+            "FRAME" : 
             {
-                "number" : 25,
+                "number" : 0,
                 "dist" : "random"
             },
-            "B" : 
+            "MOBILE" : 
             {
-                "number" : 75,
+                "number" : 1000,
                 "dist" : "random"
             }
         },
-        "cell_min_size" : 3.5
+        "cell_min_size" : 3.0
     },
     "output" :
     {
-        "dir" : "test",
-        "filename" : "data.h5",
+        "dir" : ".",
+        "filename" : "typical.h5",
         "mode" : "overwrite"
     },
     "input" :

@@ -24,19 +24,23 @@ class MainTest(unittest.TestCase):
 
         # print(control.forcefield)
         control.prepareSimulation()
-        self.assertEqual(len(control.system.particles), 15)
+        self.assertEqual(len(control.system.particles), 100)
         box_dims = np.array([control.system.box.x, control.system.box.y, control.system.box.z])
         cells_per_dim = np.array(box_dims/control.cell_min_size).astype(int)
         self.assertEqual(len(control.system.cells), np.cumprod(cells_per_dim)[-1])
 
-        self.assertEqual(control.system.numParticlesInCells(), 15)
+        self.assertEqual(control.system.numParticlesInCells(), 100)
         self.assertTrue(control.system.assertIntegrity())
 
         control.sample()
 
         for cell in control.system.cells:
             for particle in cell.particles:
-                assert(cell.contains(particle))
+                self.assertTrue(cell.contains(particle))
+        
+        # import pprint
+        # pprint.pprint(control.__dict__)
+        # print(pyves.interaction(control.system.particles[0], control.system.particles[1], control.system.box, 3))
 
 
 
