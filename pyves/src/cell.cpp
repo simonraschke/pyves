@@ -38,7 +38,7 @@ namespace _pyves
 
     void Cell::removeParticle(const Particle& to_remove)
     {
-        std::lock_guard<std::shared_mutex> lock(mutex);
+        std::lock_guard<std::shared_mutex> lock(particles_access_mutex);
         particles.erase( std::remove_if(std::begin(particles), std::end(particles), [&](const Particle& to_compare)
         { 
             return to_remove == to_compare;
@@ -56,7 +56,7 @@ namespace _pyves
             // data.emplace_back(nonstd::make_observer<particle_t>(particle));
             // lock.release();
             {
-                std::lock_guard<std::shared_mutex> lock(mutex);
+                std::lock_guard<std::shared_mutex> lock(particles_access_mutex);
                 particles.push_back(std::ref(particle));
             }
             // std::cout << "   "  << __func__ << "  Cell contains particle " << box.scaleToBox(CARTESIAN(particle.position)).format(VECTORFORMAT) << " after insertion " << std::boolalpha << contains(particle) << "\n";
@@ -117,7 +117,7 @@ namespace _pyves
 
     bool Cell::contains(const Particle& p)
     {
-        std::shared_lock<std::shared_mutex> lock(mutex);
+        std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
         return std::any_of(std::begin(particles), std::end(particles), [&](const Particle& other ){ return other == p; });
     }
 
@@ -125,7 +125,7 @@ namespace _pyves
 
     bool Cell::assertIntegrity()
     {
-        std::shared_lock<std::shared_mutex> lock(mutex);
+        // std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
         return all(
             proximity.size() == 26,
             region.size() == 27,
@@ -138,17 +138,17 @@ namespace _pyves
 
     void Cell::shuffle()
     {
-        std::lock_guard<std::shared_mutex> lock(mutex);
-        std::shuffle(std::begin(particles), std::end(particles), std::mt19937_64(std::random_device{}()));
-        std::shuffle(std::begin(proximity), std::end(proximity), std::mt19937_64(std::random_device{}()));
-        std::shuffle(std::begin(region), std::end(region), std::mt19937_64(std::random_device{}()));
+        std::lock_guard<std::shared_mutex> lock(particles_access_mutex);
+        std::shuffle(std::begin(particles), std::end(particles), RandomEngine.pseudo_engine);
+        std::shuffle(std::begin(proximity), std::end(proximity), RandomEngine.pseudo_engine);
+        std::shuffle(std::begin(region), std::end(region), RandomEngine.pseudo_engine);
     }
 
 
 
     REAL Cell::potentialEnergy(const Particle& particle, const Box<PBC::ON>& box, REAL cutoff) const
     {
-        // std::shared_lock<std::shared_mutex> lock(mutex);
+        // std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
         return std::accumulate(std::begin(region), std::end(region), REAL(0), [&](REAL __val, const Cell& cell)
         {
             return __val + std::accumulate(std::begin(cell.particles), std::end(cell.particles), REAL(0), [&](REAL _val, const Particle& compare)
@@ -160,9 +160,9 @@ namespace _pyves
 
 
 
-    auto Cell::particlesOutOfBounds(const Box<PBC::ON>& box) const -> std::deque<decltype(particles)::value_type>
+    auto Cell::particlesOutOfBounds(const Box<PBC::ON>& box) -> std::deque<decltype(particles)::value_type>
     {
-        // std::shared_lock<std::shared_mutex> lock(mutex);
+        std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
         std::deque<decltype(particles)::value_type> leavers;
         for(Particle& particle : particles)
         {

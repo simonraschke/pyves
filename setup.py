@@ -127,7 +127,8 @@ setup(
         'pybind11==2.5.0',
         "numpy",
         "pandas",
-        "tables"
+        "tables",
+        "h5py"
     ],
     zip_safe=False,
 )

@@ -47,7 +47,7 @@ namespace _pyves
         std::size_t cores = make_nan<std::size_t>();
         std::size_t threads = make_nan<std::size_t>();
         
-        std::mt19937_64 pseudo_engine{std::random_device{}()};
+        // std::mt19937_64 pseudo_engine{std::random_device{}()};
 
         REAL temperature = make_nan<REAL>();
         // std::size_t time_max = make_nan<std::size_t>();
@@ -98,7 +98,7 @@ namespace _pyves
         
         std::vector<CellContainer::iterator> iterators(cells.size());
         std::iota(std::begin(iterators), std::end(iterators), std::begin(cells));
-        std::shuffle(std::begin(iterators), std::end(iterators), pseudo_engine);
+        std::shuffle(std::begin(iterators), std::end(iterators), RandomEngine.pseudo_engine);
         
         tbb::task_group tg;
         task_arena.execute([&]()

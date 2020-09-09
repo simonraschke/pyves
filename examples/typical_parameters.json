@@ -2,16 +2,16 @@
     "hardware" : 
     {
         "cores" : 2,
-        "threads" : 4
+        "threads" : 6
     },
     "system" : 
     {
         "temperature" : 0.23,
         "box" : 
         {
-            "x" : 30.0,
-            "y" : 30.0,
-            "z" : 30.0
+            "x" : 40.0,
+            "y" : 40.0,
+            "z" : 40.0
         },
         "translation" :
         {
@@ -34,7 +34,7 @@
     },
     "control" : 
     {
-        "time_delta" : 10000,
+        "time_delta" : 1000,
         "time_max" : 100000,
         "particles" :
         {
@@ -45,7 +45,7 @@
             },
             "MOBILE" : 
             {
-                "number" : 1000,
+                "number" : 5000,
                 "dist" : "random"
             }
         },
@@ -59,8 +59,8 @@
     },
     "input" :
     {
-        "dir" : null,
-        "filename" : null,
-        "key" : "/time1000"
+        "dir" : ".",
+        "filename" : "typical.h5",
+        "key" : "HEAD"
     }
 }

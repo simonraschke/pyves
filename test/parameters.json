@@ -59,8 +59,8 @@
     },
     "input" :
     {
-        "dir" : null,
-        "filename" : null,
-        "key" : "/time1000"
+        "dir" : "test",
+        "filename" : "data.h5",
+        "key" : "HEAD"
     }
 }

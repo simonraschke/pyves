@@ -5,6 +5,7 @@ from enum import Enum
 
 
 class ProgramState(Enum):
+    UNDEFINED = 0
     STARTUP = 1
     SETUP = 2
     PAUSE = 3
@@ -15,6 +16,7 @@ class ProgramState(Enum):
 
 class SignalHandler(object):
     num_terminate_calls = 0
+    program_state = ProgramState.UNDEFINED
 
     @classmethod 
     def recieved_exit_signal(cls, sig, frame):
@@ -22,9 +24,13 @@ class SignalHandler(object):
         cls.num_terminate_calls += 1
         if cls.num_terminate_calls == 1:
             print(":  Trying civilized shutdown...")
+            cls.ProgramState = ProgramState.SHUTDOWN
         elif cls.num_terminate_calls == 2:
             print(":  Shutting down immediately!")
             sys.exit(sig)
+        else:
+            print(":  Aborting...")
+            
 
     @classmethod
     def recieved_noaction_signal(cls, sig, frame):

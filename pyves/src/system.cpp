@@ -123,7 +123,7 @@ namespace _pyves
 
         std::vector<ParticleRefContainer::const_iterator> iterators(cell.particles.size());
         std::iota(std::begin(iterators), std::end(iterators), std::cbegin(cell.particles));
-        std::shuffle(std::begin(iterators), std::end(iterators), pseudo_engine);
+        std::shuffle(std::begin(iterators), std::end(iterators), RandomEngine.pseudo_engine);
 
         for(const auto& iterator : iterators)
         {
@@ -135,9 +135,9 @@ namespace _pyves
                 {
                     translation = CARTESIAN
                     (
-                        dist_coords(pseudo_engine),
-                        dist_coords(pseudo_engine),
-                        dist_coords(pseudo_engine)
+                        dist_coords(RandomEngine.pseudo_engine),
+                        dist_coords(RandomEngine.pseudo_engine),
+                        dist_coords(RandomEngine.pseudo_engine)
                     );
                 }
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
@@ -183,7 +183,7 @@ namespace _pyves
             }
 
             orientation_before = particle.orientation; 
-            particle.setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), random_vector) * particle.getOrientation());
+            particle.setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation());
 
             if( 
                 // particle->try_setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), random_vector) * particle->getOrientation())

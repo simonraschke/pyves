@@ -18,4 +18,4 @@ print("prepare simulation")
 ctrl.prepareSimulation()
 
 print("start sampling")
-ctrl.sample()
+ctrl.sample(timestats=True)

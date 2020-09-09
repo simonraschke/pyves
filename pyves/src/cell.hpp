@@ -7,6 +7,7 @@
 #include <atomic>
 #include <shared_mutex>
 #include <memory>
+#include <random>
 #include <Eigen/Geometry>
 
 #include <pybind11/pybind11.h>
@@ -41,6 +42,8 @@ PYBIND11_MAKE_OPAQUE(_pyves::CellRefContainer)
 
 struct _pyves::Cell
 {
+    // TODO: ADD Box REF
+
     std::atomic<CellState> state {CellState::UNDEFINED};
     Eigen::AlignedBox<REAL,3> bounding_box;
 
@@ -48,7 +51,7 @@ struct _pyves::Cell
     CellRefContainer region;
     ParticleRefContainer particles;
 
-    std::shared_mutex mutex;
+    std::shared_mutex particles_access_mutex;
 
     Cell(CARTESIAN_CREF min, CARTESIAN_CREF max);
     Cell(const Cell &other);
@@ -64,7 +67,7 @@ struct _pyves::Cell
     bool contains(const Particle& p);
     bool assertIntegrity();
     void shuffle();
-    auto particlesOutOfBounds(const Box<PBC::ON>&) const -> std::deque<decltype(particles)::value_type>;
+    auto particlesOutOfBounds(const Box<PBC::ON>&) -> std::deque<decltype(particles)::value_type>;
     REAL potentialEnergy(const Particle& p, const Box<PBC::ON>& b, REAL cutoff) const;
     
     template<CellState S> bool proximityAllInState() const;
