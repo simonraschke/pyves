@@ -18,3 +18,13 @@ ctrl.prepareSimulation()
 
 print("start sampling")
 ctrl.sample(timestats=True)
+
+pyves.hdf2gro(
+    inpath = os.path.join(ctrl.output["dir"], ctrl.output["filename"]),
+    outpath = os.path.join(ctrl.output["dir"], "trajectory.gro"),
+    atom_repr = dict(
+        FRAME = "O",
+        MOBILE = "S"#
+    ),
+    box = ctrl.system.box
+)

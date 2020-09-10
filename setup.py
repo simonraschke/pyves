@@ -11,10 +11,12 @@ from setuptools.command.build_ext import build_ext
 from setuptools.command.test import test as TestCommand
 
 
+
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
+
 
 
 class CMakeBuild(build_ext):
@@ -49,28 +51,40 @@ class CMakeBuild(build_ext):
 
         if platform.system() == "Windows":
             cmake_args += [
-                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir)]
+                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir)
+            ]
             if sys.maxsize > 2**32:
                 cmake_args += ['-A', 'x64']
             build_args += ['--', '/m']
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
             build_args += ['--', '-j']
+        cmake_args += [
+            "-DCMAKE_C_COMPILER=clang",
+            "-DCMAKE_CXX_COMPILER=clang++"
+        ]
 
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
             env.get('CXXFLAGS', ''),
             self.distribution.get_version())
+
+        import pprint
+        print("\nenv")
+        pprint.pprint(env)
+        print("\ncmake_args")
+        pprint.pprint(cmake_args)
+        print("\nbuild_args")
+        pprint.pprint(build_args)
+        
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
         subprocess.check_call(['cmake', ext.sourcedir] +
                               cmake_args, cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.'] +
                               build_args, cwd=self.build_temp)
-        print()
-        print("----------------------------------------------------------------------")
-        print("Python tests")
-        print()
+        print("\n----------------------------------------------------------------------\nPython tests\n")
+
 
 
 class CatchTestCommand(TestCommand):
@@ -134,14 +148,6 @@ setup(
     cmdclass=dict(build_ext=CMakeBuild, test=CatchTestCommand),
     setup_requires=requires,
     install_requires=requires,
-    # setup_requires=[
-    #     'pybind11==2.5.0',
-    #     "numpy>=1.14",
-    #     "pandas>=1.0",
-    #     "tables",
-    #     "h5py",
-    #     "wheel"
-    # ],
     python_requires='~=3.6',
     zip_safe=False,
 )

@@ -1,6 +1,16 @@
 #pragma once
 
-#include <Eigen/Core>
+#if defined(__clang__)
+    #pragma clang diagnostic ignored "-Wdeprecated-copy"
+    #include <Eigen/Core>
+    // #pragma clang diagnostic pop
+#elif defined(__GNUC__) || defined(__GNUG__)
+    #pragma GCC diagnostic ignored "-Wdeprecated-copy"
+    #include <Eigen/Core>
+    #pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+    #include <Eigen/Core>
+#endif
 
 namespace _pyves
 {

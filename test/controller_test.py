@@ -1,5 +1,6 @@
 from binascii import a2b_qp
 import enum
+from symbol import atom
 import unittest
 import pyves
 import os
@@ -64,6 +65,16 @@ class MainTest(unittest.TestCase):
             self.assertTrue(c.assertIntegrity(), f"cell {i}")
         
         self.assertTrue(control2.system.assertIntegrity())
+
+        pyves.hdf2gro(
+            inpath = os.path.join(control2.output["dir"], control2.output["filename"]),
+            outpath = os.path.join(control2.output["dir"], "trajectory.gro"),
+            atom_repr = dict(
+                A = "O",
+                B = "S"#
+            ),
+            box = control2.system.box
+        )
 
 
 

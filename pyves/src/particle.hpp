@@ -5,6 +5,7 @@
 #include <limits>
 #include <exception>
 #include <cmath>
+#include <numeric>
 #include <Eigen/Core>
 #if __cplusplus >= 202000L
     #include <format>
@@ -13,9 +14,17 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 
-#pragma GCC diagnostic ignored "-Wdeprecated-copy" // hurts, but is necessary
-#include <pybind11/eigen.h>
-#pragma GCC diagnostic pop
+#if defined(__clang__)
+    #pragma clang diagnostic ignored "-Wdeprecated-copy"
+    #include <pybind11/eigen.h>
+    // #pragma clang diagnostic pop
+#elif defined(__GNUC__) || defined(__GNUG__)
+    #pragma GCC diagnostic ignored "-Wdeprecated-copy"
+    #include <pybind11/eigen.h>
+    #pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+    #include <pybind11/eigen.h>
+#endif
 
 namespace py = pybind11;
 

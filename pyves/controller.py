@@ -42,34 +42,6 @@ class Controller(object):
         with open(path, 'r') as prms_file:
             _prms = json.loads(prms_file.read())
             self.setParameters(_prms)
-            # self.system.cores = _prms["hardware"]["cores"]
-            # self.system.threads = _prms["hardware"]["threads"]
-
-            # self.system.temperature = _prms["system"]["temperature"]
-            # self.system.box.x = _prms["system"]["box"]["x"]
-            # self.system.box.y = _prms["system"]["box"]["y"]
-            # self.system.box.z = _prms["system"]["box"]["z"]
-            # translation = _prms["system"]["translation"]
-            # self.system.translation = _pyves.StepwidthAlignmentUnit()
-            # self.system.translation.setup(translation["interval"], translation["min"], translation["max"], translation["target"])
-            # rotation = _prms["system"]["rotation"]
-            # self.system.rotation = _pyves.StepwidthAlignmentUnit()
-            # self.system.rotation.setup(rotation["interval"], rotation["min"], rotation["max"], rotation["target"])
-
-            # self.time_delta = _prms["control"]["time_delta"]
-            # self.time_max = _prms["control"]["time_max"]
-            # self.particle_prms = _prms["control"]["particles"]
-            # self.cell_min_size = _prms["control"]["cell_min_size"]
-
-            # self.output = _prms["output"]
-            # self.input = _prms["input"]
-            # self.out_dir = _prms["output"]["dir"]
-            # self.out_filename = _prms["output"]["filename"]
-            # self.out_mode =_prms["output"]["mode"]
-
-            # self.in_dir = _prms["input"]["dir"]
-            # self.in_filename =_prms["input"]["filename"]
-            # self.in_key = _prms["input"]["key"]
 
 
 
@@ -161,35 +133,7 @@ class Controller(object):
                             print(f"tried to set particle {particle_try_set_count} time. Aborting")
                             sys.exit(signal.SIGKILL)
 
-        # Setup cells
         self.setupCells()
-        # cells_per_dim = np.array(box_dims/self.cell_min_size).astype(int)
-        # cell_actual_size = box_dims/cells_per_dim
-        # for x in np.arange(0, box_dims[0], cell_actual_size[0]):
-        #     for y in np.arange(0, box_dims[1], cell_actual_size[1]):
-        #         for z in np.arange(0, box_dims[2], cell_actual_size[2]):
-        #             _min = np.array([x,y,z])
-        #             _max = np.array([x,y,z]) + cell_actual_size
-        #             self.system.cells.append(_pyves.Cell(_min, _max))
-        # for ci in self.system.cells:
-        #     for cj in self.system.cells:
-        #         if ci == cj:
-        #             ci.region.append(cj)
-        #         if ci.isNeighbourOf(cj, self.system.box):
-        #             ci.proximity.append(cj)
-        #             ci.region.append(cj)
-        
-        # place particles in cells
-        # cell_place_counter = 0
-        # for i, particle in enumerate(self.system.particles):
-        #     for j, cell in enumerate(self.system.cells):
-        #         if cell.insideCellBounds(particle):
-        #             cell.particles.append(particle)
-        #             # print(i, "to", j)
-        #             cell_place_counter += 1
-        #             break
-        # assert(cell_place_counter == len(self.system.particles))
-        # assert(self.system.assertIntegrity())
         self.placeParticlesInCells()
 
 
@@ -246,7 +190,7 @@ class Controller(object):
             if timestats:
                 endtime = time.perf_counter()
                 print(
-                    f"sampling to step {self.time_actual} took {endtime-starttime:.4f} s", " | ", 
+                    f"time {self.time_actual} took {endtime-starttime:.4f} s", " | ", 
                     f"{(endtime-starttime)*1000*1000/len(self.system.particles)/steps:.4f} ns /particle/step", " | ", 
                     end=""
                 )

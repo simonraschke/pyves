@@ -9,10 +9,17 @@
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations" // hurts, but is necessary
-#include <pybind11/eigen.h>
-#pragma GCC diagnostic pop
-
+#if defined(__clang__)
+    #pragma clang diagnostic ignored "-Wdeprecated-copy"
+    #include <pybind11/eigen.h>
+    // #pragma clang diagnostic pop
+#elif defined(__GNUC__) || defined(__GNUG__)
+    #pragma GCC diagnostic ignored "-Wdeprecated-copy"
+    #include <pybind11/eigen.h>
+    #pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+    #include <pybind11/eigen.h>
+#endif
 
 
 namespace _pyves 
@@ -23,7 +30,7 @@ namespace _pyves
         OFF=false}
     ;
 
-    template<PBC P> class Box;
+    template<PBC P> struct Box;
 
     struct Particle;
 }
