@@ -19,6 +19,22 @@ class CMakeExtension(Extension):
 
 
 
+def find_clang():
+    out = subprocess.check_output(['clang', '--version'])
+    for line in out.decode("utf8").splitlines():
+        if "InstalledDir" in line:
+            return os.path.join(line.split(" ")[-1], "clang")
+    
+
+    
+def find_clangpp():
+    out = subprocess.check_output(['clang++', '--version'])
+    for line in out.decode("utf8").splitlines():
+        if "InstalledDir" in line:
+            return os.path.join(line.split(" ")[-1], "clang++")
+
+
+
 class CMakeBuild(build_ext):
     def run(self):
         try:
@@ -59,9 +75,14 @@ class CMakeBuild(build_ext):
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
             build_args += ['--', '-j']
+
+        clangpath = find_clang()
+        print("clang path:", clangpath)
+        clangpppath = find_clangpp()
+        print("clangpp path:", clangpppath)
         cmake_args += [
-            "-DCMAKE_C_COMPILER=clang",
-            "-DCMAKE_CXX_COMPILER=clang++"
+            f"-DCMAKE_C_COMPILER={clangpath}",
+            f"-DCMAKE_CXX_COMPILER={clangpppath}"
         ]
 
         env = os.environ.copy()
@@ -76,7 +97,7 @@ class CMakeBuild(build_ext):
         pprint.pprint(cmake_args)
         print("\nbuild_args")
         pprint.pprint(build_args)
-        
+
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
         subprocess.check_call(['cmake', ext.sourcedir] +
