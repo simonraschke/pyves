@@ -31,6 +31,7 @@ namespace py = pybind11;
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 #include <vector>
+#include <memory>
 
 
 
@@ -54,6 +55,11 @@ namespace _pyves
     // private:
         CARTESIAN position;
         CARTESIAN orientation;
+        std::unique_ptr<CARTESIAN> initial_position = nullptr;
+        std::unique_ptr<CARTESIAN> initial_orientation = nullptr;
+        REAL position_bound_radius_squared = std::numeric_limits<REAL>::max();
+        REAL orientation_bound_radiant = std::numeric_limits<REAL>::max();
+
     // public:
         REAL sigma = std::numeric_limits<REAL>::signaling_NaN();
         REAL epsilon = std::numeric_limits<REAL>::signaling_NaN();
@@ -62,30 +68,89 @@ namespace _pyves
         std::string name = "UNDEFINED";
         
         Particle() = default;
-        Particle(const Particle&) = default;
+        Particle(const Particle&);
+        Particle& operator=(const Particle&);
         Particle(CARTESIAN_CREF _pos, CARTESIAN_CREF _o);
         Particle(CARTESIAN_CREF pos, CARTESIAN_CREF orien, REAL sigma, REAL eps, REAL kappa, REAL gamma, std::string name);
+
+
 
         inline CARTESIAN::Scalar getx() const { return position(0); }
         inline CARTESIAN::Scalar gety() const { return position(1); }
         inline CARTESIAN::Scalar getz() const { return position(2); }
+        
+        inline auto getPosition() const { return CARTESIAN_CREF(position); }
+        inline CARTESIAN getInitialPosition() const
+        {
+            return *initial_position;
+        }
 
-        inline void setx(CARTESIAN::Scalar s) { position(0) = s; }
-        inline void sety(CARTESIAN::Scalar s) { position(1) = s; }
-        inline void setz(CARTESIAN::Scalar s) { position(2) = s; }
+        inline bool trySetPosition(CARTESIAN_CREF v)
+        {
+            if(!initial_orientation)
+            {
+                initial_orientation = std::make_unique<CARTESIAN>(v.normalized());
+            }
+            if((v - (*initial_position)).squaredNorm() < position_bound_radius_squared)
+            {
+                position = v;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+            
+        }
+
+        inline void setInitialPosition(CARTESIAN_CREF p)
+        {
+            initial_position = std::make_unique<CARTESIAN>(p);
+        }
 
         inline CARTESIAN::Scalar getux() const { return orientation(0); }
         inline CARTESIAN::Scalar getuy() const { return orientation(1); }
         inline CARTESIAN::Scalar getuz() const { return orientation(2); }
 
-        // inline auto getPosition() const { return CARTESIAN_CREF(position); }
-        // inline void setPosition(CARTESIAN_CREF p) { std::cout << "PARTICLE WAS SET FROM " << position.format(VECTORFORMAT) << " TO "  << p.format(VECTORFORMAT) << "\n"; position = p; }
+
 
         inline auto getOrientation() const { return CARTESIAN_CREF(orientation); }
-        inline void setOrientation(CARTESIAN_CREF v) { orientation = v; orientation.normalize(); }
+        inline void setOrientation(CARTESIAN_CREF v) 
+        {
+            orientation = v; 
+            orientation.normalize(); 
+        }
 
-        // inline bool operator==(const Particle& other) const { return std::addressof(*this) == std::addressof(other); };
-        // inline bool operator!=(const Particle& other) const { return std::addressof(*this) != std::addressof(other); };
+        inline bool trySetOrientation(CARTESIAN_CREF v)
+        {
+            if(!initial_orientation)
+            {
+                initial_orientation = std::make_unique<CARTESIAN>(v.normalized());
+            }
+            if(std::acos(v.normalized().dot(*initial_orientation)) < orientation_bound_radiant)
+            {
+                setOrientation(v);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+            
+        }
+
+        inline CARTESIAN getInitialOrientation() const
+        {
+            return *initial_orientation;
+        }
+
+        inline void setInitialOrientation(CARTESIAN_CREF o)
+        {
+            initial_orientation = std::make_unique<CARTESIAN>(o);
+        }
+
+
+
         inline bool operator==(const Particle& other) const { return this == &other; };
         inline bool operator!=(const Particle& other) const { return !(this == &other); };
 
@@ -146,29 +211,82 @@ namespace _pyves
         
         py::class_<Particle>(m, "Particle", py::dynamic_attr())
             .def(py::init<>())
-            .def(py::init<Particle>())
+            // .def(py::init<Particle>())
             .def(py::init<CARTESIAN_CREF, CARTESIAN_CREF>())
             .def(py::init<CARTESIAN_CREF, CARTESIAN_CREF, REAL, REAL, REAL, REAL, std::string>(), 
                  py::arg("pos"), py::arg("orien"), py::arg("sigma"), py::arg("eps"), py::arg("kappa"), py::arg("gamma"), py::arg("name"))
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def("assertIntegrity", &Particle::assertIntegrity)
-            .def_readwrite("position", &Particle::position)
-            // .def_property("position", &Particle::getPosition, &Particle::setPosition)
-            .def_property("orientation", &Particle::getOrientation, &Particle::setOrientation)
+            .def_property("position", &Particle::getPosition, &Particle::trySetPosition)
+            .def_property("orientation", &Particle::getOrientation, &Particle::trySetOrientation)
+            .def_property("initial_position", &Particle::getInitialPosition, &Particle::setInitialPosition)
+            .def_property("initial_orientation", &Particle::getInitialOrientation, &Particle::setInitialOrientation)
             .def_readwrite("sigma", &Particle::sigma)
             .def_readwrite("epsilon", &Particle::epsilon)
             .def_readwrite("kappa", &Particle::kappa)
             .def_readwrite("gamma", &Particle::gamma)
             .def_readwrite("name", &Particle::name)
-            .def_property("x", &Particle::getx, &Particle::setx)
-            .def_property("y", &Particle::gety, &Particle::sety)
-            .def_property("z", &Particle::getz, &Particle::setz)
+            .def_property_readonly("x", &Particle::getx)//, &Particle::setx)
+            .def_property_readonly("y", &Particle::gety)//, &Particle::sety)
+            .def_property_readonly("z", &Particle::getz)//, &Particle::setz)
             .def_property_readonly("ux", &Particle::getux)
             .def_property_readonly("uy", &Particle::getuy)
             .def_property_readonly("uz", &Particle::getuz)
             .def("__repr__", &Particle::repr);
             ;
+    }
+
+
+
+    inline Particle::Particle(const Particle& other)
+        : position(other.position)
+        , orientation(other.orientation)
+        , position_bound_radius_squared(other.position_bound_radius_squared)
+        , orientation_bound_radiant(other.orientation_bound_radiant)
+        , sigma(other.sigma)
+        , epsilon(other.epsilon)
+        , kappa(other.kappa)
+        , gamma(other.gamma)
+        , name(other.name)
+    {
+        if (!other.initial_position)
+        {
+            CARTESIAN copy = CARTESIAN(*other.initial_position.get());
+            initial_position = std::make_unique<CARTESIAN>(CARTESIAN(copy));
+        }
+        if (!other.initial_orientation)
+        {
+            CARTESIAN copy = CARTESIAN(*other.initial_orientation.get());
+            initial_orientation = std::make_unique<CARTESIAN>(CARTESIAN(copy));
+        }
+    }
+
+
+
+    inline Particle& Particle::operator=(const Particle& other)
+    {
+        position = other.position;
+        orientation = other.orientation;
+        position_bound_radius_squared = other.position_bound_radius_squared;
+        orientation_bound_radiant = other.orientation_bound_radiant;
+        sigma = other.sigma;
+        epsilon = other.epsilon;
+        kappa = other.kappa;
+        gamma = other.gamma;
+        name = other.name;
+        
+        if (!other.initial_position)
+        {
+            CARTESIAN copy = CARTESIAN(*other.initial_position.get());
+            initial_position = std::make_unique<CARTESIAN>(CARTESIAN(copy));
+        }
+        if (!other.initial_orientation)
+        {
+            CARTESIAN copy = CARTESIAN(*other.initial_orientation.get());
+            initial_orientation = std::make_unique<CARTESIAN>(CARTESIAN(copy));
+        }
+        return *this;
     }
 
 

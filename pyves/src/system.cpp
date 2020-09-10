@@ -302,7 +302,7 @@ namespace _pyves
             .def_property("threads",[](const System& s){ return s.threads; }, &System::setThreads)
             .def_readwrite("temperature", &System::temperature, py::return_value_policy::reference_internal)
             .def_readwrite("box", &System::box, py::return_value_policy::reference_internal)
-            .def_readwrite("particles", &System::particles, py::return_value_policy::reference_internal)
+            .def_readwrite("particles", &System::particles)
             .def_readwrite("cells", &System::cells, py::return_value_policy::reference_internal)
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&) const>(&System::particleIsFree))
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&, REAL) const>(&System::particleIsFree))
