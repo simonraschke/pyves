@@ -23,15 +23,20 @@ def find_clang():
     out = subprocess.check_output(['clang', '--version'])
     for line in out.decode("utf8").splitlines():
         if "InstalledDir" in line:
-            return os.path.join(line.split(" ")[-1], "clang")
-    
+            path = os.path.join(line.split(" ")[-1], "clang").replace("\\", "/")
+            if platform.system() == "Windows":
+                path += ".exe"
+            return path
 
     
 def find_clangpp():
     out = subprocess.check_output(['clang++', '--version'])
     for line in out.decode("utf8").splitlines():
         if "InstalledDir" in line:
-            return os.path.join(line.split(" ")[-1], "clang++")
+            path = os.path.join(line.split(" ")[-1], "clang++").replace("\\", "/")
+            if platform.system() == "Windows":
+                path += ".exe"
+            return path
 
 
 
@@ -76,14 +81,15 @@ class CMakeBuild(build_ext):
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
             build_args += ['--', '-j']
 
-        clangpath = find_clang()
-        print("clang path:", clangpath)
-        clangpppath = find_clangpp()
-        print("clangpp path:", clangpppath)
-        cmake_args += [
-            f"-DCMAKE_C_COMPILER={clangpath}",
-            f"-DCMAKE_CXX_COMPILER={clangpppath}"
-        ]
+        # clangpath = find_clang()
+        # print("clang path:", clangpath)
+        # clangpppath = find_clangpp()
+        # print("clangpp path:", clangpppath)
+
+        # cmake_args += [
+        #     f"-DCMAKE_C_COMPILER={clangpath}",
+        #     f"-DCMAKE_CXX_COMPILER={clangpppath}"
+        # ]
 
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
