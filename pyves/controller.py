@@ -1,5 +1,6 @@
 import json
 import os
+from os import initgroups
 from sqlite3.dbapi2 import TimestampFromTicks
 import sys
 import _pyves
@@ -24,16 +25,16 @@ class Controller(object):
 
 
 
-    def readForceField(self, path):
-        SignalHandler.ProgramState = ProgramState.SETUP
-        with open(path, 'r') as ff_file:
-            self.forcefield = json.loads(ff_file.read())
+    # def readForceField(self, path):
+    #     SignalHandler.ProgramState = ProgramState.SETUP
+    #     with open(path, 'r') as ff_file:
+    #         self.forcefield = json.loads(ff_file.read())
     
 
 
-    def setForceField(self, ff:dict):
-        SignalHandler.ProgramState = ProgramState.SETUP
-        self.forcefield = ff
+    # def setForceField(self, ff:dict):
+    #     SignalHandler.ProgramState = ProgramState.SETUP
+    #     self.forcefield = ff
 
 
 
@@ -63,7 +64,7 @@ class Controller(object):
 
         self.time_delta = _prms["control"]["time_delta"]
         self.time_max = _prms["control"]["time_max"]
-        self.particle_prms = _prms["control"]["particles"]
+        self.particle_prms = _prms["system"]["particles"]
         self.cell_min_size = _prms["control"]["cell_min_size"]
 
         self.output = _prms["output"]
@@ -116,8 +117,8 @@ class Controller(object):
 
         # distribute particles
         for name, particle_prms in self.particle_prms.items():
-            assert( name in self.forcefield )
-            particle_ff = self.forcefield[name]
+            # assert( name in self.forcefield )
+            particle_ff = self.particle_prms[name]
             if particle_prms["dist"] != "random":
                 raise NotImplementedError("no fixed distribution supported")
             elif particle_prms["dist"] == "random":
@@ -132,9 +133,14 @@ class Controller(object):
                         if particle_try_set_count > 1e6:
                             print(f"tried to set particle {particle_try_set_count} time. Aborting")
                             sys.exit(signal.SIGKILL)
+                    if particle_ff["bound_translation"] != None:
+                        self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
+                    if particle_ff["bound_rotation"] != None:
+                        self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
 
         self.setupCells()
         self.placeParticlesInCells()
+        self.writeTrajectoryHDF(timestats=True)
 
 
 
@@ -152,6 +158,10 @@ class Controller(object):
         for _, row in df.iterrows():
             self.system.particles.append(_pyves.Particle([row["x"], row["y"], row["z"]], [row["ux"], row["uy"], row["uz"]], 
                 sigma=row["sigma"], kappa=row["kappa"], eps=row["epsilon"], gamma=row["gamma"], name=row["name"]))
+            self.system.particles[-1].initial_position = [row["initial_x"], row["initial_y"], row["initial_z"]]
+            self.system.particles[-1].initial_orientation = [row["initial_ux"], row["initial_uy"], row["initial_uz"]]
+            self.system.particles[-1].translation_bound_sq = row["translation_bound_sq"]
+            self.system.particles[-1].rotation_bound = row["rotation_bound"]
         
         self.setupCells()
         self.placeParticlesInCells()
@@ -229,6 +239,8 @@ class Controller(object):
         starttime = time.perf_counter()
 
         positions = np.array([self.system.box.scaleToBox(p.position) for p in self.system.particles])
+        initial_positions = np.array([self.system.box.scaleToBox(p.initial_position) for p in self.system.particles])
+        initial_orientations = np.array([self.system.box.scaleToBox(p.initial_orientation) for p in self.system.particles])
 
         df = pd.DataFrame(dict(
             name = [p.name for p in self.system.particles],
@@ -238,6 +250,14 @@ class Controller(object):
             ux = [p.ux for p in self.system.particles],
             uy = [p.uy for p in self.system.particles],
             uz = [p.uz for p in self.system.particles],
+            initial_x = [p[0] for p in initial_positions],
+            initial_y = [p[1] for p in initial_positions],
+            initial_z = [p[2] for p in initial_positions],
+            translation_bound_sq = [p.translation_bound_sq for p in self.system.particles],
+            initial_ux = [p[0] for p in initial_orientations],
+            initial_uy = [p[1] for p in initial_orientations],
+            initial_uz = [p[2] for p in initial_orientations],
+            rotation_bound = [p.rotation_bound for p in self.system.particles],
             sigma = [p.sigma for p in self.system.particles],
             epsilon = [p.epsilon for p in self.system.particles],
             kappa = [p.kappa for p in self.system.particles],

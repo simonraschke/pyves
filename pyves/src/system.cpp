@@ -145,9 +145,9 @@ namespace _pyves
                 last_energy_value = cell.potentialEnergy(particle, 3);
                 // if(particle->try_setCoordinates(particle->getCoordinates()+translation)
                 // std::cout << particle.position.format(VECTORFORMAT) << "\n";
-                particle.position += translation;
-                // std::cout << particle.position.format(VECTORFORMAT) << "\n\n";
-                if(true)
+                // particle.position += translation;
+                // std::cout << particle.position.format(VECTORFORMAT) << "\n\n"
+                if(particle.trySetPosition(particle.position+translation))
                 {
                     energy_after = cell.potentialEnergy(particle, 3);
 
@@ -183,12 +183,9 @@ namespace _pyves
             }
 
             orientation_before = particle.orientation; 
-            particle.setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation());
+            // particle.setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation());
 
-            if( 
-                // particle->try_setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), random_vector) * particle->getOrientation())
-                true
-            )
+            if(particle.trySetOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation()))
             {
                 energy_after = cell.potentialEnergy(particle, 3);
 

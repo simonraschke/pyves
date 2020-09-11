@@ -12,7 +12,7 @@ TEST_CASE("Particle Constructor Test")
     Particle p1;
     CHECK_NOTHROW(Particle());
     // CHECK_NOTHROW(Particle(p1));
-    CHECK_NOTHROW(Particle(CARTESIAN(1,1,1), CARTESIAN(1,0,0)));
+    // CHECK_NOTHROW(Particle(CARTESIAN(1,1,1), CARTESIAN(1,0,0)));
 }
 
 
@@ -21,7 +21,7 @@ TEST_CASE("Particle Member Test")
 {
     SECTION("position and orientation access")
     {
-        Particle p1 = Particle(CARTESIAN(4, 3.2, -4.5), CARTESIAN(1,0,0));
+        Particle p1 = Particle(CARTESIAN(4, 3.2, -4.5), CARTESIAN(1,0,0), 1, 1, 1, 1, "UNDEF");
         CHECK(p1.position(0) == Approx(static_cast<REAL>(   4)));
         CHECK(p1.position(1) == Approx(static_cast<REAL>( 3.2)));
         CHECK(p1.position(2) == Approx(static_cast<REAL>(-4.5)));
@@ -45,8 +45,8 @@ TEST_CASE("Particle Member Test")
 
     SECTION("operators")
     {
-        Particle p1(CARTESIAN(1,1,1), CARTESIAN(1,0,0));
-        Particle p2(CARTESIAN(2,-2,0.1), CARTESIAN(1,0,0));
+        Particle p1(CARTESIAN(1,1,1), CARTESIAN(1,0,0), 1, 1, 1, 1, "UNDEF");
+        Particle p2(CARTESIAN(2,-2,0.1), CARTESIAN(1,0,0), 1, 1, 1, 1, "UNDEF");
         CHECK(p1 == p1);
         CHECK(p1 != p2);
         CHECK_FALSE(p1 == p2);
@@ -57,8 +57,8 @@ TEST_CASE("Particle Member Test")
 
     SECTION("simple additions")
     {
-        Particle p1(CARTESIAN(1,1,1), CARTESIAN(8,0,0));
-        Particle p2(CARTESIAN(2,-2,0.1), CARTESIAN(2,0,0));
+        Particle p1(CARTESIAN(1,1,1), CARTESIAN(8,0,0), 1, 1, 1, 1, "UNDEF");
+        Particle p2(CARTESIAN(2,-2,0.1), CARTESIAN(2,0,0), 1, 1, 1, 1, "UNDEF");
         Particle p3;
         p3.position = p1.position + p2.position;
         // p3.setPosition(p1.position + p2.position);

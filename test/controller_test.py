@@ -17,16 +17,16 @@ class MainTest(unittest.TestCase):
             print("no data.h5 to remove",e)
 
         control = pyves.Controller()
-        control.readForceField("test/forcefield.json")
-        self.assertAlmostEqual(control.forcefield["A"]["sigma"], 1)
+        # control.readForceField("test/forcefield.json")
+        # self.assertAlmostEqual(control.forcefield["A"]["sigma"], 1)
 
-        copy = control.forcefield.copy()
-        copy["A"]["sigma"] = 2
-        self.assertAlmostEqual(copy["A"]["sigma"], 2)
+        # copy = control.forcefield.copy()
+        # copy["A"]["sigma"] = 2
+        # self.assertAlmostEqual(copy["A"]["sigma"], 2)
 
-        control.setForceField(copy)
-        self.assertAlmostEqual(control.forcefield["A"]["sigma"], 2)
-        control.forcefield["A"]["sigma"] = 1
+        # control.setForceField(copy)
+        # self.assertAlmostEqual(control.forcefield["A"]["sigma"], 2)
+        # control.forcefield["A"]["sigma"] = 1
         
         control.readParameters("test/parameters.json")
 
@@ -47,7 +47,7 @@ class MainTest(unittest.TestCase):
                 self.assertTrue(cell.contains(particle))
 
         control2 = pyves.Controller()
-        control2.readForceField("test/forcefield.json")
+        # control2.readForceField("test/forcefield.json")
         control2.readParameters("test/parameters.json")
         control2.prepareSimulation()
 

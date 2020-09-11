@@ -2,7 +2,7 @@
     "hardware" : 
     {
         "cores" : 2,
-        "threads" : 4
+        "threads" : 10
     },
     "system" : 
     {
@@ -27,6 +27,31 @@
             "target" : 0.3,
             "interval" : 10000
         },
+        "particles" :
+        {
+            "FRAME" : 
+            {
+                "number" : 0,
+                "dist" : "random",
+                "sigma" : 1.0,
+                "kappa" : 1.0,
+                "epsilon" : 1.0,
+                "gamma" : 10.97,
+                "bound_translation" : 0.5,
+                "bound_rotation" : 0.5
+            },
+            "MOBILE" : 
+            {
+                "number" : 1000,
+                "dist" : "random",
+                "sigma" : 1.0,
+                "kappa" : 1.0,
+                "epsilon" : 1.0,
+                "gamma" : 10.97,
+                "bound_translation" : null,
+                "bound_rotation" : null
+            }
+        },
         "interaction" : 
         {
             "cutoff" : 3.0
@@ -36,19 +61,7 @@
     {
         "time_delta" : 1000,
         "time_max" : 100000,
-        "particles" :
-        {
-            "FRAME" : 
-            {
-                "number" : 0,
-                "dist" : "random"
-            },
-            "MOBILE" : 
-            {
-                "number" : 1000,
-                "dist" : "random"
-            }
-        },
+        
         "cell_min_size" : 3.0
     },
     "output" :

@@ -7,13 +7,13 @@ import numpy as np
 class MainTest(unittest.TestCase):
     def test_construction(self):
         p1 = pyves.Particle()
-        p1.x = 1
+        p1.position = [1,p1.y,p1.z]
         self.assertAlmostEqual(p1.x, 1)
 
         p2 = pyves.Particle(p1)
         self.assertAlmostEqual(p2.x, 1)
 
-        p2.x = 2
+        p2.position = np.array([2,p2.y,p2.z])
         self.assertAlmostEqual(p1.x, 1)
         self.assertAlmostEqual(p2.x, 2)
 
