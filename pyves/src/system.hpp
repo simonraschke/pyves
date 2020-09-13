@@ -20,7 +20,13 @@ namespace py = pybind11;
 #include <mutex>
 #include <tbb/task_arena.h>
 #include <tbb/parallel_for_each.h>
-#include <tbb/task_group.h>
+// #include <tbb/task_group.h>
+#include <tbb/global_control.h>
+#undef __TBB_show_deprecated_header_message
+#include "parallel.hpp"
+#ifndef __TBB_show_deprecated_header_message
+#define __TBB_show_deprecated_header_message
+#endif
 
 
 
@@ -51,7 +57,7 @@ namespace _pyves
 
         REAL temperature = make_nan<REAL>();
         // std::size_t time_max = make_nan<std::size_t>();
-        std::mutex mutex;
+        // std::mutex mutex;
 
         void setThreads(std::size_t);
         bool particleIsFree(const Particle&) const;
@@ -65,6 +71,7 @@ namespace _pyves
         std::size_t numParticlesInCells() const;
 
         template<typename FUNCTOR> void applyToCells(FUNCTOR&& func);
+        template<typename FUNCTOR> void applyToCellsSlowAndSafe(FUNCTOR&& func);
 
         template<CellState S> bool allCellsInState() const;
         template<CellState S> bool noCellsInState() const;
@@ -100,9 +107,10 @@ namespace _pyves
         std::iota(std::begin(iterators), std::end(iterators), std::begin(cells));
         std::shuffle(std::begin(iterators), std::end(iterators), RandomEngine.pseudo_engine);
         
-        tbb::task_group tg;
-        task_arena.execute([&]()
+        task_arena.execute([&]
         {
+            enhance::scoped_root_dummy ROOT; 
+                
             // std::atomic<std::size_t> i = 0;
             while(! (allCellsInState<CellState::FINISHED>()) )
             {
@@ -119,7 +127,7 @@ namespace _pyves
                         assert( cell.state == CellState::BLOCKED );
                         assert( cell.proximityNoneInState<CellState::BLOCKED>() );
                         
-                        tg.run( [&]
+                        ROOT.enqueue_child( [&]
                         {
                             assert( cell.state == CellState::BLOCKED );
                             func( cell ); 
@@ -128,14 +136,14 @@ namespace _pyves
                         } );
                     }
                 }
-                // using namespace std::chrono_literals;
-                // std::this_thread::sleep_for(1ms);
             }
             // std::cout << "ran " << i << "\n";
         });
-        tg.wait();
         
-        assert( allInState<CellState::FINISHED>() );
+        if( !allCellsInState<CellState::FINISHED>() )
+        {
+            throw std::runtime_error("not all cells finished");
+        }
     }
 
     

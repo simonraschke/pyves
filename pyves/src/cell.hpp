@@ -6,6 +6,7 @@
 #include "interaction.hpp"
 #include <atomic>
 #include <shared_mutex>
+#include <tbb/spin_rw_mutex.h>
 #include <memory>
 #include <random>
 #include <Eigen/Geometry>
@@ -52,7 +53,8 @@ struct _pyves::Cell
     CellRefContainer region;
     ParticleRefContainer particles;
 
-    std::shared_mutex particles_access_mutex;
+    tbb::spin_rw_mutex particles_access_mutex;
+    // std::shared_mutex particles_access_mutex;
 
     Cell(CARTESIAN_CREF min, CARTESIAN_CREF max, const Box<PBC::ON>&);
     Cell(const Cell &other);

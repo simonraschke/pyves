@@ -373,9 +373,9 @@ namespace _pyves
     {
         return CARTESIAN
         (
-            _pyves::random<CARTESIAN::Scalar>()(0.f,getLengthX()),
-            _pyves::random<CARTESIAN::Scalar>()(0.f,getLengthY()),
-            _pyves::random<CARTESIAN::Scalar>()(0.f,getLengthZ())
+            _pyves::random<CARTESIAN::Scalar>(0.f,getLengthX()),
+            _pyves::random<CARTESIAN::Scalar>(0.f,getLengthY()),
+            _pyves::random<CARTESIAN::Scalar>(0.f,getLengthZ())
         );
     }
 

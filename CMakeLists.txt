@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 project(_pves LANGUAGES C CXX)
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 
 set(CMAKE_CXX_STANDARD 17)
 set(PYBIND11_CPP_STANDARD -std=c++17)
@@ -56,6 +55,7 @@ target_compile_options(${PROJECT_NAME}_test
 )
 execute_process(COMMAND python3-config --embed --ldflags OUTPUT_VARIABLE PY_EMBED_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
 string(STRIP "${PY_EMBED_LIBS}" PY_EMBED_LIBS)
+target_link_options(${PROJECT_NAME}_test PRIVATE -W -Wno-undef)
 target_link_libraries(${PROJECT_NAME}_test PRIVATE tbb pthread ${PY_EMBED_LIBS})
 
 
@@ -68,4 +68,5 @@ target_compile_options(_pyves
         $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -Wextra -Wpedantic -ferror-limit=2>
         $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=2>
 )
+target_link_options(_pyves PRIVATE -W -Wno-undef)
 target_link_libraries(_pyves PRIVATE tbb pthread)

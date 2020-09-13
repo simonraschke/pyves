@@ -2,7 +2,7 @@
     "hardware" : 
     {
         "cores" : 2,
-        "threads" : 4
+        "threads" : 10
     },
     "system" : 
     {
@@ -58,7 +58,7 @@
     "control" : 
     {
         "time_delta" : 100,
-        "time_max" : 1000,
+        "time_max" : 100000,
         "cell_min_size" : 3.5
     },  
     "output" :

@@ -5,8 +5,10 @@ namespace _pyves
 {
     void System::setThreads(std::size_t num)
     {
-        threads = std::max(num, static_cast<std::size_t>(2));
+        // threads = std::max(num, static_cast<std::size_t>(2));
         threads = num;
+	    tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads);
+
         if(threads == 1)
         {
             task_arena.initialize(threads, 1);
@@ -66,13 +68,48 @@ namespace _pyves
 
 
 
-    void System::prepareSimulationStep()
+    void System::singleSimulationStep()
+    {
+        prepareSimulationStep();
+        applyToCells([&](const Cell& c){ cellStep(c);});
+    }
+
+
+
+    void System::multipleSimulationSteps(const unsigned long _max)
+    {
+        for(unsigned long step = 0; step < _max; ++step )
+        {
+            singleSimulationStep();
+        }
+    }
+    
+
+
+    void System::shuffle()
     {
         tbb::task_group tg;
+        task_arena.execute([&]
+        {
+            // tg.run_and_wait([&]
+            // {
+                tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+                {
+                    cell.shuffle(); 
+                });
+            // });
+        });
+    }
+
+
+
+    void System::prepareSimulationStep()
+    {
+        // tbb::task_group tg;
         task_arena.execute([&]()
         {
-            tg.run_and_wait([&]
-            {
+            // tg.run_and_wait([&]
+            // {
                 tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell)
                 {
                     // std::cout << cell.repr() << "\n";
@@ -102,7 +139,7 @@ namespace _pyves
                     cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
                     cell.shuffle(); 
                 });
-            });
+            // });
         });
     }
 
@@ -116,9 +153,10 @@ namespace _pyves
         // std::cout << cell.repr() << "\n";
         REAL last_energy_value;
         REAL energy_after;
-        std::uniform_real_distribution<REAL> dist_coords(-translation_alignment(),translation_alignment());
+        // std::uniform_real_distribution<REAL> dist_coords(-translation_alignment(),translation_alignment());
         std::uniform_real_distribution<REAL> dist_orientation(-rotation_alignment(),rotation_alignment());
         CARTESIAN translation;//(dist_coords(pseudo_engine), dist_coords(pseudo_engine), dist_coords(pseudo_engine));
+        CARTESIAN random_vector;//(dist_coords(pseudo_engine), dist_coords(pseudo_engine), dist_coords(pseudo_engine));
         CARTESIAN orientation_before;//(dist_coords(pseudo_engine), dist_coords(pseudo_engine), dist_coords(pseudo_engine));
 
         std::vector<ParticleRefContainer::const_iterator> iterators(cell.particles.size());
@@ -133,20 +171,12 @@ namespace _pyves
             {
                 do
                 {
-                    translation = CARTESIAN
-                    (
-                        dist_coords(RandomEngine.pseudo_engine),
-                        dist_coords(RandomEngine.pseudo_engine),
-                        dist_coords(RandomEngine.pseudo_engine)
-                    );
+                    translation = CARTESIAN::Random() * translation_alignment();
                 }
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
                 last_energy_value = cell.potentialEnergy(particle, 3);
-                // if(particle->try_setCoordinates(particle->getCoordinates()+translation)
-                // std::cout << particle.position.format(VECTORFORMAT) << "\n";
-                // particle.position += translation;
-                // std::cout << particle.position.format(VECTORFORMAT) << "\n\n"
+                
                 if(particle.trySetPosition(particle.position+translation))
                 {
                     energy_after = cell.potentialEnergy(particle, 3);
@@ -174,13 +204,12 @@ namespace _pyves
         // TODO:FIXME:TODO:FIXME: CAUTION: this function is exactly what it should look like.
         // do not change order or modify any function call
 
-            CARTESIAN random_vector = CARTESIAN::Random();
-
-            // to not oversample with points outside of the unity sphere
-            while(random_vector.squaredNorm() > 1)
+            do
             {
                 random_vector = CARTESIAN::Random();
             }
+            // to not oversample with points outside of the unity sphere
+            while(random_vector.squaredNorm() > 1);
 
             orientation_before = particle.orientation; 
             // particle.setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation());
@@ -210,41 +239,6 @@ namespace _pyves
 
         // TODO:FIXME:TODO:FIXME: CAUTION: this function is exactly what it should look like.
         // do not change order or modify any function call
-    }
-
-
-
-    void System::singleSimulationStep()
-    {
-        prepareSimulationStep();
-        applyToCells([&](const auto& c){ cellStep(c);});
-    }
-
-
-
-    void System::multipleSimulationSteps(const unsigned long _max)
-    {
-        for(unsigned long step = 0; step < _max; ++step )
-        {
-            singleSimulationStep();
-        }
-    }
-    
-
-
-    void System::shuffle()
-    {
-        tbb::task_group tg;
-        task_arena.execute([&]
-        {
-            tg.run_and_wait([&]
-            {
-                tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
-                {
-                    cell.shuffle(); 
-                });
-            });
-        });
     }
 
 

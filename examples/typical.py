@@ -16,6 +16,7 @@ ctrl.prepareSimulation()
 print("start sampling")
 ctrl.sample(timestats=True)
 
+print("make gro file from data")
 pyves.hdf2gro(
     inpath = os.path.join(ctrl.output["dir"], ctrl.output["filename"]),
     outpath = os.path.join(ctrl.output["dir"], "trajectory.gro"),

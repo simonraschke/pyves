@@ -2,27 +2,27 @@
     "hardware" : 
     {
         "cores" : 2,
-        "threads" : 10
+        "threads" : 11
     },
     "system" : 
     {
         "temperature" : 0.23,
         "box" : 
         {
-            "x" : 30.0,
-            "y" : 30.0,
-            "z" : 30.0
+            "x" : 20.0,
+            "y" : 20.0,
+            "z" : 20.0
         },
         "translation" :
         {
-            "min" : 0.01,
+            "min" : 0.2,
             "max" : 0.2,
             "target" : 0.3,
             "interval" : 10000
         },
         "rotation" :
         {
-            "min" : 0.01,
+            "min" : 0.2,
             "max" : 0.2,
             "target" : 0.3,
             "interval" : 10000
@@ -42,7 +42,7 @@
             },
             "MOBILE" : 
             {
-                "number" : 1000,
+                "number" : 400,
                 "dist" : "random",
                 "sigma" : 1.0,
                 "kappa" : 1.0,

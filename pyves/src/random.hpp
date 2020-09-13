@@ -39,22 +39,36 @@ namespace _pyves
     // T random(const T, const T);
 
     // partially specialized template function to get random numbers
-    template<typename T>
-    struct random
+    template<typename T, typename std::enable_if<std::is_integral<T>::value, std::nullptr_t>::type = nullptr>
+    inline T random(const T a, const T b)
     {
+        std::uniform_int_distribution<T> dist(a,b);
+        return dist(RandomEngine.pseudo_engine);
+    }
 
-        template<typename U=T, typename std::enable_if<std::is_integral<U>::value, std::nullptr_t>::type = nullptr>
-        inline const T operator()(const T a, const T b) const
-        {
-            std::uniform_int_distribution<T> dist(a,b);
-            return dist(RandomEngine.pseudo_engine);
-        }
 
-        template<typename U=T, typename std::enable_if<std::is_floating_point<U>::value, std::nullptr_t>::type = nullptr>
-        inline const T operator()(const T a, const T b) const
-        {
-            std::uniform_real_distribution<T> dist(a,b);
-            return dist(RandomEngine.pseudo_engine);
-        }
-    };
+    template<typename T, typename std::enable_if<std::is_floating_point<T>::value, std::nullptr_t>::type = nullptr>
+    inline T random(const T a, const T b)
+    {
+        std::uniform_real_distribution<T> dist(a,b);
+        return dist(RandomEngine.pseudo_engine);
+    }
+
+    // template<typename T>
+    // struct random
+    // {
+    //     template<typename U=T, typename std::enable_if<std::is_integral<U>::value, std::nullptr_t>::type = nullptr>
+    //     inline const T operator()(const T a, const T b) const
+    //     {
+    //         std::uniform_int_distribution<T> dist(a,b);
+    //         return dist(RandomEngine.pseudo_engine);
+    //     }
+
+    //     template<typename U=T, typename std::enable_if<std::is_floating_point<U>::value, std::nullptr_t>::type = nullptr>
+    //     inline const T operator()(const T a, const T b) const
+    //     {
+    //         std::uniform_real_distribution<T> dist(a,b);
+    //         return dist(RandomEngine.pseudo_engine);
+    //     }
+    // };
 }
