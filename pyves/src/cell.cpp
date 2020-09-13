@@ -41,8 +41,8 @@ namespace _pyves
 
     void Cell::removeParticle(const Particle& to_remove)
     {
-        // std::lock_guard<std::shared_mutex> lock(particles_access_mutex);
-        tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, true);
+        std::lock_guard<std::shared_mutex> lock(particles_access_mutex);
+        // tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, true);
         particles.erase( std::remove_if(std::begin(particles), std::end(particles), [&](const Particle& to_compare)
         { 
             return to_remove == to_compare;
@@ -56,13 +56,13 @@ namespace _pyves
     {
         if(!contains(particle) && insideCellBounds(box.scaleToBox(CARTESIAN(particle.position))))
         {   
-            tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, true);
-            particles.push_back(std::ref(particle));
+            // tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, true);
+            // particles.push_back(std::ref(particle));
             // lock.release();
-            // {
-            //     std::lock_guard<std::shared_mutex> lock(particles_access_mutex);
-            //     particles.push_back(std::ref(particle));
-            // }
+            {
+                std::lock_guard<std::shared_mutex> lock(particles_access_mutex);
+                particles.push_back(std::ref(particle));
+            }
             // std::cout << "   "  << __func__ << "  Cell contains particle " << box.scaleToBox(CARTESIAN(particle.position)).format(VECTORFORMAT) << " after insertion " << std::boolalpha << contains(particle) << "\n";
             assert(contains(particle));
             return true;
@@ -122,8 +122,8 @@ namespace _pyves
 
     bool Cell::contains(const Particle& p)
     {
-        tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, false);
-        // std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
+        // tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, false);
+        std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
         return std::any_of(std::begin(particles), std::end(particles), [&](const Particle& other ){ return other == p; });
     }
 
@@ -144,8 +144,8 @@ namespace _pyves
 
     void Cell::shuffle()
     {
-        tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, true);
-        // std::lock_guard<std::shared_mutex> lock(particles_access_mutex);
+        // tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, true);
+        std::lock_guard<std::shared_mutex> lock(particles_access_mutex);
         std::shuffle(std::begin(particles), std::end(particles), RandomEngine.pseudo_engine);
         std::shuffle(std::begin(proximity), std::end(proximity), RandomEngine.pseudo_engine);
         std::shuffle(std::begin(region), std::end(region), RandomEngine.pseudo_engine);
@@ -155,8 +155,8 @@ namespace _pyves
 
     auto Cell::particlesOutOfBounds() -> std::deque<decltype(particles)::value_type>
     {
-        tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, false);
-        // std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
+        // tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, false);
+        std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
         std::deque<decltype(particles)::value_type> leavers;
         for(Particle& particle : particles)
         {

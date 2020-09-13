@@ -18,6 +18,18 @@ message(STATUS "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
 message(STATUS "PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
 include_directories(${Python3_INCLUDE_DIRS})
 
+set(EIGEN_DEFINES "")
+set(EIGEN_LINKING_EXTENDED "")
+# find_package(BLAS QUIET)
+# if(BLAS_FOUND)
+#     message(STATUS "found BLAS")
+#     set(EIGEN_DEFINES "EIGEN_USE_BLAS")
+#     set(EIGEN_LINKING_EXTENDED ${BLAS_LIBRARIES})
+# endif()
+
+message(STATUS "EIGEN_DEFINES = ${EIGEN_DEFINES}")
+message(STATUS "EIGEN_LINKING_EXTENDED = ${EIGEN_LINKING_EXTENDED}")
+add_compile_definitions(${EIGEN_DEFINES})
 
 
 #SET VARIABLES
@@ -39,8 +51,8 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/lib/pybind11)
 # INCLUDE LIB DIRS
 include_directories(${SRC_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/lib/eigen)
-include_directories(${CMAKE_SOURCE_DIR}/lib/tbb/include)
 include_directories(${CMAKE_SOURCE_DIR}/lib/pybind11/include)
+include_directories(${CMAKE_SOURCE_DIR}/lib/taskflow)
 
 
 
@@ -56,7 +68,7 @@ target_compile_options(${PROJECT_NAME}_test
 execute_process(COMMAND python3-config --embed --ldflags OUTPUT_VARIABLE PY_EMBED_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
 string(STRIP "${PY_EMBED_LIBS}" PY_EMBED_LIBS)
 target_link_options(${PROJECT_NAME}_test PRIVATE -W -Wno-undef)
-target_link_libraries(${PROJECT_NAME}_test PRIVATE tbb pthread ${PY_EMBED_LIBS})
+target_link_libraries(${PROJECT_NAME}_test PRIVATE pthread ${PY_EMBED_LIBS} ${EIGEN_LINKING_EXTENDED})
 
 
 
@@ -69,4 +81,4 @@ target_compile_options(_pyves
         $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=2>
 )
 target_link_options(_pyves PRIVATE -W -Wno-undef)
-target_link_libraries(_pyves PRIVATE tbb pthread)
+target_link_libraries(_pyves PRIVATE pthread ${EIGEN_LINKING_EXTENDED})

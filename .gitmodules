@@ -10,3 +10,7 @@
 	path = lib/eigen
 	url = https://gitlab.com/libeigen/eigen.git
 	branch = master
+[submodule "taskflow"]
+	path = lib/taskflow
+	url = https://github.com/taskflow/taskflow.git
+	branch = master

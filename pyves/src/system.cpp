@@ -7,17 +7,17 @@ namespace _pyves
     {
         // threads = std::max(num, static_cast<std::size_t>(2));
         threads = num;
-	    tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads);
+	    // tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads);
 
-        if(threads == 1)
-        {
-            task_arena.initialize(threads, 1);
-        }
-        else
-        {
-            task_arena.initialize(threads);
-        }
-        
+        // if(threads == 1)
+        // {
+        //     task_arena.initialize(threads, 1);
+        // }
+        // else
+        // {
+        //     task_arena.initialize(threads);
+        // }
+        executor.reset(new tf::Executor(threads));
     }
 
 
@@ -88,59 +88,51 @@ namespace _pyves
 
     void System::shuffle()
     {
-        tbb::task_group tg;
-        task_arena.execute([&]
+        tf::Taskflow taskflow;
+        taskflow.for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
         {
-            // tg.run_and_wait([&]
-            // {
-                tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
-                {
-                    cell.shuffle(); 
-                });
-            // });
+            cell.shuffle(); 
         });
+        executor->run(taskflow).get();
     }
 
 
 
     void System::prepareSimulationStep()
     {
-        // tbb::task_group tg;
-        task_arena.execute([&]()
+        // tf::Executor executor(threads);
+        tf::Taskflow taskflow;
+        taskflow.for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
         {
-            // tg.run_and_wait([&]
-            // {
-                tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell)
+            // std::cout << cell.repr() << "\n";
+            auto leavers = cell.particlesOutOfBounds();
+            
+            for(Particle& leaver : leavers)
+            {
+                bool was_added = false;
+                // std::cout << cell.proximity.size() << "\n";
+                for(Cell& proximity_cell : cell.proximity)
                 {
-                    // std::cout << cell.repr() << "\n";
-                    auto leavers = cell.particlesOutOfBounds();
-                    
-                    for(Particle& leaver : leavers)
+                    // std::cout << " " << proximity_cell.repr() << "\n";
+                    was_added = proximity_cell.try_add(leaver);
+                    if(was_added) 
                     {
-                        bool was_added = false;
-                        // std::cout << cell.proximity.size() << "\n";
-                        for(Cell& proximity_cell : cell.proximity)
-                        {
-                            // std::cout << " " << proximity_cell.repr() << "\n";
-                            was_added = proximity_cell.try_add(leaver);
-                            if(was_added) 
-                            {
-                                break;
-                            }
-                        }
-                        if(!was_added)
-                        {
-                            throw std::logic_error("Particle out of bound was not added to another cell\n" + leaver.repr() +" and " + cell.repr());
-                        }
-                        assert(was_added);
-                        cell.removeParticle(leaver);
-                        assert(!cell.contains(leaver));
+                        break;
                     }
-                    cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
-                    cell.shuffle(); 
-                });
-            // });
+                }
+                if(!was_added)
+                {
+                    throw std::logic_error("Particle out of bound was not added to another cell\n" + leaver.repr() +" and " + cell.repr());
+                }
+                assert(was_added);
+                cell.removeParticle(leaver);
+                assert(!cell.contains(leaver));
+            }
+            cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
+            cell.shuffle(); 
         });
+
+        executor->run(taskflow).get();
     }
 
 

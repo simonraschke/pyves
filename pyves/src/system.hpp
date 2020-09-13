@@ -18,15 +18,7 @@ namespace py = pybind11;
 #include <chrono>
 #include <thread>
 #include <mutex>
-#include <tbb/task_arena.h>
-#include <tbb/parallel_for_each.h>
-// #include <tbb/task_group.h>
-#include <tbb/global_control.h>
-#undef __TBB_show_deprecated_header_message
-#include "parallel.hpp"
-#ifndef __TBB_show_deprecated_header_message
-#define __TBB_show_deprecated_header_message
-#endif
+#include <taskflow/taskflow.hpp>
 
 
 
@@ -77,7 +69,8 @@ namespace _pyves
         template<CellState S> bool noCellsInState() const;
 
     private:
-        tbb::task_arena task_arena;
+        // tbb::task_arena task_arena;
+        std::unique_ptr<tf::Executor> executor;
     };
 
 
@@ -100,45 +93,38 @@ namespace _pyves
 
     template<typename FUNC>
     void System::applyToCells(FUNC&& func)
-    {
-        // std::shuffle(std::begin(cells), std::end(cells), pseudo_engine);
-        
+    { 
+        // tf::Executor executor(threads);
+
         std::vector<CellContainer::iterator> iterators(cells.size());
         std::iota(std::begin(iterators), std::end(iterators), std::begin(cells));
         std::shuffle(std::begin(iterators), std::end(iterators), RandomEngine.pseudo_engine);
         
-        task_arena.execute([&]
+        while(! (allCellsInState<CellState::FINISHED>()) )
         {
-            enhance::scoped_root_dummy ROOT; 
-                
-            // std::atomic<std::size_t> i = 0;
-            while(! (allCellsInState<CellState::FINISHED>()) )
+            for(auto& cell_it: iterators)
             {
-                // i++;
-                for(auto& cell_it: iterators)
+                if( Cell& cell = *cell_it;
+                    cell.state == CellState::IDLE &&
+                    cell.regionNoneInState<CellState::BLOCKED>()
+                )
                 {
-                    if( Cell& cell = *cell_it;
-                        cell.state == CellState::IDLE &&
-                        cell.regionNoneInState<CellState::BLOCKED>()
-                    )
+                    cell.state = CellState::BLOCKED;
+                    
+                    assert( cell.state == CellState::BLOCKED );
+                    assert( cell.proximityNoneInState<CellState::BLOCKED>() );  
+                    
+                    executor->async( [&]
                     {
-                        cell.state = CellState::BLOCKED;
-                        
                         assert( cell.state == CellState::BLOCKED );
-                        assert( cell.proximityNoneInState<CellState::BLOCKED>() );
-                        
-                        ROOT.enqueue_child( [&]
-                        {
-                            assert( cell.state == CellState::BLOCKED );
-                            func( cell ); 
-                            cell.state = CellState::FINISHED;
-                            assert( cell.state == CellState::FINISHED );
-                        } );
-                    }
+                        func( cell ); 
+                        cell.state = CellState::FINISHED;
+                        assert( cell.state == CellState::FINISHED );
+                    } );
                 }
             }
-            // std::cout << "ran " << i << "\n";
-        });
+        }
+        executor->wait_for_all();
         
         if( !allCellsInState<CellState::FINISHED>() )
         {
