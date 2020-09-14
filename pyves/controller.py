@@ -49,6 +49,7 @@ class Controller(object):
 
 
     def setParameters(self, _prms:dict):
+        self.prms_complete = _prms
         SignalHandler.ProgramState = ProgramState.SETUP
         self.system.cores = _prms["hardware"]["cores"]
         self.system.threads = _prms["hardware"]["threads"]
@@ -121,22 +122,23 @@ class Controller(object):
 
         # distribute particles
         for name, particle_ff in self.particle_prms.items():
-            # assert( name in self.forcefield )
-            # particle_ff = self.particle_prms[name]
+            
             if "sphere" in particle_ff["dist"]:
+                r0 = 2.0**(1.0/6)*particle_ff["sigma"]
+                points = sunflower_sphere_points(particle_ff["number"])
                 if particle_ff["dist"] == "sphere":
-                    points = sunflower_sphere_points(particle_ff["number"])
-                    r0 = 2.0**(1.0/6)*particle_ff["sigma"]
                     radius = r0/(2.0*np.sin(particle_ff["gamma"]))
-                    for point in points:
-                        self.system.particles.append(_pyves.Particle(point*radius+box_dims/2, point, 
-                            sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
-                        if particle_ff["bound_translation"] != None:
-                            self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
-                        if particle_ff["bound_rotation"] != None:
-                            self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
                 else:
-                    raise NotImplementedError(f"Sphere distribution {particle_ff['dist']} not implemented.")
+                    optimum_size = int(re.findall('(?<=sphere)\d+', particle_ff["dist"])[0])
+                    radius = r0/4*np.sqrt(1.1027*optimum_size)
+                for point in points:
+                    self.system.particles.append(_pyves.Particle(point*radius+box_dims/2, point, 
+                        sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                    if particle_ff["bound_translation"] != None:
+                        self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
+                    if particle_ff["bound_rotation"] != None:
+                        self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
+
             elif particle_ff["dist"] == "random":
                 for _ in range(particle_ff["number"]):
                     self.system.particles.append(_pyves.Particle(np.random.rand(3)*box_dims, np.random.uniform(-1,1,3), 
@@ -205,7 +207,7 @@ class Controller(object):
 
     def sample(self, steps=None, timestats=False):
         SignalHandler.ProgramState = ProgramState.RUNNING
-        starttime = time.perf_counter()
+        self.sample_starttime = time.perf_counter()
 
         if isinstance(steps, int):
             for i in range(steps):
@@ -216,10 +218,10 @@ class Controller(object):
                 else:
                     break
             if timestats:
-                endtime = time.perf_counter()
+                self.sample_endtime = time.perf_counter()
                 print(
-                    f"time {self.time_actual} took {endtime-starttime:.4f} s", " | ", 
-                    f"{(endtime-starttime)*1000*1000/len(self.system.particles)/steps:.4f} ns /particle/step", " | ", 
+                    f"time {self.time_actual} took {self.sample_endtime-self.sample_starttime:.4f} s", " | ", 
+                    f"{(self.sample_endtime-self.sample_starttime)*1000*1000/len(self.system.particles)/steps:.4f} ns /particle/step", " | ", 
                     end=""
                 )
             # print("writing...")
@@ -238,10 +240,10 @@ class Controller(object):
                     self.system.multipleSimulationSteps(self.time_delta)
                     self.time_actual += self.time_delta
                     if timestats:
-                        endtime = time.perf_counter()
+                        self.sample_endtime = time.perf_counter()
                         print(
-                            f"sampling to step {self.time_actual} took {endtime-starttime:.4f} s", " | ", 
-                            f"{(endtime-starttime)*1000*1000/len(self.system.particles)/self.time_delta:.4f} ns /particle/step", " | ", 
+                            f"sampling to step {self.time_actual} took {self.sample_endtime-self.sample_starttime:.4f} s", " | ", 
+                            f"{(self.sample_endtime-self.sample_starttime)*1000*1000/len(self.system.particles)/self.time_delta:.4f} ns /particle/step", " | ", 
                             end=""
                         )
                     self.writeTrajectoryHDF(timestats=timestats)
@@ -250,7 +252,7 @@ class Controller(object):
                 if SignalHandler.ProgramState is ProgramState.SHUTDOWN:
                     print("shutting down")
                     sys.exit(0)
-                starttime = time.perf_counter()
+                self.sample_starttime = time.perf_counter()
 
 
 
@@ -291,6 +293,22 @@ class Controller(object):
             format="table",
             complevel=1,
         )
+
+        node = h5py.File(os.path.join(self.output["dir"], self.output["filename"]), mode="a").get(f"/time{self.time_actual}")
+        node.attrs["box.x"] = self.system.box.x
+        node.attrs["box.y"] = self.system.box.y
+        node.attrs["box.z"] = self.system.box.z
+        node.attrs["threads"] = self.system.threads
+        node.attrs["temperature"] = self.system.temperature
+        node.attrs["translation_step"] = self.system.translation()
+        node.attrs["rotation_step"] = self.system.rotation()
+        node.attrs["interaction.cutoff"] = self.system.interaction_cutoff
+        node.attrs["time"] = self.time_actual
+        node.attrs["cell_min_size"] = self.prms_complete["control"]["cell_min_size"]
+        try:
+            node.attrs["simulation_walltime"] = time.perf_counter() - self.sample_starttime
+        except:
+            node.attrs["simulation_walltime"] = time.perf_counter()
 
         if log:
             print(df)

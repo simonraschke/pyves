@@ -9,6 +9,7 @@ from MDAnalysis.lib.distances import distance_array
 
 
 def analyze_df(df):
+    DBSCAN()
     return
 
 

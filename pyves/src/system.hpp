@@ -49,7 +49,7 @@ namespace _pyves
 
         REAL temperature = make_nan<REAL>();
         // std::size_t time_max = make_nan<std::size_t>();
-        std::mutex mutex;
+        // std::mutex mutex;
 
         void setThreads(std::size_t);
         bool particleIsFree(const Particle&) const;
@@ -94,8 +94,6 @@ namespace _pyves
     template<typename FUNC>
     void System::applyToCells(FUNC&& func)
     { 
-        // tf::Executor executor(threads);
-
         std::vector<CellContainer::iterator> iterators(cells.size());
         std::iota(std::begin(iterators), std::end(iterators), std::begin(cells));
         std::shuffle(std::begin(iterators), std::end(iterators), RandomEngine.pseudo_engine);

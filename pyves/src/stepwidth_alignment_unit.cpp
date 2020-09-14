@@ -174,7 +174,7 @@ namespace _pyves
             .def(py::init<>()) 
             .def("setup", static_cast<void (StepwidthAlignmentUnit::*)(std::size_t, REAL, REAL, REAL)>(&StepwidthAlignmentUnit::setup))
             .def("setup", static_cast<void (StepwidthAlignmentUnit::*)(std::size_t, REAL, REAL, REAL, REAL)>(&StepwidthAlignmentUnit::setup))
-            // .def("__call__", &StepwidthAlignmentUnit::operator())
+            .def("__call__", &StepwidthAlignmentUnit::operator())
             .def("ratio", &StepwidthAlignmentUnit::getRatio)
             ;
     }

@@ -6,7 +6,7 @@
     },
     "system" : 
     {
-        "temperature" : 0.10,
+        "temperature" : 0.20,
         "box" : 
         {
             "x" : 20,
@@ -35,7 +35,7 @@
         {
             "A":{
                 "number" : 25,
-                "dist" : "sphere",
+                "dist" : "sphere200",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
                 "epsilon" : 1.0,
