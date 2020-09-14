@@ -31,12 +31,12 @@
         {
             "FRAME" : 
             {
-                "number" : 10,
+                "number" : 0,
                 "dist" : "random",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
                 "epsilon" : 1.0,
-                "gamma" : 10.97,
+                "gamma" : 0.1914626,
                 "bound_translation" : 0.5,
                 "bound_rotation" : 0.5
             },
@@ -47,7 +47,18 @@
                 "sigma" : 1.0,
                 "kappa" : 1.0,
                 "epsilon" : 1.0,
-                "gamma" : 10.97,
+                "gamma" : 0.1914626,
+                "bound_translation" : null,
+                "bound_rotation" : null
+            },
+            "MOBILE2" : 
+            {
+                "number" : 0,
+                "dist" : "random",
+                "sigma" : 2.0,
+                "kappa" : 1.0,
+                "epsilon" : 1.0,
+                "gamma" : 0.1914626,
                 "bound_translation" : null,
                 "bound_rotation" : null
             }

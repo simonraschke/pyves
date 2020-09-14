@@ -42,14 +42,14 @@ namespace _pyves
         StepwidthAlignmentUnit translation_alignment;
         StepwidthAlignmentUnit rotation_alignment;
     
-        std::size_t cores = make_nan<std::size_t>();
+        REAL interaction_cutoff = make_nan<REAL>();
         std::size_t threads = make_nan<std::size_t>();
         
         // std::mt19937_64 pseudo_engine{std::random_device{}()};
 
         REAL temperature = make_nan<REAL>();
         // std::size_t time_max = make_nan<std::size_t>();
-        // std::mutex mutex;
+        std::mutex mutex;
 
         void setThreads(std::size_t);
         bool particleIsFree(const Particle&) const;

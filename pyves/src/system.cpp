@@ -60,7 +60,6 @@ namespace _pyves
             numParticlesInCells() == particles.size(),
             std::all_of(std::begin(particles), std::end(particles), [](const auto& p) { return p.assertIntegrity(); }),
             std::all_of(std::begin(cells), std::end(cells), [](auto& c) { return c.assertIntegrity(); }),
-            std::isfinite(cores),
             std::isfinite(threads),
             std::isfinite(temperature)
         );
@@ -145,7 +144,7 @@ namespace _pyves
         // std::cout << cell.repr() << "\n";
         REAL last_energy_value;
         REAL energy_after;
-        // std::uniform_real_distribution<REAL> dist_coords(-translation_alignment(),translation_alignment());
+        std::uniform_real_distribution<REAL> dist_coords(-translation_alignment(),translation_alignment());
         std::uniform_real_distribution<REAL> dist_orientation(-rotation_alignment(),rotation_alignment());
         CARTESIAN translation;//(dist_coords(pseudo_engine), dist_coords(pseudo_engine), dist_coords(pseudo_engine));
         CARTESIAN random_vector;//(dist_coords(pseudo_engine), dist_coords(pseudo_engine), dist_coords(pseudo_engine));
@@ -163,15 +162,15 @@ namespace _pyves
             {
                 do
                 {
-                    translation = CARTESIAN::Random() * translation_alignment();
+                    translation = CARTESIAN::Random() * dist_coords(RandomEngine.pseudo_engine);
                 }
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
-                last_energy_value = cell.potentialEnergy(particle, 3);
-                
+                last_energy_value = cell.potentialEnergy(particle, interaction_cutoff);
+
                 if(particle.trySetPosition(particle.position+translation))
                 {
-                    energy_after = cell.potentialEnergy(particle, 3);
+                    energy_after = cell.potentialEnergy(particle, interaction_cutoff);
 
                     // rejection
                     if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -208,7 +207,7 @@ namespace _pyves
 
             if(particle.trySetOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation()))
             {
-                energy_after = cell.potentialEnergy(particle, 3);
+                energy_after = cell.potentialEnergy(particle, interaction_cutoff);
 
                 // rejection
                 if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -281,11 +280,11 @@ namespace _pyves
 
         py::class_<System>(m, "System", py::dynamic_attr())
             .def(py::init<>())
-            .def_readwrite("cores", &System::cores, py::return_value_policy::reference_internal)
             .def_property("threads",[](const System& s){ return s.threads; }, &System::setThreads)
             .def_readwrite("temperature", &System::temperature, py::return_value_policy::reference_internal)
             .def_readwrite("box", &System::box, py::return_value_policy::reference_internal)
-            .def_readwrite("particles", &System::particles)
+            .def_readwrite("particles", &System::particles, py::return_value_policy::reference_internal)
+            .def_readwrite("interaction_cutoff", &System::interaction_cutoff, py::return_value_policy::reference_internal)
             .def_readwrite("cells", &System::cells, py::return_value_policy::reference_internal)
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&) const>(&System::particleIsFree))
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&, REAL) const>(&System::particleIsFree))

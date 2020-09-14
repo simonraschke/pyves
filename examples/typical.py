@@ -22,7 +22,8 @@ pyves.hdf2gro(
     outpath = os.path.join(ctrl.output["dir"], "trajectory.gro"),
     atom_repr = dict(
         FRAME = "O",
-        MOBILE = "S"#
+        MOBILE = "S",
+        MOBILE2 = "P",
     ),
     box = ctrl.system.box,
     with_direction = True

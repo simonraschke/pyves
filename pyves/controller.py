@@ -12,6 +12,8 @@ import h5py
 import re
 
 from .signal_handler import SignalHandler, ProgramState
+from .point_distributions import *
+from .analysis import analyze_df
 
 
 
@@ -61,6 +63,8 @@ class Controller(object):
         rotation = _prms["system"]["rotation"]
         self.system.rotation = _pyves.StepwidthAlignmentUnit()
         self.system.rotation.setup(rotation["interval"], rotation["min"], rotation["max"], rotation["target"])
+
+        self.system.interaction_cutoff = _prms["system"]["interaction"]["cutoff"]
 
         self.time_delta = _prms["control"]["time_delta"]
         self.time_max = _prms["control"]["time_max"]
@@ -116,13 +120,25 @@ class Controller(object):
         box_dims = np.array([self.system.box.x, self.system.box.y, self.system.box.z])
 
         # distribute particles
-        for name, particle_prms in self.particle_prms.items():
+        for name, particle_ff in self.particle_prms.items():
             # assert( name in self.forcefield )
-            particle_ff = self.particle_prms[name]
-            if particle_prms["dist"] != "random":
-                raise NotImplementedError("no fixed distribution supported")
-            elif particle_prms["dist"] == "random":
-                for _ in range(particle_prms["number"]):
+            # particle_ff = self.particle_prms[name]
+            if "sphere" in particle_ff["dist"]:
+                if particle_ff["dist"] == "sphere":
+                    points = sunflower_sphere_points(particle_ff["number"])
+                    r0 = 2.0**(1.0/6)*particle_ff["sigma"]
+                    radius = r0/(2.0*np.sin(particle_ff["gamma"]))
+                    for point in points:
+                        self.system.particles.append(_pyves.Particle(point*radius+box_dims/2, point, 
+                            sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                        if particle_ff["bound_translation"] != None:
+                            self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
+                        if particle_ff["bound_rotation"] != None:
+                            self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
+                else:
+                    raise NotImplementedError(f"Sphere distribution {particle_ff['dist']} not implemented.")
+            elif particle_ff["dist"] == "random":
+                for _ in range(particle_ff["number"]):
                     self.system.particles.append(_pyves.Particle(np.random.rand(3)*box_dims, np.random.uniform(-1,1,3), 
                         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
                     # repeat until particle is free
@@ -137,6 +153,8 @@ class Controller(object):
                         self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
                     if particle_ff["bound_rotation"] != None:
                         self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
+            else:
+                raise NotImplementedError(f"Particle distribution {particle_ff['dist']} not implemented.")
 
         self.setupCells()
         self.placeParticlesInCells()
@@ -204,6 +222,7 @@ class Controller(object):
                     f"{(endtime-starttime)*1000*1000/len(self.system.particles)/steps:.4f} ns /particle/step", " | ", 
                     end=""
                 )
+            # print("writing...")
             self.writeTrajectoryHDF(timestats=timestats)
             if timestats: print()
             if SignalHandler.ProgramState is ProgramState.SHUTDOWN:
@@ -267,7 +286,7 @@ class Controller(object):
         df.to_hdf(
             path_or_buf=os.path.join(self.output["dir"], self.output["filename"]),
             key=f"/time{self.time_actual}",
-            mode="a" if self.output["mode"] == "append" else "w",
+            mode="a",# if self.output["mode"] == "append" else "w",
             # append=True if self.output["mode"] == "append" else False,
             format="table",
             complevel=1,
