@@ -89,7 +89,7 @@ namespace _pyves
     void System::shuffle()
     {
         tf::Taskflow taskflow;
-        taskflow.for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+        taskflow.for_each_static(std::begin(cells), std::end(cells), [&] (Cell& cell) 
         {
             cell.shuffle(); 
         });
@@ -102,7 +102,7 @@ namespace _pyves
     {
         // tf::Executor executor(threads);
         tf::Taskflow taskflow;
-        taskflow.for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+        taskflow.for_each_static(std::begin(cells), std::end(cells), [&] (Cell& cell) 
         {
             // std::cout << cell.repr() << "\n";
             auto leavers = cell.particlesOutOfBounds();

@@ -267,8 +267,8 @@ class Controller(object):
         df.to_hdf(
             path_or_buf=os.path.join(self.output["dir"], self.output["filename"]),
             key=f"/time{self.time_actual}",
-            mode="r+" if self.output["mode"] == "append" else "a",
-            append=True if self.output["mode"] == "append" else False,
+            mode="a" if self.output["mode"] == "append" else "w",
+            # append=True if self.output["mode"] == "append" else False,
             format="table",
             complevel=1,
         )

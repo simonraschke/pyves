@@ -2,6 +2,8 @@
 
 *.h5
 *.gro
+vmd.rc
+.vmdrc
 
 
 ### C++

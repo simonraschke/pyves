@@ -24,5 +24,8 @@ pyves.hdf2gro(
         FRAME = "O",
         MOBILE = "S"#
     ),
-    box = ctrl.system.box
+    box = ctrl.system.box,
+    with_direction = True
 )
+
+pyves.writeVMDrc(outdir=ctrl.output["dir"], num_bonds=len(ctrl.system.particles))

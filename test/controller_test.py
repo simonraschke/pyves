@@ -76,6 +76,18 @@ class MainTest(unittest.TestCase):
             box = control2.system.box
         )
 
+        pyves.hdf2gro(
+            inpath = os.path.join(control2.output["dir"], control2.output["filename"]),
+            outpath = os.path.join(control2.output["dir"], "trajectory.gro"),
+            atom_repr = dict(
+                A = "O",
+                B = "S"#
+            ),
+            box = control2.system.box,
+            with_direction = True
+        )
+        
+        pyves.writeVMDrc(outdir=control2.output["dir"], traj_file_name="trajectory.gro", num_bonds=len(control2.system.particles))
 
 
 if __name__ == '__main__':

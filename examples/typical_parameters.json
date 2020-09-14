@@ -9,9 +9,9 @@
         "temperature" : 0.23,
         "box" : 
         {
-            "x" : 30.0,
-            "y" : 30.0,
-            "z" : 30.0
+            "x" : 20.0,
+            "y" : 20.0,
+            "z" : 20.0
         },
         "translation" :
         {
@@ -31,7 +31,7 @@
         {
             "FRAME" : 
             {
-                "number" : 0,
+                "number" : 10,
                 "dist" : "random",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
@@ -42,7 +42,7 @@
             },
             "MOBILE" : 
             {
-                "number" : 2700,
+                "number" : 400,
                 "dist" : "random",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
@@ -68,7 +68,7 @@
     {
         "dir" : ".",
         "filename" : "typical.h5",
-        "mode" : "overwrite"
+        "mode" : "append"
     },
     "input" :
     {
