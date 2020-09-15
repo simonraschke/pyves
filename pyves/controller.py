@@ -138,6 +138,18 @@ class Controller(object):
                         self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
                     if particle_ff["bound_rotation"] != None:
                         self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
+            
+            elif "plane" in particle_ff["dist"]:
+                points = grid_plane_points(particle_ff["number"])
+                area = float(re.findall('(?<=plane)\d+', particle_ff["dist"])[0])
+                edge = np.sqrt(area)
+                for point in points:
+                    self.system.particles.append(_pyves.Particle(point*edge/2+box_dims/2, [0,0,1], 
+                        sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                    if particle_ff["bound_translation"] != None:
+                        self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
+                    if particle_ff["bound_rotation"] != None:
+                        self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
 
             elif particle_ff["dist"] == "random":
                 for _ in range(particle_ff["number"]):

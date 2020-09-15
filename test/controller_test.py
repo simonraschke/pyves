@@ -58,8 +58,10 @@ class MainTest(unittest.TestCase):
             inpath = os.path.join(control2.output["dir"], control2.output["filename"]),
             outpath = os.path.join(control2.output["dir"], "trajectory.gro"),
             atom_repr = dict(
-                A = "O",
-                B = "S"#
+                RAND = "O",
+                S1 = "S",#
+                S2 = "B",#
+                P = "C"#
             ),
             box = control2.system.box
         )
@@ -68,8 +70,10 @@ class MainTest(unittest.TestCase):
             inpath = os.path.join(control2.output["dir"], control2.output["filename"]),
             outpath = os.path.join(control2.output["dir"], "trajectory.gro"),
             atom_repr = dict(
-                A = "O",
-                B = "S"#
+                RAND = "O",
+                S1 = "S",#
+                S2 = "B",#
+                P = "C"#
             ),
             box = control2.system.box,
             with_direction = True
