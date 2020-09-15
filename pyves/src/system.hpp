@@ -65,6 +65,7 @@ namespace _pyves
         template<typename FUNCTOR> void applyToCells(FUNCTOR&& func);
         template<typename FUNCTOR> void applyToCellsSlowAndSafe(FUNCTOR&& func);
 
+        template<CellState S> std::size_t numCellsInState() const;
         template<CellState S> bool allCellsInState() const;
         template<CellState S> bool noCellsInState() const;
 
@@ -72,6 +73,14 @@ namespace _pyves
         // tbb::task_arena task_arena;
         std::unique_ptr<tf::Executor> executor;
     };
+
+
+
+    template<CellState S>
+    std::size_t System::numCellsInState() const
+    {
+        return std::accumulate(std::begin(cells), std::end(cells), static_cast<std::size_t>(0), [](std::size_t i, const Cell& cell){ return (cell.state == S) ? ++i : i; } );
+    }
 
 
 
@@ -94,41 +103,124 @@ namespace _pyves
     template<typename FUNC>
     void System::applyToCells(FUNC&& func)
     { 
-        std::vector<CellContainer::iterator> iterators(cells.size());
-        std::iota(std::begin(iterators), std::end(iterators), std::begin(cells));
-        std::shuffle(std::begin(iterators), std::end(iterators), RandomEngine.pseudo_engine);
+        CellRefContainer cellrefs;
+                
+        std::copy_if(std::begin(cells), std::end(cells), std::back_inserter(cellrefs), [](Cell& cell){
+            return cell.particles.size() > 0;
+        });
+
+        // for(auto cell_it = std::begin(cells); cell_it != std::end(cells); cell_it++)
+        // {
+        //     if(cell_it->particles.size())
+        //     {
+        //         iterators.push_back(cell_it);
+        //     }
+        // }
+        // std::iota(std::begin(iterators), std::end(iterators), std::begin(cells));
+
+        // auto starttask = taskflow.placeholder();
+
+        // auto B = taskflow.emplace([&](tf::Subflow& subflow){ 
+        //     std::cout << "TaskB\n";
+        //     auto B1 = subflow.emplace([&](){ std::cout << "TaskB1\n"; }).name("B1");
+        //     auto B2 = subflow.emplace([&](){ std::cout << "TaskB2\n"; }).name("B2");
+        //     auto B3 = subflow.emplace([&](){ std::cout << "TaskB3\n"; }).name("B3");
+        //     B1.precede(B3); 
+        //     B2.precede(B3);
+        // }).name("B");
+
+        // executor.run_until(taskflow, [] { return allCellsInState<CellState::FINISHED>(); });
+
+        tf::Taskflow taskflow;
+        tf::Task join_task = taskflow.placeholder().name("join_task");
         
-        while(! (allCellsInState<CellState::FINISHED>()) )
+        for(std::size_t i = 0; i < executor->num_workers(); ++i)
         {
-            for(auto& cell_it: iterators)
-            {
-                if( Cell& cell = *cell_it;
-                    cell.state == CellState::IDLE &&
-                    cell.regionNoneInState<CellState::BLOCKED>()
-                )
+            tf::Task worker_task = taskflow.emplace([&, cellrefs] () mutable
+            {   
+                std::shuffle(std::begin(cellrefs), std::end(cellrefs), RandomEngine.pseudo_engine);
+                
+                while(! (allCellsInState<CellState::FINISHED>()) )
+                // while(! (numCellsInState<CellState::FINISHED>() <= 1) )
                 {
-                    cell.state = CellState::BLOCKED;
-                    
-                    assert( cell.state == CellState::BLOCKED );
-                    assert( cell.proximityNoneInState<CellState::BLOCKED>() );  
-                    
-                    executor->async( [&]
+                    for(Cell& cell: cellrefs)
                     {
-                        assert( cell.state == CellState::BLOCKED );
-                        func( cell ); 
-                        cell.state = CellState::FINISHED;
-                        assert( cell.state == CellState::FINISHED );
-                    } );
+                        if(// Cell& cell = cell_it.get();
+                            cell.state == CellState::IDLE &&
+                            cell.regionNoneInState<CellState::BLOCKED>() &&
+                            cell.algorithm_mutex.try_lock()
+                        )
+                        {
+                            cell.state = CellState::BLOCKED;
+                            assert( cell.state == CellState::BLOCKED );
+                            assert( cell.proximityNoneInState<CellState::BLOCKED>() );
+                            assert( cell.state == CellState::BLOCKED );
+                            func( cell ); 
+                            cell.state = CellState::FINISHED;
+                            assert( cell.state == CellState::FINISHED );
+                            cell.algorithm_mutex.unlock();
+                        }
+                    }
                 }
-            }
+            }).name(std::string("worker")+std::to_string(i));
+            worker_task.precede(join_task);
         }
-        executor->wait_for_all();
-        
+        // taskflow.dump(std::cout);
+        executor->run(taskflow).wait();
+
+        // executor->wait_for_all();
         if( !allCellsInState<CellState::FINISHED>() )
         {
             throw std::runtime_error("not all cells finished");
         }
     }
+
+
+
+    // template<typename FUNC>
+    // void System::applyToCells(FUNC&& func)
+    // { 
+    //     std::vector<CellContainer::iterator> iterators(cells.size());
+    //     std::iota(std::begin(iterators), std::end(iterators), std::begin(cells));
+    //     std::shuffle(std::begin(iterators), std::end(iterators), RandomEngine.pseudo_engine);
+        
+    //     // auto find_cell = [&iterators] -> CellContainer::iterator { 
+    //     //     return std::find_if(std::begin(iterators), std::end(iterators), [](const auto cell_it){
+    //     //         return cell.state == CellState::IDLE && cell.regionNoneInState<CellState::BLOCKED>();
+    //     //     });
+    //     // }
+        
+    //     while(! (allCellsInState<CellState::FINISHED>()) )
+    //     {
+    //         for(auto& cell_it: iterators)
+    //         {
+    //             if( Cell& cell = *cell_it;
+    //                 cell.state == CellState::IDLE &&
+    //                 cell.regionNoneInState<CellState::BLOCKED>()
+    //             )
+    //             {
+    //                 cell.state = CellState::BLOCKED;
+                    
+    //                 assert( cell.state == CellState::BLOCKED );
+    //                 assert( cell.proximityNoneInState<CellState::BLOCKED>() );  
+                    
+    //                 executor->async( [&]
+    //                 {
+    //                     assert( cell.state == CellState::BLOCKED );
+    //                     func( cell ); 
+    //                     cell.state = CellState::FINISHED;
+    //                     assert( cell.state == CellState::FINISHED );
+    //                 } );
+    //             }
+    //         }
+    //     }
+    //     executor->wait_for_all();
+        
+    //     if( !allCellsInState<CellState::FINISHED>() )
+    //     {
+    //         throw std::runtime_error("not all cells finished");
+    //     }
+    // }
 
     
 

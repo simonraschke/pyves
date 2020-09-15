@@ -172,8 +172,6 @@ namespace _pyves
 
     REAL Cell::potentialEnergy(const Particle& particle, REAL cutoff) const
     {
-        // std::shared_lock<std::shared_mutex> lock(particles_access_mutex);
-        // tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, false);
         return std::accumulate(std::begin(region), std::end(region), REAL(0), [&](REAL __val, const Cell& cell)
         {
             return __val + std::accumulate(std::begin(cell.particles), std::end(cell.particles), REAL(0), [&](REAL _val, const Particle& compare)
@@ -181,6 +179,38 @@ namespace _pyves
                 return particle == compare ? _val : _val + interaction(particle, compare, box, cutoff);
             });
         });
+    }
+
+
+
+    REAL Cell::potentialEnergyVectorized(const Particle& particle, REAL cutoff) const
+    {
+        // const std::size_t num_particles = std::accumulate(std::begin(region), std::end(region), std::size_t(0), [](auto i, const Cell& cell){ return i + cell.particles.size(); });
+        
+        // decltype(Cell::particles) region_particles;
+        // region_particles.reserve(num_particles);
+
+        // for(Cell& c : region)
+        // {
+        //     std::transform(c.particles.begin(), c.particles.end(), std::back_inserter(region_particles), [](auto& x){ return std::ref<Particle>(x); });
+        // }
+        
+        // std::cout << "\n";
+        // std::cout << "\n";
+        // std::cout << "\n";
+        // Eigen::MatrixXf positions(num_particles, 3);
+        // for(std::size_t i = 0; i < region_particles.size(); ++i)
+        // {
+        //     positions(i,0) = region_particles.at(i).get().getx();
+        //     positions(i,1) = region_particles.at(i).get().gety();
+        //     positions(i,2) = region_particles.at(i).get().getz();
+        // }
+        // std::cout << positions.format(PYTHONFORMAT) << "\n";
+
+        // auto distance_vectors = positions.rowwise() - particle.position.transpose();
+        // std::cout << distance_vectors.format(PYTHONFORMAT) << "\n";
+
+        return 0;
     }
 
 

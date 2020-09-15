@@ -1,5 +1,7 @@
 #pragma once
 
+#include <exception>
+
 #if defined(__clang__)
     #pragma clang diagnostic ignored "-Wdeprecated-copy"
     #include <Eigen/Core>

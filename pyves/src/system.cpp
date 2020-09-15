@@ -167,6 +167,13 @@ namespace _pyves
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
                 last_energy_value = cell.potentialEnergy(particle, interaction_cutoff);
+                // auto last_energy_value_vec = cell.potentialEnergyVectorized(particle, interaction_cutoff);
+                // auto diff = last_energy_value-last_energy_value_vec;
+                // // std::cout << 
+                // if(std::sqrt(diff*diff) >= 1e-5)
+                // {
+                //     throw std::runtime_error(std::string("nope  ") + std::to_string(diff));
+                // }
 
                 if(particle.trySetPosition(particle.position+translation))
                 {

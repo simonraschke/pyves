@@ -6,6 +6,7 @@
 #include "interaction.hpp"
 #include <atomic>
 #include <shared_mutex>
+#include <mutex>
 // #include <tbb/spin_rw_mutex.h>
 #include <memory>
 #include <random>
@@ -55,6 +56,7 @@ struct _pyves::Cell
 
     // tbb::spin_rw_mutex particles_access_mutex;
     std::shared_mutex particles_access_mutex;
+    std::mutex algorithm_mutex;
 
     Cell(CARTESIAN_CREF min, CARTESIAN_CREF max, const Box<PBC::ON>&);
     Cell(const Cell &other);
@@ -72,6 +74,7 @@ struct _pyves::Cell
     void shuffle();
     auto particlesOutOfBounds() -> std::deque<decltype(particles)::value_type>;
     REAL potentialEnergy(const Particle& p, REAL cutoff) const;
+    REAL potentialEnergyVectorized(const Particle& p, REAL cutoff) const;
     
     template<CellState S> bool proximityAllInState() const;
     template<CellState S> bool proximityNoneInState() const;

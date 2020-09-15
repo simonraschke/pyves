@@ -2,16 +2,16 @@
     "hardware" : 
     {
         "cores" : 2,
-        "threads" : 6
+        "threads" : 8
     },
     "system" : 
     {
         "temperature" : 0.23,
         "box" : 
         {
-            "x" : 20.0,
-            "y" : 20.0,
-            "z" : 20.0
+            "x" : 50.0,
+            "y" : 50.0,
+            "z" : 50.0
         },
         "translation" :
         {
@@ -42,7 +42,7 @@
             },
             "MOBILE" : 
             {
-                "number" : 400,
+                "number" : 2500,
                 "dist" : "random",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
