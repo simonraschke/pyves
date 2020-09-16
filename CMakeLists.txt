@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 project(_pves LANGUAGES C CXX)
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
@@ -13,9 +13,9 @@ message("CXX COMPILER " ${CMAKE_CXX_COMPILER})
 
 # FIND MODULES
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-message(STATUS "PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
-message(STATUS "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
-message(STATUS "PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "PYTHON_LIBRARIES    = ${Python3_LIBRARIES}")
+message(STATUS "PYTHON_EXECUTABLE   = ${Python3_EXECUTABLE}")
+message(STATUS "PYTHON_INCLUDE_DIRS = ${PYTHON3_INCLUDE_DIRS}")
 include_directories(${Python3_INCLUDE_DIRS})
 
 set(EIGEN_DEFINES "")
@@ -57,19 +57,30 @@ include_directories(${CMAKE_SOURCE_DIR}/lib/taskflow)
 
 
 # MAKE TEST EXECUTABLE
-add_executable("${PROJECT_NAME}_test" ${TEST_FILES})
-target_include_directories(${PROJECT_NAME}_test PRIVATE ${CMAKE_SOURCE_DIR}/lib/catch/single_include/catch2)
-target_compile_options(${PROJECT_NAME}_test
-    PRIVATE
-        $<$<CXX_COMPILER_ID:MSVC>:/W3>
-        $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -Wextra -Wpedantic -ferror-limit=2>
-        $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=2>
-)
-execute_process(COMMAND python3-config --embed --ldflags OUTPUT_VARIABLE PY_EMBED_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
-string(STRIP "${PY_EMBED_LIBS}" PY_EMBED_LIBS)
-target_link_options(${PROJECT_NAME}_test PRIVATE -W -Wno-undef)
-target_link_libraries(${PROJECT_NAME}_test PRIVATE pthread ${PY_EMBED_LIBS} ${EIGEN_LINKING_EXTENDED})
-
+# if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+#     message("debug mode. building tests")
+    add_executable("${PROJECT_NAME}_test" ${TEST_FILES})
+    target_include_directories(${PROJECT_NAME}_test PRIVATE ${CMAKE_SOURCE_DIR}/lib/catch/single_include/catch2)
+    target_compile_options(${PROJECT_NAME}_test
+        PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:/W3>
+            $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -Wextra -Wpedantic -ferror-limit=2>
+            $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=2>
+    )
+    message(STATUS ${Python_VERSION})
+    message("Python Major Version " ${Python3_VERSION_MAJOR})
+    message("Python Minor Version " ${Python3_VERSION_MINOR})
+    # if(Python_MINOR GREATER_EQUAL 8)
+    #     message(">=8")
+    #     execute_process(COMMAND python3-config --embed --ldflags OUTPUT_VARIABLE PY_EMBED_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    # else()
+    #     message("<8")
+    #     execute_process(COMMAND python3-config --ldflags OUTPUT_VARIABLE PY_EMBED_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    # endif()
+    # string(STRIP "${PY_EMBED_LIBS}" PY_EMBED_LIBS)
+    target_link_options(${PROJECT_NAME}_test PRIVATE -W -Wno-undef)
+    target_link_libraries(${PROJECT_NAME}_test PRIVATE pthread ${Python3_LIBRARIES} ${EIGEN_LINKING_EXTENDED})
+# endif()
 
 
 # MAKE PYTHON SHARED LIBRARY
@@ -80,8 +91,6 @@ target_compile_options(_pyves
         $<$<CXX_COMPILER_ID:MSVC>:/W3>
         $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -Wextra -Wpedantic -ferror-limit=2>
         $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=2>
-    # -static
 )
 target_link_options(_pyves PRIVATE -W -Wno-undef)
 target_link_libraries(_pyves PRIVATE pthread ${EIGEN_LINKING_EXTENDED})
-# target_link_libraries(_pyves PRIVATE -Wl,--whole-archive pthread -Wl,--no-whole-archive ${EIGEN_LINKING_EXTENDED} -static-libgcc -static-libstdc++)

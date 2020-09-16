@@ -10,7 +10,7 @@ namespace _pyves
     {
     #ifndef NDEBUG
         const REAL exr = std::exp(-energy_difference/temperature);
-        const REAL ran = random<REAL>()(0.f,1.f);
+        const REAL ran = random<REAL>(0.f,1.f);
         const bool acc = exr > ran;
         // vesDEBUG("energy difference: "<< energy_difference << "  temp: " << temperature << "  exp: " << exr <<"  random: " << ran << "  accepted: " << std::boolalpha << acc )
         assert( energy_difference < 0.f ? acc : true);
