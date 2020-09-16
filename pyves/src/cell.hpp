@@ -10,7 +10,6 @@
 // #include <tbb/spin_rw_mutex.h>
 #include <memory>
 #include <numeric>
-#include <execution>
 #include <random>
 #include <Eigen/Geometry>
 
