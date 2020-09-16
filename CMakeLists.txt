@@ -74,11 +74,14 @@ target_link_libraries(${PROJECT_NAME}_test PRIVATE pthread ${PY_EMBED_LIBS} ${EI
 
 # MAKE PYTHON SHARED LIBRARY
 pybind11_add_module(_pyves ${SRC_FILES})
+set_target_properties(_pyves PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 target_compile_options(_pyves
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W3>
         $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -Wextra -Wpedantic -ferror-limit=2>
         $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=2>
+    # -static
 )
 target_link_options(_pyves PRIVATE -W -Wno-undef)
 target_link_libraries(_pyves PRIVATE pthread ${EIGEN_LINKING_EXTENDED})
+# target_link_libraries(_pyves PRIVATE -Wl,--whole-archive pthread -Wl,--no-whole-archive ${EIGEN_LINKING_EXTENDED} -static-libgcc -static-libstdc++)

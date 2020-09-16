@@ -16,6 +16,7 @@ class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
+        self.extra_link_args = ["static"]
 
 
 
@@ -90,6 +91,7 @@ class CMakeBuild(build_ext):
         #     f"-DCMAKE_C_COMPILER={clangpath}",
         #     f"-DCMAKE_CXX_COMPILER={clangpppath}"
         # ]
+    
 
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
