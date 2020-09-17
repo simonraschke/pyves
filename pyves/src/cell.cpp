@@ -265,9 +265,9 @@ namespace _pyves
         py::class_<BoxClass>(m, "AlignedBox")
             .def(py::init<>())
             .def(py::init<CARTESIAN_CREF,CARTESIAN_CREF>())
-            .def_property_readonly("center", &BoxClass::center, py::return_value_policy::reference_internal)
-            .def_property("min", [](const BoxClass& b){ return b.min(); }, [](BoxClass& b, CARTESIAN_CREF c) { b.min() = c; }, py::return_value_policy::reference_internal)
-            .def_property("max", [](const BoxClass& b){ return b.max(); }, [](BoxClass& b, CARTESIAN_CREF c) { b.max() = c; }, py::return_value_policy::reference_internal)
+            .def_property_readonly("center", &BoxClass::center, R"pyves(Get the Box Center.)pyves")
+            .def_property("min", [](const BoxClass& b){ return b.min(); }, [](BoxClass& b, CARTESIAN_CREF c) { b.min() = c; })
+            .def_property("max", [](const BoxClass& b){ return b.max(); }, [](BoxClass& b, CARTESIAN_CREF c) { b.max() = c; })
         ;
 
 
@@ -275,13 +275,13 @@ namespace _pyves
         py::class_<Cell>(m, "Cell", py::dynamic_attr())
             .def(py::init<CARTESIAN_CREF, CARTESIAN_CREF, Box<PBC::ON>>(), py::arg("min"), py::arg("max"), py::arg("box"))
             .def_readonly("bounding_box", &Cell::bounding_box)
-            .def_readwrite("proximity", &Cell::proximity, py::return_value_policy::reference_internal)
-            .def_readwrite("region", &Cell::region, py::return_value_policy::reference_internal)
-            .def_readwrite("particles", &Cell::particles, py::return_value_policy::reference_internal)
+            .def_readwrite("proximity", &Cell::proximity)
+            .def_readwrite("region", &Cell::region)
+            .def_readwrite("particles", &Cell::particles)
             .def_property("min", [](const Cell& c){ return c.bounding_box.min(); }, 
-                                 [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.min() = v - CellBoundOffset; }, py::return_value_policy::reference_internal)
+                                 [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.min() = v - CellBoundOffset; })
             .def_property("max", [](const Cell& c){ return c.bounding_box.max(); }, 
-                                 [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.max() = v - CellBoundOffset; }, py::return_value_policy::reference_internal)
+                                 [](Cell& c, CARTESIAN_CREF v) { c.bounding_box.max() = v - CellBoundOffset; })
             .def("particlesOutOfBounds", &Cell::particlesOutOfBounds)
             .def("insideCellBounds", static_cast<bool (Cell::*)(const Particle&) const>(&Cell::insideCellBounds))
             .def("insideCellBounds", static_cast<bool (Cell::*)(CARTESIAN_CREF) const>(&Cell::insideCellBounds))

@@ -73,7 +73,7 @@ class CMakeBuild(build_ext):
 
         if platform.system() == "Windows":
             cmake_args += [
-                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir)
+                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir),
             ]
             if sys.maxsize > 2**32:
                 cmake_args += ['-A', 'x64']
@@ -105,6 +105,10 @@ class CMakeBuild(build_ext):
         pprint.pprint(cmake_args)
         print("\nbuild_args")
         pprint.pprint(build_args)
+
+        # import pprint
+        # pprint.pprint(self.__dict__)
+        # pprint.pprint(self.distribution.__dict__)
 
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)

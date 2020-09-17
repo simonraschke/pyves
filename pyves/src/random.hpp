@@ -53,22 +53,4 @@ namespace _pyves
         std::uniform_real_distribution<T> dist(a,b);
         return dist(RandomEngine.pseudo_engine);
     }
-
-    // template<typename T>
-    // struct random
-    // {
-    //     template<typename U=T, typename std::enable_if<std::is_integral<U>::value, std::nullptr_t>::type = nullptr>
-    //     inline const T operator()(const T a, const T b) const
-    //     {
-    //         std::uniform_int_distribution<T> dist(a,b);
-    //         return dist(RandomEngine.pseudo_engine);
-    //     }
-
-    //     template<typename U=T, typename std::enable_if<std::is_floating_point<U>::value, std::nullptr_t>::type = nullptr>
-    //     inline const T operator()(const T a, const T b) const
-    //     {
-    //         std::uniform_real_distribution<T> dist(a,b);
-    //         return dist(RandomEngine.pseudo_engine);
-    //     }
-    // };
 }
