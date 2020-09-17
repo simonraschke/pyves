@@ -21,7 +21,7 @@
 
 #pragma GCC diagnostic ignored "-Weffc++" // hurts, but is necessary
 
-namespace enhance
+namespace pyves
 {
     // dummy for enqueue functions
     template<typename F>
@@ -39,7 +39,7 @@ namespace enhance
     template<typename F>
     void enqueue_root( const F& __func ) 
     {
-        tbb::task::enqueue( *new( tbb::task::allocate_root() ) enhance::lambda_task<F>(__func) );
+        tbb::task::enqueue( *new( tbb::task::allocate_root() ) lambda_task<F>(__func) );
     }
     
     
@@ -48,7 +48,7 @@ namespace enhance
     template<typename F>
     void spawn_root( const F& __func ) 
     {
-        tbb::task::spawn( *new( tbb::task::allocate_root() ) enhance::lambda_task<F>(__func) );
+        tbb::task::spawn( *new( tbb::task::allocate_root() ) lambda_task<F>(__func) );
     }
     
     
@@ -57,7 +57,7 @@ namespace enhance
     template<typename F>
     void enqueue_additional_child_of( const F& __func , tbb::empty_task& ROOT) 
     {
-        tbb::task::enqueue( *new( tbb::task::allocate_additional_child_of(ROOT) ) enhance::lambda_task<F>(__func) );
+        tbb::task::enqueue( *new( tbb::task::allocate_additional_child_of(ROOT) ) lambda_task<F>(__func) );
     }
     
     
@@ -66,7 +66,7 @@ namespace enhance
     template<typename F>
     void spawn_additional_child_of( const F& __func , tbb::empty_task& ROOT) 
     {
-        tbb::task::spawn( *new( tbb::task::allocate_additional_child_of(ROOT) ) enhance::lambda_task<F>(__func) );
+        tbb::task::spawn( *new( tbb::task::allocate_additional_child_of(ROOT) ) lambda_task<F>(__func) );
     }
     
     
@@ -80,8 +80,8 @@ namespace enhance
         const F* operator->() const { return task; }
         const F& operator* () const { return *task; }
         
-        template<typename...Args> inline void enqueue_child( Args...args ) { enhance::enqueue_additional_child_of(std::forward<Args>(args)..., *task); }
-        template<typename...Args> inline void spawn_child  ( Args...args ) { enhance::spawn_additional_child_of  (std::forward<Args>(args)..., *task); }
+        template<typename...Args> inline void enqueue_child( Args...args ) { enqueue_additional_child_of(std::forward<Args>(args)..., *task); }
+        template<typename...Args> inline void spawn_child  ( Args...args ) { spawn_additional_child_of  (std::forward<Args>(args)..., *task); }
         
     protected:
         root_task_base() : task ( new( tbb::task::allocate_root()) F ) {}
@@ -130,4 +130,8 @@ namespace enhance
         scoped_root_task() : root_task_base<F>() { }
         ~scoped_root_task(){ this->task->wait_for_all(); }
     };
+
+
+
+    // template<typename t
 }

@@ -16,6 +16,7 @@ or
 ```bash
 git clone https://github.com/simonraschke/pyves.git
 cd pyves
+git submodule update --init --recursive
 pip install --upgrade .
 ```
 

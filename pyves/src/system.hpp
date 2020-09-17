@@ -18,8 +18,12 @@ namespace py = pybind11;
 #include <chrono>
 #include <thread>
 #include <mutex>
-#include <taskflow/taskflow.hpp>
 
+#ifdef PYVES_USE_TBB
+#include "parallel.hpp"
+#else
+#include <taskflow/taskflow.hpp>
+#endif
 
 
 PYBIND11_MAKE_OPAQUE(std::vector<_pyves::Particle>)
@@ -70,8 +74,12 @@ namespace _pyves
         template<CellState S> bool noCellsInState() const;
 
     private:
-        // tbb::task_arena task_arena;
-        std::unique_ptr<tf::Executor> executor;
+
+        #ifdef PYVES_USE_TBB
+            tbb::task_arena task_arena;
+        #else
+            std::unique_ptr<tf::Executor> executor;
+        #endif
     };
 
 
@@ -109,28 +117,93 @@ namespace _pyves
             return cell.particles.size() > 0;
         });
 
-        // for(auto cell_it = std::begin(cells); cell_it != std::end(cells); cell_it++)
+#ifdef PYVES_USE_TBB
+        {   
+            pyves::scoped_root_dummy ROOT; 
+            for(int i = 0; i < task_arena.max_concurrency(); ++i)
+            {
+                ROOT.enqueue_child( [&, cellrefs] () mutable
+                {   
+                    std::shuffle(std::begin(cellrefs), std::end(cellrefs), RandomEngine.pseudo_engine);
+                    
+                    while(! (allCellsInState<CellState::FINISHED>()) )
+                    {
+                        for(Cell& cell: cellrefs)
+                        {
+                            if(// Cell& cell = cell_it.get();
+                                cell.state == CellState::IDLE &&
+                                cell.regionNoneInState<CellState::BLOCKED>() &&
+                                cell.algorithm_mutex.try_lock()
+                            )
+                            {
+                                cell.state = CellState::BLOCKED;
+                                assert( cell.state == CellState::BLOCKED );
+                                assert( cell.proximityNoneInState<CellState::BLOCKED>() );
+                                assert( cell.state == CellState::BLOCKED );
+                                func( cell ); 
+                                cell.state = CellState::FINISHED;
+                                assert( cell.state == CellState::FINISHED );
+                                cell.algorithm_mutex.unlock();
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+
+
+        // std::shuffle(std::begin(cellrefs), std::end(cellrefs), RandomEngine.pseudo_engine);
+        // tbb::parallel_for_each(std::begin(cellrefs), std::end(cellrefs), [&] (Cell& cell)
         // {
-        //     if(cell_it->particles.size())
+        //     while(cell.state != CellState::FINISHED)
         //     {
-        //         iterators.push_back(cell_it);
+        //         if(// Cell& cell = cell_it.get();
+        //             cell.state == CellState::IDLE &&
+        //             cell.regionNoneInState<CellState::BLOCKED>() &&
+        //             cell.algorithm_mutex.try_lock()
+        //         )
+        //         {
+        //             cell.state = CellState::BLOCKED;
+        //             assert( cell.state == CellState::BLOCKED );
+        //             assert( cell.proximityNoneInState<CellState::BLOCKED>() );
+        //             assert( cell.state == CellState::BLOCKED );
+        //             func( cell ); 
+        //             cell.state = CellState::FINISHED;
+        //             assert( cell.state == CellState::FINISHED );
+        //             cell.algorithm_mutex.unlock();
+        //         }
+        //     }
+        // });
+
+        // // OLD VERSION, slightly slower at 
+        // {
+        //     pyves::scoped_root_dummy ROOT; 
+        //     while(! (allCellsInState<CellState::FINISHED>()) )
+        //     {
+        //         for(Cell& cell: cellrefs)
+        //         {
+        //             if(// Cell& cell = cell_it.get();
+        //                 cell.state == CellState::IDLE &&
+        //                 cell.regionNoneInState<CellState::BLOCKED>()
+        //             )
+        //             {
+        //                 cell.state = CellState::BLOCKED;
+        //                 assert( cell.state == CellState::BLOCKED );
+        //                 assert( cell.proximityNoneInState<CellState::BLOCKED>() );
+        //                 assert( cell.state == CellState::BLOCKED );
+        //                 ROOT.enqueue_child( [&]
+        //                 {
+        //                     assert( cell.state == CellState::BLOCKED );
+        //                     func( cell ); 
+        //                     cell.state = CellState::FINISHED;
+        //                     assert( cell.state == CellState::FINISHED );
+        //                 } );
+        //             }
+        //         }
         //     }
         // }
-        // std::iota(std::begin(iterators), std::end(iterators), std::begin(cells));
-
-        // auto starttask = taskflow.placeholder();
-
-        // auto B = taskflow.emplace([&](tf::Subflow& subflow){ 
-        //     std::cout << "TaskB\n";
-        //     auto B1 = subflow.emplace([&](){ std::cout << "TaskB1\n"; }).name("B1");
-        //     auto B2 = subflow.emplace([&](){ std::cout << "TaskB2\n"; }).name("B2");
-        //     auto B3 = subflow.emplace([&](){ std::cout << "TaskB3\n"; }).name("B3");
-        //     B1.precede(B3); 
-        //     B2.precede(B3);
-        // }).name("B");
-
-        // executor.run_until(taskflow, [] { return allCellsInState<CellState::FINISHED>(); });
-
+#else
         tf::Taskflow taskflow;
         tf::Task join_task = taskflow.placeholder().name("join_task");
         
@@ -141,7 +214,6 @@ namespace _pyves
                 std::shuffle(std::begin(cellrefs), std::end(cellrefs), RandomEngine.pseudo_engine);
                 
                 while(! (allCellsInState<CellState::FINISHED>()) )
-                // while(! (numCellsInState<CellState::FINISHED>() <= 1) )
                 {
                     for(Cell& cell: cellrefs)
                     {
@@ -165,10 +237,8 @@ namespace _pyves
             }).name(std::string("worker")+std::to_string(i));
             worker_task.precede(join_task);
         }
-        // taskflow.dump(std::cout);
         executor->run(taskflow).wait();
-
-        // executor->wait_for_all();
+#endif
         if( !allCellsInState<CellState::FINISHED>() )
         {
             throw std::runtime_error("not all cells finished");

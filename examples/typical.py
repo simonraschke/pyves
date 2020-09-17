@@ -3,6 +3,7 @@ import os
 
 print("pyves typical use example")
 print("pyves version:", pyves.__version__)
+print("pyves concurrency model:", pyves.concurrency_model())
 
 print("create Controller")
 ctrl = pyves.Controller()

@@ -75,7 +75,7 @@ struct _pyves::Cell
     void shuffle();
     auto particlesOutOfBounds() -> std::deque<decltype(particles)::value_type>;
     REAL potentialEnergy(const Particle& p, REAL cutoff) const;
-    REAL potentialEnergyVectorized(const Particle& p, REAL cutoff) const;
+    // REAL potentialEnergyVectorized(const Particle& p, REAL cutoff) const;
     
     template<CellState S> bool proximityAllInState() const;
     template<CellState S> bool proximityNoneInState() const;

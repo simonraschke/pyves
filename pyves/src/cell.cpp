@@ -183,35 +183,35 @@ namespace _pyves
 
 
 
-    REAL Cell::potentialEnergyVectorized(const Particle& particle, REAL cutoff) const
-    {
-        // const std::size_t num_particles = std::accumulate(std::begin(region), std::end(region), std::size_t(0), [](auto i, const Cell& cell){ return i + cell.particles.size(); });
+    // REAL Cell::potentialEnergyVectorized(const Particle& particle, REAL cutoff) const
+    // {
+    //     // const std::size_t num_particles = std::accumulate(std::begin(region), std::end(region), std::size_t(0), [](auto i, const Cell& cell){ return i + cell.particles.size(); });
         
-        // decltype(Cell::particles) region_particles;
-        // region_particles.reserve(num_particles);
+    //     // decltype(Cell::particles) region_particles;
+    //     // region_particles.reserve(num_particles);
 
-        // for(Cell& c : region)
-        // {
-        //     std::transform(c.particles.begin(), c.particles.end(), std::back_inserter(region_particles), [](auto& x){ return std::ref<Particle>(x); });
-        // }
+    //     // for(Cell& c : region)
+    //     // {
+    //     //     std::transform(c.particles.begin(), c.particles.end(), std::back_inserter(region_particles), [](auto& x){ return std::ref<Particle>(x); });
+    //     // }
         
-        // std::cout << "\n";
-        // std::cout << "\n";
-        // std::cout << "\n";
-        // Eigen::MatrixXf positions(num_particles, 3);
-        // for(std::size_t i = 0; i < region_particles.size(); ++i)
-        // {
-        //     positions(i,0) = region_particles.at(i).get().getx();
-        //     positions(i,1) = region_particles.at(i).get().gety();
-        //     positions(i,2) = region_particles.at(i).get().getz();
-        // }
-        // std::cout << positions.format(PYTHONFORMAT) << "\n";
+    //     // std::cout << "\n";
+    //     // std::cout << "\n";
+    //     // std::cout << "\n";
+    //     // Eigen::MatrixXf positions(num_particles, 3);
+    //     // for(std::size_t i = 0; i < region_particles.size(); ++i)
+    //     // {
+    //     //     positions(i,0) = region_particles.at(i).get().getx();
+    //     //     positions(i,1) = region_particles.at(i).get().gety();
+    //     //     positions(i,2) = region_particles.at(i).get().getz();
+    //     // }
+    //     // std::cout << positions.format(PYTHONFORMAT) << "\n";
 
-        // auto distance_vectors = positions.rowwise() - particle.position.transpose();
-        // std::cout << distance_vectors.format(PYTHONFORMAT) << "\n";
+    //     // auto distance_vectors = positions.rowwise() - particle.position.transpose();
+    //     // std::cout << distance_vectors.format(PYTHONFORMAT) << "\n";
 
-        return 0;
-    }
+    //     return 0;
+    // }
 
 
 

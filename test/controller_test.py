@@ -17,6 +17,8 @@ class MainTest(unittest.TestCase):
             print("no data.h5 to remove",e)
 
         control = pyves.Controller()
+        print("pyves version:", pyves.__version__)
+        print("pyves concurrency model:", pyves.concurrency_model())
         
         control.readParameters("test/parameters.json")
 

@@ -2,16 +2,16 @@
     "hardware" : 
     {
         "cores" : 2,
-        "threads" : 8
+        "threads" : 6
     },
     "system" : 
     {
         "temperature" : 0.23,
         "box" : 
         {
-            "x" : 50.0,
-            "y" : 50.0,
-            "z" : 50.0
+            "x" : 45.0,
+            "y" : 45.0,
+            "z" : 45.0
         },
         "translation" :
         {
@@ -71,7 +71,7 @@
     "control" : 
     {
         "time_delta" : 1000,
-        "time_max" : 100000,
+        "time_max" : 50000,
         
         "cell_min_size" : 3.0
     },

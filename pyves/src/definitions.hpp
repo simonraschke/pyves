@@ -14,6 +14,8 @@
     #include <Eigen/Core>
 #endif
 
+
+
 namespace _pyves
 {
     typedef float REAL;
@@ -29,6 +31,14 @@ namespace _pyves
 
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
+
+
+// #undef PYVES_USE_TBB
+#ifdef PYVES_USE_TBB
+    #define PYVES_PARALLEL_FOR_EACH(THREADS, BEGIN, END, FUNC) tbb::task_arena limited(THREADS); limited.execute([&]{ tbb::parallel_for_each(BEGIN, END, FUNC); })
+#else
+    #define PYVES_PARALLEL_FOR_EACH(THREADS, BEGIN, END, FUNC) tf::Executor __e(THREADS); tf::Taskflow __tf; __tf.for_each(BEGIN, END, FUNC); __e.run(__tf).get()
+#endif
 
 
 // #include <csignal>

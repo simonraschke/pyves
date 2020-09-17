@@ -7,17 +7,22 @@ namespace _pyves
     {
         // threads = std::max(num, static_cast<std::size_t>(2));
         threads = num;
-	    // tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads);
 
-        // if(threads == 1)
-        // {
-        //     task_arena.initialize(threads, 1);
-        // }
-        // else
-        // {
-        //     task_arena.initialize(threads);
-        // }
+#ifdef PYVES_USE_TBB
+	    tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads);
+
+        if(threads == 1)
+        {
+            task_arena.initialize(threads, 1);
+        }
+        else
+        {
+            task_arena.initialize(threads);
+        }
+
+#else
         executor.reset(new tf::Executor(threads));
+#endif
     }
 
 
@@ -69,8 +74,16 @@ namespace _pyves
 
     void System::singleSimulationStep()
     {
+#ifdef PYVES_USE_TBB
+        task_arena.execute([&]
+        {
+            prepareSimulationStep();
+            applyToCells([&](const Cell& c){ cellStep(c);});
+        });
+#else
         prepareSimulationStep();
         applyToCells([&](const Cell& c){ cellStep(c);});
+#endif
     }
 
 
@@ -87,21 +100,30 @@ namespace _pyves
 
     void System::shuffle()
     {
+#ifdef PYVES_USE_TBB
+        tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+#else
         tf::Taskflow taskflow;
         taskflow.for_each_static(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+#endif
         {
             cell.shuffle(); 
         });
+#ifndef PYVES_USE_TBB
         executor->run(taskflow).get();
+#endif
     }
 
 
 
     void System::prepareSimulationStep()
     {
-        // tf::Executor executor(threads);
+#ifdef PYVES_USE_TBB
+        tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+#else
         tf::Taskflow taskflow;
         taskflow.for_each_static(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+#endif
         {
             // std::cout << cell.repr() << "\n";
             auto leavers = cell.particlesOutOfBounds();
@@ -130,8 +152,9 @@ namespace _pyves
             cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
             cell.shuffle(); 
         });
-
+#ifndef PYVES_USE_TBB
         executor->run(taskflow).get();
+#endif
     }
 
 
