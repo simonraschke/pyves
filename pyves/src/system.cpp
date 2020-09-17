@@ -189,18 +189,12 @@ namespace _pyves
                 }
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
-                last_energy_value = cell.potentialEnergy(particle, interaction_cutoff);
-                // auto last_energy_value_vec = cell.potentialEnergyVectorized(particle, interaction_cutoff);
-                // auto diff = last_energy_value-last_energy_value_vec;
-                // // std::cout << 
-                // if(std::sqrt(diff*diff) >= 1e-5)
-                // {
-                //     throw std::runtime_error(std::string("nope  ") + std::to_string(diff));
-                // }
+                last_energy_value = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
 
                 if(particle.trySetPosition(particle.position+translation))
                 {
-                    energy_after = cell.potentialEnergy(particle, interaction_cutoff);
+                    energy_after = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
+                    
 
                     // rejection
                     if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -237,7 +231,7 @@ namespace _pyves
 
             if(particle.trySetOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation()))
             {
-                energy_after = cell.potentialEnergy(particle, interaction_cutoff);
+                energy_after = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
 
                 // rejection
                 if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -260,6 +254,14 @@ namespace _pyves
 
         // TODO:FIXME:TODO:FIXME: CAUTION: this function is exactly what it should look like.
         // do not change order or modify any function call
+    }
+
+
+
+    void System::makeInteractionLookupTable(ParticleContainer unqiues)
+    {
+        lookup_table.clear();
+        lookup_table = calculateInteractionLookupTable(unqiues);
     }
 
 
@@ -306,11 +308,12 @@ namespace _pyves
             })
         ;
 
+        py::bind_map<LookupTable_t>(m, "LookupTable");
 
 
         py::class_<System>(m, "System", py::dynamic_attr())
             .def(py::init<>())
-            .def_property("threads",[](const System& s){ return s.threads; }, &System::setThreads)
+            .def_property("threads", [](const System& s){ return s.threads; }, &System::setThreads)
             .def_readwrite("temperature", &System::temperature)
             .def_readwrite("box", &System::box)
             .def_readwrite("particles", &System::particles)
@@ -326,6 +329,8 @@ namespace _pyves
             .def("prepareSimulationStep", &System::prepareSimulationStep)
             .def("singleSimulationStep", &System::singleSimulationStep)
             .def("multipleSimulationSteps", &System::multipleSimulationSteps)
+            .def_readonly("lookupTable", &System::lookup_table)
+            .def("makeLookupTableFrom", &System::makeInteractionLookupTable)
         ;
     }
 }

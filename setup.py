@@ -80,18 +80,7 @@ class CMakeBuild(build_ext):
             build_args += ['--', '/m']
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            build_args += ['--', '-j8']
-
-        # clangpath = find_clang()
-        # print("clang path:", clangpath)
-        # clangpppath = find_clangpp()
-        # print("clangpp path:", clangpppath)
-
-        # cmake_args += [
-        #     f"-DCMAKE_C_COMPILER={clangpath}",
-        #     f"-DCMAKE_CXX_COMPILER={clangpppath}"
-        # ]
-    
+            build_args += ['--', '-j6']
 
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
@@ -105,10 +94,6 @@ class CMakeBuild(build_ext):
         pprint.pprint(cmake_args)
         print("\nbuild_args")
         pprint.pprint(build_args)
-
-        # import pprint
-        # pprint.pprint(self.__dict__)
-        # pprint.pprint(self.distribution.__dict__)
 
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)

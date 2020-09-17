@@ -183,6 +183,35 @@ namespace _pyves
 
 
 
+    REAL Cell::potentialEnergyWithLookup(const Particle& particle, REAL cutoff, const LookupTable_t& table) const
+    {
+        return std::accumulate(std::begin(region), std::end(region), REAL(0), [&](REAL __val, const Cell& cell)
+        {
+            return __val + std::accumulate(std::begin(cell.particles), std::end(cell.particles), REAL(0), [&](REAL _val, const Particle& compare)
+            {
+                if(particle == compare)
+                {
+                    return _val;
+                }
+                else
+                {
+                    REAL result = 0;
+                    try
+                    {
+                        result = interactionWithLookup(particle, compare, box, cutoff, table);
+                    }
+                    catch(...)
+                    {
+                        result = interaction(particle, compare, box, cutoff);
+                    }
+                    return _val + result;
+                }
+            });
+        });
+    }
+
+
+
     // REAL Cell::potentialEnergyVectorized(const Particle& particle, REAL cutoff) const
     // {
     //     // const std::size_t num_particles = std::accumulate(std::begin(region), std::end(region), std::size_t(0), [](auto i, const Cell& cell){ return i + cell.particles.size(); });

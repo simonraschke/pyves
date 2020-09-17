@@ -122,6 +122,22 @@ class Controller(object):
 
     
 
+    def makeInteractionLookupTable(self):
+        particles = _pyves.ParticleContainer()
+        for name, particle_ff in self.particle_prms.items():
+            particles.append(_pyves.Particle([0,0,0], [0,1,0], 
+                sigma=particle_ff["sigma"], 
+                kappa=particle_ff["kappa"], 
+                eps=particle_ff["epsilon"], 
+                gamma=particle_ff["gamma"], 
+                name=name)
+            )
+        self.system.makeLookupTableFrom(particles)
+        import pprint
+        pprint.pprint(self.system.lookupTable)
+
+
+
     def placeParticlesInCells(self):
         cell_place_counter = 0
         for i, particle in enumerate(self.system.particles):
@@ -233,6 +249,7 @@ class Controller(object):
             print("TypeError: unable to read datafile:", e)
             print("creating System new")
             self.prepareNew()
+        self.makeInteractionLookupTable()
 
 
 

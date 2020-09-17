@@ -39,21 +39,31 @@ class SignalHandler(object):
 
     @classmethod 
     def recieved_exit_signal(cls, sig, frame):
-        print("Recieved Signal", sig, end="")
+        print("Recieved Signal", sig, end=" ")
         cls.num_terminate_calls += 1
+        
+        if sig == signal.SIGABRT:
+            sys.exit(sig)
+            
         if cls.num_terminate_calls == 1:
             print(":  Trying civilized shutdown...")
             cls.ProgramState = ProgramState.SHUTDOWN
-        elif cls.num_terminate_calls == 2:
-            print(":  Shutting down immediately!")
+            
+        if cls.num_terminate_calls == 2:
+            print(":  Still trying civilized shutdown...")
+            cls.ProgramState = ProgramState.SHUTDOWN
+
+        elif cls.num_terminate_calls == 3:
+            print(":  Wow, rude! Shutting down immediately!")
             sys.exit(sig)
-        else:
-            print(":  Aborting...")
+
             
 
     @classmethod
     def recieved_noaction_signal(cls, sig, frame):
         print("Recieved Signal", sig)
+
+
 
     def __init__(self) -> None:
         signal.signal(signal.SIGHUP, SignalHandler.recieved_noaction_signal)

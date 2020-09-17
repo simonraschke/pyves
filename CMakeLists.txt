@@ -84,8 +84,8 @@ target_compile_definitions(_pyves PRIVATE EIGEN_FAST_MATH=1 EIGEN_MAX_CPP_VER=17
 target_compile_options(_pyves
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W3>
-        $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -Wextra -Wpedantic -ferror-limit=2>
-        $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=2>
+        $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -O3 -Wextra -Wpedantic -ferror-limit=2>
+        $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -O3 -Wextra -Wpedantic -fmax-errors=2>
 )
 target_link_options(_pyves PRIVATE -W -Wno-undef)
 target_link_libraries(_pyves PRIVATE pthread)

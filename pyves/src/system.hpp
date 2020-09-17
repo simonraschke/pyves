@@ -47,13 +47,9 @@ namespace _pyves
         StepwidthAlignmentUnit rotation_alignment;
     
         REAL interaction_cutoff = make_nan<REAL>();
-        std::size_t threads = make_nan<std::size_t>();
-        
-        // std::mt19937_64 pseudo_engine{std::random_device{}()};
-
         REAL temperature = make_nan<REAL>();
-        // std::size_t time_max = make_nan<std::size_t>();
-        // std::mutex mutex;
+        std::size_t threads = make_nan<std::size_t>();
+        LookupTable_t lookup_table;
 
         void setThreads(std::size_t);
         bool particleIsFree(const Particle&) const;
@@ -64,6 +60,7 @@ namespace _pyves
         void shuffle();
         void singleSimulationStep();
         void multipleSimulationSteps(const unsigned long);
+        void makeInteractionLookupTable(ParticleContainer);
         std::size_t numParticlesInCells() const;
 
         template<typename FUNCTOR> void applyToCells(FUNCTOR&& func);
@@ -72,6 +69,7 @@ namespace _pyves
         template<CellState S> std::size_t numCellsInState() const;
         template<CellState S> bool allCellsInState() const;
         template<CellState S> bool noCellsInState() const;
+        
 
     private:
 
