@@ -68,9 +68,9 @@ class Controller(object):
 
 
     def setParameters(self, _prms:dict):
+        if not SignalHandler.ProgramState == ProgramState.SHUTDOWN:
+            SignalHandler.ProgramState = ProgramState.SETUP
         self.prms_complete = _prms
-        SignalHandler.ProgramState = ProgramState.SETUP
-        self.system.cores = _prms["hardware"]["cores"]
         self.system.threads = _prms["hardware"]["threads"]
 
         self.system.temperature = _prms["system"]["temperature"]
@@ -86,6 +86,9 @@ class Controller(object):
 
         self.system.interaction_cutoff = _prms["system"]["interaction"]["cutoff"]
 
+        self.system.update_interval = _prms["control"]["update_interval"]
+        self.system.neighbor_cutoff = _prms["control"]["neighbor_cutoff"]
+
         self.time_delta = _prms["control"]["time_delta"]
         self.time_max = _prms["control"]["time_max"]
         self.particle_prms = _prms["system"]["particles"]
@@ -93,6 +96,9 @@ class Controller(object):
 
         self.output = _prms["output"]
         self.input = _prms["input"]
+
+        assert(self.system.neighbor_cutoff >= self.system.interaction_cutoff)
+        assert(self.cell_min_size >= self.system.interaction_cutoff)
     
 
 
@@ -236,71 +242,75 @@ class Controller(object):
 
 
     def prepareSimulation(self):
-        SignalHandler.ProgramState = ProgramState.SETUP
+        if not SignalHandler.ProgramState == ProgramState.SHUTDOWN:
+            SignalHandler.ProgramState = ProgramState.SETUP
 
-        try:
-            input_data_file_path = os.path.join(self.input["dir"], self.input["filename"])
-            self.prepareFromData(input_data_file_path)
-        except TypeError as e:
-            print("TypeError: unable to read input file:", e)
-            print("creating System new")
-            self.prepareNew()
-        except OSError as e:
-            print("TypeError: unable to read datafile:", e)
-            print("creating System new")
-            self.prepareNew()
-        self.makeInteractionLookupTable()
+            try:
+                input_data_file_path = os.path.join(self.input["dir"], self.input["filename"])
+                self.prepareFromData(input_data_file_path)
+            except TypeError as e:
+                print("TypeError: unable to read input file:", e)
+                print("creating System new")
+                self.prepareNew()
+            except OSError as e:
+                print("TypeError: unable to read datafile:", e)
+                print("creating System new")
+                self.prepareNew()
+            self.makeInteractionLookupTable()
+            self.system.makeNeighborLists()
 
 
 
     def sample(self, steps=None, timestats=False):
-        SignalHandler.ProgramState = ProgramState.RUNNING
-        self.sample_starttime = time.perf_counter()
+        if not SignalHandler.ProgramState == ProgramState.SHUTDOWN:
+            SignalHandler.ProgramState = ProgramState.RUNNING
 
-        if isinstance(steps, int):
-            for i in range(steps):
-                if not SignalHandler.ProgramState is ProgramState.SHUTDOWN:
-                    self.system.assertIntegrity()
-                    self.system.singleSimulationStep()
-                    self.time_actual += 1
-                else:
-                    break
-            if timestats:
-                self.sample_endtime = time.perf_counter()
-                print(
-                    f"time {self.time_actual} took {self.sample_endtime-self.sample_starttime:.4f} s", " | ", 
-                    f"{(self.sample_endtime-self.sample_starttime)*1000*1000/len(self.system.particles)/steps:.4f} ns /particle/step", " | ", 
-                    end=""
-                )
-            # print("writing...")
-            self.writeTrajectoryHDF(timestats=timestats)
-            if timestats: print()
-            if SignalHandler.ProgramState is ProgramState.SHUTDOWN:
-                print("shutting down")
-                sys.exit(0)
+            self.sample_starttime = time.perf_counter()
 
-        else:
-            sampling_time_points = np.arange(self.time_actual, self.time_max, self.time_delta)
-            for time_point in sampling_time_points:
-                if not SignalHandler.ProgramState is ProgramState.SHUTDOWN:
-                    assert(self.time_actual == time_point)
-                    self.system.assertIntegrity()
-                    self.system.multipleSimulationSteps(self.time_delta)
-                    self.time_actual += self.time_delta
-                    if timestats:
-                        self.sample_endtime = time.perf_counter()
-                        print(
-                            f"sampling to step {self.time_actual} took {self.sample_endtime-self.sample_starttime:.4f} s", " | ", 
-                            f"{(self.sample_endtime-self.sample_starttime)*1000*1000/len(self.system.particles)/self.time_delta:.4f} ns /particle/step", " | ", 
-                            end=""
-                        )
-                    self.writeTrajectoryHDF(timestats=timestats)
-                    if timestats: print()
-
+            if isinstance(steps, int):
+                for i in range(steps):
+                    if not SignalHandler.ProgramState is ProgramState.SHUTDOWN:
+                        self.system.assertIntegrity()
+                        self.system.singleSimulationStep()
+                        self.time_actual += 1
+                    else:
+                        break
+                if timestats:
+                    self.sample_endtime = time.perf_counter()
+                    print(
+                        f"time {self.time_actual} took {self.sample_endtime-self.sample_starttime:.4f} s", " | ", 
+                        f"{(self.sample_endtime-self.sample_starttime)*1000*1000/len(self.system.particles)/steps:.4f} ns /particle/step", " | ", 
+                        end=""
+                    )
+                # print("writing...")
+                self.writeTrajectoryHDF(timestats=timestats)
+                if timestats: print()
                 if SignalHandler.ProgramState is ProgramState.SHUTDOWN:
                     print("shutting down")
                     sys.exit(0)
-                self.sample_starttime = time.perf_counter()
+
+            else:
+                sampling_time_points = np.arange(self.time_actual, self.time_max, self.time_delta)
+                for time_point in sampling_time_points:
+                    if not SignalHandler.ProgramState is ProgramState.SHUTDOWN:
+                        assert(self.time_actual == time_point)
+                        self.system.assertIntegrity()
+                        self.system.multipleSimulationSteps(self.time_delta)
+                        self.time_actual += self.time_delta
+                        if timestats:
+                            self.sample_endtime = time.perf_counter()
+                            print(
+                                f"sampling to step {self.time_actual} took {self.sample_endtime-self.sample_starttime:.4f} s", " | ", 
+                                f"{(self.sample_endtime-self.sample_starttime)*1000*1000/len(self.system.particles)/self.time_delta:.4f} ns /particle/step", " | ", 
+                                end=""
+                            )
+                        self.writeTrajectoryHDF(timestats=timestats)
+                        if timestats: print()
+
+                    if SignalHandler.ProgramState is ProgramState.SHUTDOWN:
+                        print("shutting down")
+                        sys.exit(0)
+                    self.sample_starttime = time.perf_counter()
 
 
 

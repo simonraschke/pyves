@@ -2,6 +2,8 @@
 
 #include "definitions.hpp"
 #include "utility.hpp"
+#include "box.hpp"
+#include "interaction.hpp"
 #include <limits>
 #include <exception>
 #include <cmath>
@@ -63,6 +65,8 @@ namespace _pyves
         std::string name = "UNDEFINED";
         REAL position_bound_radius_squared = std::numeric_limits<REAL>::max();
         REAL orientation_bound_radiant = std::numeric_limits<REAL>::max();
+
+        ParticleRefContainer neighbors;
         
         Particle() = default;
         Particle(const Particle&);
@@ -90,6 +94,10 @@ namespace _pyves
         bool trySetOrientation(CARTESIAN_CREF);
         void setInitialOrientation(CARTESIAN);
         void setOrientation(CARTESIAN_CREF);
+
+        void updateNeighborList(const ParticleRefContainer&, const Box<PBC::ON>&, REAL);
+
+        REAL potentialEnergy(const Box<PBC::ON>&, REAL, const LookupTable_t*) const;
 
         bool operator==(const Particle& other) const;
         bool operator!=(const Particle& other) const;

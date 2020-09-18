@@ -26,6 +26,7 @@ namespace py = pybind11;
 #endif
 
 
+
 PYBIND11_MAKE_OPAQUE(std::vector<_pyves::Particle>)
 PYBIND11_MAKE_OPAQUE(std::vector<_pyves::Cell>)
 
@@ -48,7 +49,11 @@ namespace _pyves
     
         REAL interaction_cutoff = make_nan<REAL>();
         REAL temperature = make_nan<REAL>();
+        REAL neighbor_cutoff = make_nan<REAL>();
         std::size_t threads = make_nan<std::size_t>();
+        std::size_t internal_step_count = 0;
+        std::size_t update_interval = make_nan<std::size_t>();
+
         LookupTable_t lookup_table;
 
         void setThreads(std::size_t);
@@ -58,6 +63,8 @@ namespace _pyves
         bool assertIntegrity();
         void cellStep(const Cell&);
         void shuffle();
+        void reorderCells();
+        void makeNeighborLists();
         void singleSimulationStep();
         void multipleSimulationSteps(const unsigned long);
         void makeInteractionLookupTable(ParticleContainer);
@@ -112,8 +119,11 @@ namespace _pyves
         CellRefContainer cellrefs;
                 
         std::copy_if(std::begin(cells), std::end(cells), std::back_inserter(cellrefs), [](Cell& cell){
+            cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
             return cell.particles.size() > 0;
         });
+
+        // std::cout << "calculating " << cellrefs.size() <<  " from " << cells.size() << "\n";
 
 #ifdef PYVES_USE_TBB
         {   

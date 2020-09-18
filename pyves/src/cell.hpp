@@ -54,6 +54,7 @@ struct _pyves::Cell
     CellRefContainer proximity;
     CellRefContainer region;
     ParticleRefContainer particles;
+    ParticleRefContainer region_particles;
 
     // tbb::spin_rw_mutex particles_access_mutex;
     std::shared_mutex particles_access_mutex;
@@ -77,6 +78,8 @@ struct _pyves::Cell
     REAL potentialEnergy(const Particle& p, REAL cutoff) const;
     REAL potentialEnergyWithLookup(const Particle& particle, REAL cutoff, const LookupTable_t& table) const;
     // REAL potentialEnergyVectorized(const Particle& p, REAL cutoff) const;
+
+    void updateRegionParticles();
     
     template<CellState S> bool proximityAllInState() const;
     template<CellState S> bool proximityNoneInState() const;

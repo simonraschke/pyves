@@ -185,32 +185,56 @@ namespace _pyves
 
     REAL Cell::potentialEnergyWithLookup(const Particle& particle, REAL cutoff, const LookupTable_t& table) const
     {
-        return std::accumulate(std::begin(region), std::end(region), REAL(0), [&](REAL __val, const Cell& cell)
+        // return std::accumulate(std::begin(region), std::end(region), REAL(0), [&](REAL __val, const Cell& cell)
+        // {
+        //     return __val + std::accumulate(std::begin(cell.particles), std::end(cell.particles), REAL(0), [&](REAL _val, const Particle& compare)
+        //     {
+        //         if(particle == compare)
+        //         {
+        //             return _val;
+        //         }
+        //         else
+        //         {
+        //             REAL result = 0;
+        //             try
+        //             {
+        //                 result = interactionWithLookup(particle, compare, box, cutoff, table);
+        //             }
+        //             catch(...)
+        //             {
+        //                 result = interaction(particle, compare, box, cutoff);
+        //             }
+        //             return _val + result;
+        //         }
+        //     });
+        // });
+
+        return std::accumulate(std::begin(particle.neighbors), std::end(particle.neighbors), REAL(0), [&](REAL __val, const Particle& compare)
         {
-            return __val + std::accumulate(std::begin(cell.particles), std::end(cell.particles), REAL(0), [&](REAL _val, const Particle& compare)
+            REAL result = 0;
+            try
             {
-                if(particle == compare)
-                {
-                    return _val;
-                }
-                else
-                {
-                    REAL result = 0;
-                    try
-                    {
-                        result = interactionWithLookup(particle, compare, box, cutoff, table);
-                    }
-                    catch(...)
-                    {
-                        result = interaction(particle, compare, box, cutoff);
-                    }
-                    return _val + result;
-                }
-            });
+                result = interactionWithLookup(particle, compare, box, cutoff, table);
+            }
+            catch(...)
+            {
+                result = interaction(particle, compare, box, cutoff);
+            }
+            return __val + result;
         });
     }
 
 
+
+    void Cell::updateRegionParticles() 
+    {
+        // ParticleRefContainer regionParticles;
+        region_particles.clear();
+        std::for_each(std::begin(region), std::end(region), [&] (const Cell& cell){
+            region_particles.insert(std::end(region_particles), std::begin(cell.particles), std::end(cell.particles));
+        });
+        // return regionParticles;
+    }
 
     // REAL Cell::potentialEnergyVectorized(const Particle& particle, REAL cutoff) const
     // {

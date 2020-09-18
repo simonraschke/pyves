@@ -13,6 +13,7 @@ ctrl.readParameters(os.path.join(os.path.dirname(__file__),"typical_parameters.j
 
 print("prepare simulation")
 ctrl.prepareSimulation()
+ctrl.system.assertIntegrity()
 
 print("start sampling")
 ctrl.sample(timestats=True)

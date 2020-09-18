@@ -1,7 +1,7 @@
 #pragma once
 
 #include "definitions.hpp"
-#include "particle.hpp"
+// #include "particle.hpp"
 #include "random.hpp"
 #include <memory>
 #include <Eigen/Geometry>
@@ -32,7 +32,7 @@ namespace _pyves
 
     template<PBC P> struct Box;
 
-    struct Particle;
+    // struct Particle;
 }
 
 
@@ -73,26 +73,26 @@ namespace _pyves
         // called from anywhere else
         CARTESIAN distanceVector(CARTESIAN_CREF, CARTESIAN_CREF) const;
         // implementation for Particle base class. calls CARTESIAN version
-        CARTESIAN distanceVectorParticle(const Particle&, const Particle&) const;
+        // CARTESIAN distanceVectorParticle(const Particle&, const Particle&) const;
 
 
         // distance
         // calls squaredDistance and calculates std::sqrt
         REAL distance(CARTESIAN_CREF, CARTESIAN_CREF) const;
         // implementation for Particle base class. calls CARTESIAN version
-        REAL distanceParticle(const Particle&, const Particle&) const;
+        // REAL distanceParticle(const Particle&, const Particle&) const;
 
 
         // squared distance
         REAL squaredDistance(CARTESIAN_CREF, CARTESIAN_CREF) const;
         // implementation for Particle base class. calls CARTESIAN version
-        REAL squaredDistanceParticle(const Particle&, const Particle&) const;
+        // REAL squaredDistanceParticle(const Particle&, const Particle&) const;
 
 
         // scales down any give coordinates into the simulation box
         CARTESIAN scaleToBox(CARTESIAN) const ;
         // implementation for Particle base class. calls CARTESIAN version
-        CARTESIAN scaleToBoxParticle(const Particle&) const;
+        // CARTESIAN scaleToBoxParticle(const Particle&) const;
 
 
         // scales down any give coordinates into the simulation box
@@ -100,13 +100,13 @@ namespace _pyves
         // scales accordingly
         CARTESIAN scaleToBoxForVMD(CARTESIAN) const ;
         // implementation for Particle base class. calls CARTESIAN version
-        CARTESIAN scaleToBoxForVMD(const Particle&) const;
+        // CARTESIAN scaleToBoxForVMD(const Particle&) const;
 
         // checks if bounding_box contains coordinates
         // if PBC::ON calls scaleToBox before
         bool contains(CARTESIAN_CREF) const;
         // implementation for Particle base class. calls CARTESIAN version
-        bool containsParticle(const Particle&) const;
+        // bool containsParticle(const Particle&) const;
 
 
         // destroy if derived is destroyed
@@ -258,11 +258,11 @@ namespace _pyves
 
 
 
-    template<PBC P>
-    inline CARTESIAN Box<P>::distanceVectorParticle(const Particle& p1, const Particle& p2) const
-    {
-        return distanceVector(p1.position,p2.position);
-    }
+    // template<PBC P>
+    // inline CARTESIAN Box<P>::distanceVectorParticle(const Particle& p1, const Particle& p2) const
+    // {
+    //     return distanceVector(p1.position,p2.position);
+    // }
 
 
 
@@ -274,11 +274,11 @@ namespace _pyves
 
 
 
-    template<PBC P>
-    inline REAL Box<P>::squaredDistanceParticle(const Particle& p1, const Particle& p2) const 
-    {
-        return squaredDistance(p1.position,p2.position);
-    }
+    // template<PBC P>
+    // inline REAL Box<P>::squaredDistanceParticle(const Particle& p1, const Particle& p2) const 
+    // {
+    //     return squaredDistance(p1.position,p2.position);
+    // }
 
 
 
@@ -290,11 +290,11 @@ namespace _pyves
 
 
 
-    template<PBC P>
-    inline REAL Box<P>::distanceParticle(const Particle& p1, const Particle& p2) const 
-    {
-        return distance(p1.position,p2.position);
-    }
+    // template<PBC P>
+    // inline REAL Box<P>::distanceParticle(const Particle& p1, const Particle& p2) const 
+    // {
+    //     return distance(p1.position,p2.position);
+    // }
 
 
 
@@ -313,11 +313,11 @@ namespace _pyves
 
 
 
-    template<PBC P>
-    CARTESIAN Box<P>::scaleToBoxParticle(const Particle& p) const 
-    {
-        return scaleToBox(p.position);
-    }
+    // template<PBC P>
+    // CARTESIAN Box<P>::scaleToBoxParticle(const Particle& p) const 
+    // {
+    //     return scaleToBox(p.position);
+    // }
 
 
 
@@ -332,11 +332,11 @@ namespace _pyves
 
 
 
-    template<PBC P>
-    CARTESIAN Box<P>::scaleToBoxForVMD(const Particle& p) const 
-    {
-        return scaleToBoxForVMD(p.position);
-    }
+    // template<PBC P>
+    // CARTESIAN Box<P>::scaleToBoxForVMD(const Particle& p) const 
+    // {
+    //     return scaleToBoxForVMD(p.position);
+    // }
 
 
 
@@ -360,11 +360,11 @@ namespace _pyves
 
 
 
-    template<PBC P>
-    inline bool Box<P>::containsParticle(const Particle& p) const 
-    {
-        return contains(p.position);
-    }
+    // template<PBC P>
+    // inline bool Box<P>::containsParticle(const Particle& p) const 
+    // {
+    //     return contains(p.position);
+    // }
 
 
 
@@ -397,15 +397,15 @@ namespace _pyves
             .def_property_readonly("center", &Class::getCenter)
             .def_property_readonly("volume", &Class::getVolume)
             .def("distanceVector", &Class::distanceVector)
-            .def("distanceVectorParticle", &Class::distanceVectorParticle)
+            // .def("distanceVectorParticle", &Class::distanceVectorParticle)
             .def("distance", &Class::distance)
-            .def("distanceParticle", &Class::distanceParticle)
+            // .def("distanceParticle", &Class::distanceParticle)
             .def("squaredDistance", &Class::squaredDistance)
-            .def("squaredDistanceParticle", &Class::squaredDistanceParticle)
+            // .def("squaredDistanceParticle", &Class::squaredDistanceParticle)
             .def("scaleToBox", &Class::scaleToBox)
-            .def("scaleToBoxParticle", &Class::scaleToBoxParticle)
+            // .def("scaleToBoxParticle", &Class::scaleToBoxParticle)
             .def("contains", &Class::contains)
-            .def("containsParticle", &Class::containsParticle)
+            // .def("containsParticle", &Class::containsParticle)
             .def("randomPointInside", &Class::randomPointInside)
             // .def_readonly("min", [](const Class& b){ return b.bounding_box.min(); })
             // .def_readonly("max", [](const Class& b){ return b.bounding_box.max(); })

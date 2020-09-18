@@ -35,7 +35,7 @@ namespace _pyves
             {
                 throw std::logic_error("System::particleIsFree found particle where sigma is NaN");
             }
-            return subject == p ? true : box.distanceParticle(subject, p) > 1.1224f*(subject.sigma+p.sigma)/2;
+            return subject == p ? true : box.distance(subject.position, p.position) > 1.1224f*(subject.sigma+p.sigma)/2;
         });
     }
 
@@ -46,7 +46,7 @@ namespace _pyves
         const REAL cutoff_squared = cutoff*cutoff;
         return std::all_of(std::begin(particles), std::end(particles), [&](const auto& p)
         { 
-            return subject == p ? true : box.squaredDistanceParticle(subject, p) > cutoff_squared;
+            return subject == p ? true : box.squaredDistance(subject.position, p.position) > cutoff_squared;
         });
     }
 
@@ -84,6 +84,7 @@ namespace _pyves
         prepareSimulationStep();
         applyToCells([&](const Cell& c){ cellStep(c);});
 #endif
+        ++internal_step_count;
     }
 
 
@@ -100,6 +101,7 @@ namespace _pyves
 
     void System::shuffle()
     {
+        // std::cout << __func__ << " " << internal_step_count << "  for tranlsation " << translation_alignment() << "\n";
 #ifdef PYVES_USE_TBB
         tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
 #else
@@ -116,8 +118,9 @@ namespace _pyves
 
 
 
-    void System::prepareSimulationStep()
+    void System::reorderCells()
     {
+        // std::cout << __func__ << " " << internal_step_count << "  for tranlsation " << translation_alignment() << "\n";
 #ifdef PYVES_USE_TBB
         tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
 #else
@@ -149,12 +152,48 @@ namespace _pyves
                 cell.removeParticle(leaver);
                 assert(!cell.contains(leaver));
             }
-            cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
-            cell.shuffle(); 
+            // cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
+            // cell.shuffle(); 
         });
 #ifndef PYVES_USE_TBB
         executor->run(taskflow).get();
 #endif
+    }
+
+
+
+    void System::makeNeighborLists()
+    {
+        // std::cout << __func__ << " " << internal_step_count << "  for tranlsation " << translation_alignment() << "\n";
+#ifdef PYVES_USE_TBB
+        tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+#else
+        tf::Taskflow taskflow;
+        taskflow.for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
+#endif
+        {
+            cell.updateRegionParticles();
+            for(Particle& p : cell.particles)
+            {
+                p.updateNeighborList(cell.region_particles, box, interaction_cutoff + 1);
+            }
+        });
+#ifndef PYVES_USE_TBB
+        executor->run(taskflow).get();
+#endif
+    }
+
+
+
+    void System::prepareSimulationStep()
+    {
+        if( internal_step_count >= update_interval )
+        {
+            reorderCells();
+            shuffle();
+            makeNeighborLists();
+            internal_step_count = 0;
+        }
     }
 
 
@@ -189,12 +228,13 @@ namespace _pyves
                 }
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
-                last_energy_value = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
+                // last_energy_value = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
+                last_energy_value = particle.potentialEnergy(box, interaction_cutoff, &lookup_table);
 
                 if(particle.trySetPosition(particle.position+translation))
                 {
-                    energy_after = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
-                    
+                    // energy_after = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
+                    energy_after = particle.potentialEnergy(box, interaction_cutoff, &lookup_table);                
 
                     // rejection
                     if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -231,7 +271,8 @@ namespace _pyves
 
             if(particle.trySetOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation()))
             {
-                energy_after = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
+                // energy_after = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
+                energy_after = particle.potentialEnergy(box, interaction_cutoff, &lookup_table);
 
                 // rejection
                 if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -319,6 +360,8 @@ namespace _pyves
             .def_readwrite("particles", &System::particles)
             .def_readwrite("interaction_cutoff", &System::interaction_cutoff)
             .def_readwrite("cells", &System::cells)
+            .def_readwrite("update_interval", &System::update_interval)
+            .def_readwrite("neighbor_cutoff", &System::neighbor_cutoff)
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&) const>(&System::particleIsFree))
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&, REAL) const>(&System::particleIsFree))
             .def("shuffle", &System::shuffle)
@@ -331,6 +374,7 @@ namespace _pyves
             .def("multipleSimulationSteps", &System::multipleSimulationSteps)
             .def_readonly("lookupTable", &System::lookup_table)
             .def("makeLookupTableFrom", &System::makeInteractionLookupTable)
+            .def("makeNeighborLists", &System::makeNeighborLists)
         ;
     }
 }

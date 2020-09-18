@@ -1,7 +1,6 @@
 {
     "hardware" : 
     {
-        "cores" : 2,
         "threads" : 1
     },
     "system" : 
@@ -83,7 +82,9 @@
     {
         "time_delta" : 100,
         "time_max" : 1000,
-        "cell_min_size" : 3.5
+        "cell_min_size" : 3.5,
+        "update_interval" : 5,
+        "neighbor_cutoff" : 4.0
     },  
     "output" :
     {

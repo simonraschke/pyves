@@ -28,6 +28,7 @@ if(${TBB_FOUND})
     ENDIF()
 elseif()
     message(STATUS "TBB not found. Fallback to Taskflow.")
+    include_directories(${CMAKE_SOURCE_DIR}/lib/taskflow)
 endif()
 
 
@@ -52,7 +53,6 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/lib/pybind11)
 include_directories(${SRC_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/lib/eigen)
 include_directories(${CMAKE_SOURCE_DIR}/lib/pybind11/include)
-include_directories(${CMAKE_SOURCE_DIR}/lib/taskflow)
 
 
 

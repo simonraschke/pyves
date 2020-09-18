@@ -37,9 +37,9 @@ CARTESIAN Particle::getInitialPosition() const
 
 
 
-void Particle::setPosition(CARTESIAN_CREF p)
+void Particle::setPosition(CARTESIAN_CREF v)
 {
-    position = p;
+    position = v;
 }
 
 
@@ -50,9 +50,10 @@ bool Particle::trySetPosition(CARTESIAN_CREF v)
     {
         setInitialPosition(v);
     }
+
     if((v - getInitialPosition()).squaredNorm() < position_bound_radius_squared)
     {
-        position = v;
+        setPosition(v);
         return true;
     }
     else
@@ -135,6 +136,38 @@ void Particle::setInitialOrientation(CARTESIAN o)
 {
     initial_orientation = std::make_unique<CARTESIAN>(o.normalized());
 }
+
+
+
+void Particle::updateNeighborList(const ParticleRefContainer& particles, const Box<PBC::ON>& box, REAL cutoff)
+{
+    neighbors.clear();
+    const REAL cutoff_sq = cutoff*cutoff;
+    std::copy_if(std::begin(particles), std::end(particles), std::back_inserter(neighbors), [&](const Particle& p){
+        return p != *this && box.squaredDistance(position, p.position) < cutoff_sq;
+    });
+    std::shuffle(std::begin(neighbors), std::end(neighbors), RandomEngine.pseudo_engine);
+    // std::cout << __func__ << " got "<< neighbors.size() << " neighbors from " << particles.size() << " particles" <<"\n";
+}
+
+
+
+REAL Particle::potentialEnergy(const Box<PBC::ON>& box, REAL cutoff, const LookupTable_t* table_ptr) const
+{
+    if(table_ptr)
+    {
+        return std::accumulate(std::begin(neighbors), std::end(neighbors), REAL(0), [&](REAL val, const Particle& other){
+            return val + interactionWithLookup(*this, other, box, cutoff, *table_ptr);
+        });
+    }
+    else
+    {
+        return std::accumulate(std::begin(neighbors), std::end(neighbors), REAL(0), [&](REAL val, const Particle& other){
+            return val + interaction(*this, other, box, cutoff);
+        });
+    }
+}
+
 
 
 
@@ -311,6 +344,7 @@ void bind_particle(py::module& m)
         .def_readwrite("kappa", &Particle::kappa)
         .def_readwrite("gamma", &Particle::gamma)
         .def_readwrite("name", &Particle::name)
+        .def_readonly("neighbors", &Particle::neighbors)
         .def_property_readonly("x", &Particle::getx)//, &Particle::setx)
         .def_property_readonly("y", &Particle::gety)//, &Particle::sety)
         .def_property_readonly("z", &Particle::getz)//, &Particle::setz)
