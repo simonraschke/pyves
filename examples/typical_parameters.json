@@ -41,7 +41,7 @@
             },
             "FRAME" : 
             {
-                "number" : 14,
+                "number" : 0,
                 "dist" : "sphere100",
                 "sigma" : 1.0,
                 "kappa" : 1.0,

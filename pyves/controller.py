@@ -46,19 +46,6 @@ class Controller(object):
 
 
 
-    # def readForceField(self, path):
-    #     SignalHandler.ProgramState = ProgramState.SETUP
-    #     with open(path, 'r') as ff_file:
-    #         self.forcefield = json.loads(ff_file.read())
-    
-
-
-    # def setForceField(self, ff:dict):
-    #     SignalHandler.ProgramState = ProgramState.SETUP
-    #     self.forcefield = ff
-
-
-
     def readParameters(self, path):
         SignalHandler.ProgramState = ProgramState.SETUP
         with open(path, 'r') as prms_file:
@@ -128,9 +115,11 @@ class Controller(object):
 
     
 
-    def makeInteractionLookupTable(self):
+    def makeInteractionLookupTable(self, force_zero=False):
         particles = _pyves.ParticleContainer()
         for name, particle_ff in self.particle_prms.items():
+            if not force_zero and particle_ff["number"] == 0:
+                continue
             particles.append(_pyves.Particle([0,0,0], [0,1,0], 
                 sigma=particle_ff["sigma"], 
                 kappa=particle_ff["kappa"], 
@@ -139,8 +128,8 @@ class Controller(object):
                 name=name)
             )
         self.system.makeLookupTableFrom(particles)
-        import pprint
-        pprint.pprint(self.system.lookupTable)
+        # import pprint
+        # pprint.pprint(self.system.lookupTable)
 
 
 

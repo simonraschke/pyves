@@ -69,6 +69,8 @@ namespace _pyves
         void multipleSimulationSteps(const unsigned long);
         void makeInteractionLookupTable(ParticleContainer);
         std::size_t numParticlesInCells() const;
+        REAL potentialEnergy(LookupTable_t*) const;
+        REAL potentialEnergyConcurrent(LookupTable_t*);
 
         template<typename FUNCTOR> void applyToCells(FUNCTOR&& func);
         template<typename FUNCTOR> void applyToCellsSlowAndSafe(FUNCTOR&& func);

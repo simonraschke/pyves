@@ -7,6 +7,8 @@
 #include <Eigen/Core>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 namespace py = pybind11;
 
 
@@ -17,13 +19,20 @@ namespace _pyves
     namespace __detail
     {
         template<class A, class B>
-        using map_t = std::map<A,B>;
+        using map_t = std::unordered_map<A,B>;
         
     }
     typedef __detail::map_t<std::string, __detail::map_t<std::string, __detail::map_t<std::string, REAL>>> LookupTable_t;
+}
 
 
 
+PYBIND11_MAKE_OPAQUE(_pyves::LookupTable_t)
+
+
+
+namespace _pyves
+{
     REAL interaction(const Particle& p1, const Particle& p2, const Box<PBC::ON>& box, REAL cutoff);
     REAL interactionWithLookup(const Particle& p1, const Particle& p2, const Box<PBC::ON>& box, REAL cutoff, const LookupTable_t& table);
 

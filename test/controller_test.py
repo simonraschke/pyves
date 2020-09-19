@@ -56,9 +56,9 @@ class MainTest(unittest.TestCase):
         
         self.assertTrue(control2.system.assertIntegrity())
 
-        # for p in control2.system.particles:
-        #     if len(p.neighbors):
-                # print(p.neighbors)
+        # for p1 in control2.system.particles:
+        #     for p2 in control2.system.particles:
+        #         pyves.interaction(p1, p2, control2.system.box, control2.system.interaction_cutoff)
 
         pyves.hdf2gro(
             inpath = os.path.join(control2.output["dir"], control2.output["filename"]),

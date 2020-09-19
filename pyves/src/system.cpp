@@ -197,6 +197,112 @@ namespace _pyves
     }
 
 
+    
+    REAL System::potentialEnergy(LookupTable_t* lookup_table = nullptr) const
+    {
+        REAL sum = 0;
+
+        if(lookup_table)
+        {
+            for(const Particle& p1 : particles)
+            {
+                for(const Particle& p2 : particles)
+                {
+                    
+                    sum += (p1 == p2) ? 0 : interactionWithLookup(p1, p2, box, interaction_cutoff, *lookup_table);
+                }
+            }
+        }
+        else
+        {
+            for(const Particle& p1 : particles)
+            {
+                for(const Particle& p2 : particles)
+                {
+                    sum += (p1 == p2) ? 0 : interaction(p1, p2, box, interaction_cutoff);
+                }
+            }
+        }
+        
+        return sum/2;
+    }
+
+
+    
+    REAL System::potentialEnergyConcurrent(LookupTable_t* lookup_table = nullptr)
+    {
+#ifdef PYVES_USE_TBB
+        REAL sum = 0;
+
+        if(lookup_table)
+        {
+            task_arena.execute([&]{
+                sum = tbb::parallel_reduce(
+                    tbb::blocked_range2d<std::size_t>(0, particles.size(), 1, 0, particles.size(), 1), 
+                    REAL(0), 
+                    [&](const tbb::blocked_range2d<std::size_t>& r, REAL current_sum ) -> REAL{
+                        for (size_t i = r.rows().begin(); i != r.rows().end(); ++i) 
+                        {
+                            for (size_t j = r.cols().begin(); j != r.cols().end(); ++j) 
+                            {
+                                current_sum += (particles[i] == particles[j]) ? 0 : interactionWithLookup(particles[i], particles[j], box, interaction_cutoff, *lookup_table);
+                            }
+                        }
+                        return current_sum;
+                    },
+                    std::plus<REAL>());
+            });
+        }
+        else
+        {
+            task_arena.execute([&]{
+                sum = tbb::parallel_reduce(
+                    tbb::blocked_range2d<std::size_t>(0, particles.size(), 1, 0, particles.size(), 1), 
+                    REAL(0), 
+                    [&](const tbb::blocked_range2d<std::size_t>& r, REAL current_sum ) -> REAL{
+                        for (size_t i = r.rows().begin(); i != r.rows().end(); ++i) 
+                        {
+                            for (size_t j = r.cols().begin(); j != r.cols().end(); ++j) 
+                            {
+                                current_sum += (particles[i] == particles[j]) ? 0 : interaction(particles[i], particles[j], box, interaction_cutoff);
+                            }
+                        }
+                        return current_sum;
+                    },
+                    std::plus<REAL>());
+            });
+        }
+
+        return sum/2;
+#else 
+        tf::Taskflow taskflow;
+        REAL sum = 0;
+        if(lookup_table)
+        {
+            taskflow.transform_reduce(std::begin(particles), std::end(particles), sum, std::plus<REAL>(), [&] (const Particle& p1) -> REAL 
+            { 
+                return std::accumulate(std::begin(particles), std::end(particles), REAL(0), [&](REAL _inner_sum, const Particle& p2)
+                {
+                    return (p1 == p2) ? _inner_sum : _inner_sum+interactionWithLookup(p1, p2, box, interaction_cutoff, *lookup_table);
+                });
+            });
+        }
+        else
+        {
+            taskflow.transform_reduce(std::begin(particles), std::end(particles), sum, std::plus<REAL>(), [&] (const Particle& p1) -> REAL 
+            { 
+                return std::accumulate(std::begin(particles), std::end(particles), REAL(0), [&](REAL _inner_sum, const Particle& p2)
+                {
+                    return (p1 == p2) ? _inner_sum : _inner_sum+interaction(p1, p2, box, interaction_cutoff);
+                });
+            });
+        }
+        executor->run(taskflow).get();
+        return sum/2;
+#endif
+    }
+
+
 
     void System::cellStep(const Cell& cell)
     {
@@ -228,8 +334,8 @@ namespace _pyves
                 }
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
-                // last_energy_value = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
-                last_energy_value = particle.potentialEnergy(box, interaction_cutoff, &lookup_table);
+                last_energy_value = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
+                // last_energy_value = particle.potentialEnergy(box, interaction_cutoff, &lookup_table);
 
                 if(particle.trySetPosition(particle.position+translation))
                 {
@@ -375,6 +481,8 @@ namespace _pyves
             .def_readonly("lookupTable", &System::lookup_table)
             .def("makeLookupTableFrom", &System::makeInteractionLookupTable)
             .def("makeNeighborLists", &System::makeNeighborLists)
+            .def("potentialEnergy", &System::potentialEnergy, py::arg("table").none(true))
+            .def("potentialEnergyConcurrent", &System::potentialEnergyConcurrent, py::arg("table").none(true))
         ;
     }
 }
