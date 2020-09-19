@@ -194,69 +194,36 @@ class MainTest(unittest.TestCase):
         
         import pyves
         ctrl = pyves.Controller()
-        ctrl.readParameters("test/parameters.json")
+        ctrl.readParameters("test/benchmark.json")
         ctrl.prepareSimulation()
         ctrl.sample()
-        lookup_table = ctrl.system.lookupTable
 
-        r1 = ctrl.system.potentialEnergy(None)  
-        r2 = ctrl.system.potentialEnergy(lookup_table)  
-        r3 = ctrl.system.potentialEnergyConcurrent(None)    
-        r4 = ctrl.system.potentialEnergyConcurrent(lookup_table)     
+        r1 = ctrl.system.potentialEnergy()
+        r2 = ctrl.system.potentialEnergyConcurrent()
 
-
+        res = [r1,r2]
 
         print("\n\nINTERACTION RESULTS")
-        print("Standard: Linear    ", r1)
-        print("Lookup:   Linear    ", r2)
-        print(f"Standard: {ctrl.system.threads} threads ", r3)
-        print(f"Lookup:   {ctrl.system.threads} threads ", r4)
+        print( "1 thread   ", r1)
+        print(f"{ctrl.system.threads} threads  ", r2)
+        
+        for i, resi in enumerate(res):
+            for j, resj in enumerate(res):
+                if i != j:
+                    self.assertAlmostEqual(resi, resj, 1)
 
-
-        # self.assertAlmostEqual()
 
 
 
     def test_interaction_benchmark(self):
-        
         import pyves
         ctrl = pyves.Controller()
-        ctrl.readParameters("test/parameters.json")
-
-        setup = '''
-import pyves
-ctrl = pyves.Controller()
-ctrl.readParameters("test/parameters.json")
-ctrl.prepareSimulation()
-ctrl.sample()
-lookup_table = ctrl.system.lookupTable
-'''
-        standard = ''' 
-a = ctrl.system.potentialEnergy(None)
-'''
-
-        lookup = ''' 
-a = ctrl.system.potentialEnergy(lookup_table)
-'''
-
-        concurrent_standard = ''' 
-a = ctrl.system.potentialEnergyConcurrent(None)
-'''
-        concurrent_lookup = ''' 
-a = ctrl.system.potentialEnergyConcurrent(lookup_table)
-'''
-
-        num = 5000
-        # timeit statement 
-        import timeit
+        ctrl.readParameters("test/benchmark.json")
+        ctrl.prepareSimulation()
+        ctrl.sample()
+        
         print("\n\nINTERACTION TIMES")
-        print("Standard: Linear    ", timeit.timeit(setup=setup, stmt=standard, number=num))
-        print("Lookup:   Linear    ", timeit.timeit(setup=setup, stmt=lookup, number=num))
-
-        print(f"Standard: {ctrl.system.threads} threads ", timeit.timeit(setup=setup, stmt=concurrent_standard, number=num))
-        print(f"Lookup:   {ctrl.system.threads} threads ", timeit.timeit(setup=setup, stmt=concurrent_lookup, number=num))
-        print("\n")
-        print("\n")
+        ctrl.system.benchmark(100)
 
 
 

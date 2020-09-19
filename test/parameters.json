@@ -1,7 +1,7 @@
 {
     "hardware" : 
     {
-        "threads" : 4
+        "threads" : 3
     },
     "system" : 
     {
@@ -80,10 +80,11 @@
     },
     "control" : 
     {
-        "time_delta" : 100,
-        "time_max" : 1000,
+        "time_delta" : 1000,
+        "time_max" : 5000,
         "cell_min_size" : 3.5,
-        "update_interval" : 5,
+        "cell_update_interval" : 5,
+        "neighbor_update_interval" : 5,
         "neighbor_cutoff" : 4.0
     },  
     "output" :

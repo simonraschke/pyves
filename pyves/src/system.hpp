@@ -51,8 +51,10 @@ namespace _pyves
         REAL temperature = make_nan<REAL>();
         REAL neighbor_cutoff = make_nan<REAL>();
         std::size_t threads = make_nan<std::size_t>();
-        std::size_t internal_step_count = 0;
-        std::size_t update_interval = make_nan<std::size_t>();
+        std::size_t _cell_update_step_count = 0;
+        std::size_t cell_update_interval = make_nan<std::size_t>();
+        std::size_t _neighbor_update_step_count = 0;
+        std::size_t neighbor_update_interval = make_nan<std::size_t>();
 
         LookupTable_t lookup_table;
 
@@ -69,8 +71,12 @@ namespace _pyves
         void multipleSimulationSteps(const unsigned long);
         void makeInteractionLookupTable(ParticleContainer);
         std::size_t numParticlesInCells() const;
-        REAL potentialEnergy(LookupTable_t*) const;
-        REAL potentialEnergyConcurrent(LookupTable_t*);
+        REAL potentialEnergy() const;
+        REAL potentialEnergyBruteForce() const;
+        REAL potentialEnergyConcurrent();
+        REAL potentialEnergyConcurrentBruteForce();
+
+        void benchmark(std::size_t);
 
         template<typename FUNCTOR> void applyToCells(FUNCTOR&& func);
         template<typename FUNCTOR> void applyToCellsSlowAndSafe(FUNCTOR&& func);

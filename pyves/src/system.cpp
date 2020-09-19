@@ -84,7 +84,8 @@ namespace _pyves
         prepareSimulationStep();
         applyToCells([&](const Cell& c){ cellStep(c);});
 #endif
-        ++internal_step_count;
+        ++_cell_update_step_count;
+        ++_neighbor_update_step_count;
     }
 
 
@@ -187,119 +188,87 @@ namespace _pyves
 
     void System::prepareSimulationStep()
     {
-        if( internal_step_count >= update_interval )
+        if( _cell_update_step_count >= cell_update_interval )
         {
             reorderCells();
             shuffle();
+            _cell_update_step_count = 0;
+        }
+        if( _neighbor_update_step_count >= neighbor_update_interval )
+        {
             makeNeighborLists();
-            internal_step_count = 0;
+            _neighbor_update_step_count = 0;
         }
     }
 
 
     
-    REAL System::potentialEnergy(LookupTable_t* lookup_table = nullptr) const
+    REAL System::potentialEnergy() const
     {
         REAL sum = 0;
-
-        if(lookup_table)
+        for(std::size_t i = 0; i < particles.size(); ++i)
         {
-            for(const Particle& p1 : particles)
-            {
-                for(const Particle& p2 : particles)
-                {
-                    
-                    sum += (p1 == p2) ? 0 : interactionWithLookup(p1, p2, box, interaction_cutoff, *lookup_table);
-                }
-            }
+            sum += particles[i].potentialEnergy(box, interaction_cutoff);
         }
-        else
-        {
-            for(const Particle& p1 : particles)
-            {
-                for(const Particle& p2 : particles)
-                {
-                    sum += (p1 == p2) ? 0 : interaction(p1, p2, box, interaction_cutoff);
-                }
-            }
-        }
-        
         return sum/2;
     }
 
 
     
-    REAL System::potentialEnergyConcurrent(LookupTable_t* lookup_table = nullptr)
+    REAL System::potentialEnergyConcurrent()
     {
 #ifdef PYVES_USE_TBB
         REAL sum = 0;
-
-        if(lookup_table)
-        {
-            task_arena.execute([&]{
-                sum = tbb::parallel_reduce(
-                    tbb::blocked_range2d<std::size_t>(0, particles.size(), 1, 0, particles.size(), 1), 
-                    REAL(0), 
-                    [&](const tbb::blocked_range2d<std::size_t>& r, REAL current_sum ) -> REAL{
-                        for (size_t i = r.rows().begin(); i != r.rows().end(); ++i) 
-                        {
-                            for (size_t j = r.cols().begin(); j != r.cols().end(); ++j) 
-                            {
-                                current_sum += (particles[i] == particles[j]) ? 0 : interactionWithLookup(particles[i], particles[j], box, interaction_cutoff, *lookup_table);
-                            }
-                        }
-                        return current_sum;
-                    },
-                    std::plus<REAL>());
-            });
-        }
-        else
-        {
-            task_arena.execute([&]{
-                sum = tbb::parallel_reduce(
-                    tbb::blocked_range2d<std::size_t>(0, particles.size(), 1, 0, particles.size(), 1), 
-                    REAL(0), 
-                    [&](const tbb::blocked_range2d<std::size_t>& r, REAL current_sum ) -> REAL{
-                        for (size_t i = r.rows().begin(); i != r.rows().end(); ++i) 
-                        {
-                            for (size_t j = r.cols().begin(); j != r.cols().end(); ++j) 
-                            {
-                                current_sum += (particles[i] == particles[j]) ? 0 : interaction(particles[i], particles[j], box, interaction_cutoff);
-                            }
-                        }
-                        return current_sum;
-                    },
-                    std::plus<REAL>());
-            });
-        }
-
+        task_arena.execute([&]{
+            using range_type = tbb::blocked_range<ParticleContainer::iterator>;
+            sum = tbb::parallel_reduce(
+                range_type(std::begin(particles), std::end(particles)), 
+                REAL(0), 
+                [&](const range_type& r, REAL init ){ 
+                    return std::accumulate( r.begin(), r.end(), init, [&](REAL _v, const Particle& p){
+                        return _v + p.potentialEnergy(box, interaction_cutoff);
+                    }); 
+                }, 
+                std::plus<REAL>()
+            );
+        });
         return sum/2;
 #else 
-        tf::Taskflow taskflow;
         REAL sum = 0;
-        if(lookup_table)
-        {
-            taskflow.transform_reduce(std::begin(particles), std::end(particles), sum, std::plus<REAL>(), [&] (const Particle& p1) -> REAL 
-            { 
-                return std::accumulate(std::begin(particles), std::end(particles), REAL(0), [&](REAL _inner_sum, const Particle& p2)
-                {
-                    return (p1 == p2) ? _inner_sum : _inner_sum+interactionWithLookup(p1, p2, box, interaction_cutoff, *lookup_table);
-                });
-            });
-        }
-        else
-        {
-            taskflow.transform_reduce(std::begin(particles), std::end(particles), sum, std::plus<REAL>(), [&] (const Particle& p1) -> REAL 
-            { 
-                return std::accumulate(std::begin(particles), std::end(particles), REAL(0), [&](REAL _inner_sum, const Particle& p2)
-                {
-                    return (p1 == p2) ? _inner_sum : _inner_sum+interaction(p1, p2, box, interaction_cutoff);
-                });
-            });
-        }
+        tf::Taskflow taskflow;
+        taskflow.transform_reduce_static(
+            std::begin(particles), 
+            std::end(particles), 
+            sum, 
+            std::plus<REAL>(), 
+            [&](const Particle& p){
+                return p.potentialEnergy(box, interaction_cutoff); 
+            }
+        );
         executor->run(taskflow).get();
         return sum/2;
 #endif
+    }
+
+
+
+    void System::benchmark(std::size_t num)
+    {
+        auto timeFuncInvocation = [](std::size_t num, auto&& func, auto&&... params) {
+            // get time before function invocation
+            const auto& start = std::chrono::high_resolution_clock::now();
+            // function invocation using perfect forwarding
+            for(volatile std::size_t i = 0; i<num; ++i)
+                std::forward<decltype(func)>(func)(std::forward<decltype(params)>(params)...);
+            // get time after function invocation
+            const auto& stop = std::chrono::high_resolution_clock::now();
+            return std::chrono::duration<double>(stop - start).count();
+        };
+
+        std::cout << "num x potentialEnergy                " <<  timeFuncInvocation(num, [&]{potentialEnergy();})<< " s\n"; 
+        std::cout << "num x potentialEnergyConcurrent      " <<  timeFuncInvocation(num, [&]{potentialEnergyConcurrent();}) << " s\n";
+        std::cout << "num x singleSimulationStep           " <<  timeFuncInvocation(num, [&]{singleSimulationStep();}) << " s\n";
+        std::cout << "multipleSimulationSteps(num)         " <<  timeFuncInvocation(1, [&]{multipleSimulationSteps(num);}) << " s\n";
     }
 
 
@@ -334,13 +303,13 @@ namespace _pyves
                 }
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
-                last_energy_value = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
-                // last_energy_value = particle.potentialEnergy(box, interaction_cutoff, &lookup_table);
+                // last_energy_value = cell.potentialEnergy(particle, interaction_cutoff);
+                last_energy_value = particle.potentialEnergy(box, interaction_cutoff);
 
                 if(particle.trySetPosition(particle.position+translation))
                 {
-                    // energy_after = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
-                    energy_after = particle.potentialEnergy(box, interaction_cutoff, &lookup_table);                
+                    // energy_after = cell.potentialEnergy(particle, interaction_cutoff);
+                    energy_after = particle.potentialEnergy(box, interaction_cutoff);                
 
                     // rejection
                     if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -377,8 +346,8 @@ namespace _pyves
 
             if(particle.trySetOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation()))
             {
-                // energy_after = cell.potentialEnergyWithLookup(particle, interaction_cutoff, lookup_table);
-                energy_after = particle.potentialEnergy(box, interaction_cutoff, &lookup_table);
+                // energy_after = cell.potentialEnergy(particle, interaction_cutoff);
+                energy_after = particle.potentialEnergy(box, interaction_cutoff);
 
                 // rejection
                 if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -466,8 +435,8 @@ namespace _pyves
             .def_readwrite("particles", &System::particles)
             .def_readwrite("interaction_cutoff", &System::interaction_cutoff)
             .def_readwrite("cells", &System::cells)
-            .def_readwrite("update_interval", &System::update_interval)
-            .def_readwrite("neighbor_cutoff", &System::neighbor_cutoff)
+            .def_readwrite("cell_update_interval", &System::cell_update_interval)
+            .def_readwrite("neighbor_update_interval", &System::neighbor_update_interval)
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&) const>(&System::particleIsFree))
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&, REAL) const>(&System::particleIsFree))
             .def("shuffle", &System::shuffle)
@@ -478,11 +447,11 @@ namespace _pyves
             .def("prepareSimulationStep", &System::prepareSimulationStep)
             .def("singleSimulationStep", &System::singleSimulationStep)
             .def("multipleSimulationSteps", &System::multipleSimulationSteps)
-            .def_readonly("lookupTable", &System::lookup_table)
             .def("makeLookupTableFrom", &System::makeInteractionLookupTable)
             .def("makeNeighborLists", &System::makeNeighborLists)
-            .def("potentialEnergy", &System::potentialEnergy, py::arg("table").none(true))
-            .def("potentialEnergyConcurrent", &System::potentialEnergyConcurrent, py::arg("table").none(true))
+            .def("potentialEnergy", &System::potentialEnergy)
+            .def("potentialEnergyConcurrent", &System::potentialEnergyConcurrent)
+            .def("benchmark", &System::benchmark)
         ;
     }
 }

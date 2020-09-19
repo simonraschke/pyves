@@ -152,20 +152,11 @@ void Particle::updateNeighborList(const ParticleRefContainer& particles, const B
 
 
 
-REAL Particle::potentialEnergy(const Box<PBC::ON>& box, REAL cutoff, const LookupTable_t* table_ptr) const
+REAL Particle::potentialEnergy(const Box<PBC::ON>& box, REAL cutoff) const
 {
-    if(table_ptr)
-    {
-        return std::accumulate(std::begin(neighbors), std::end(neighbors), REAL(0), [&](REAL val, const Particle& other){
-            return val + interactionWithLookup(*this, other, box, cutoff, *table_ptr);
-        });
-    }
-    else
-    {
-        return std::accumulate(std::begin(neighbors), std::end(neighbors), REAL(0), [&](REAL val, const Particle& other){
-            return val + interaction(*this, other, box, cutoff);
-        });
-    }
+    return std::accumulate(std::begin(neighbors), std::end(neighbors), REAL(0), [&](REAL val, const Particle& other){
+        return val + interaction(*this, other, box, cutoff);
+    });
 }
 
 

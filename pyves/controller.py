@@ -73,7 +73,8 @@ class Controller(object):
 
         self.system.interaction_cutoff = _prms["system"]["interaction"]["cutoff"]
 
-        self.system.update_interval = _prms["control"]["update_interval"]
+        self.system.cell_update_interval = _prms["control"]["cell_update_interval"]
+        self.system.neighbor_update_interval = _prms["control"]["neighbor_update_interval"]
         self.system.neighbor_cutoff = _prms["control"]["neighbor_cutoff"]
 
         self.time_delta = _prms["control"]["time_delta"]
@@ -304,6 +305,9 @@ class Controller(object):
 
 
     def writeTrajectoryHDF(self, log=False, timestats=False):
+        if self.output["filename"] == None:
+            return
+
         starttime = time.perf_counter()
 
         positions = np.array([self.system.box.scaleToBox(p.position) for p in self.system.particles])
