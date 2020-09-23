@@ -1,7 +1,7 @@
 {
     "hardware" : 
     {
-        "threads" : 6
+        "threads" : 4
     },
     "system" : 
     {
@@ -30,7 +30,7 @@
         {
             "MOBILE" : 
             {
-                "number" : 1000,
+                "number" : 1500,
                 "dist" : "random",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
@@ -59,10 +59,11 @@
     "control" : 
     {
         "time_delta" : 1000,
-        "time_max" : 50000,
-        "update_interval" : 5,
-        "neighbor_cutoff" : 3.5,
-        "cell_min_size" : 3.5
+        "time_max" : 100000,
+        "cell_min_size" : 3.5,
+        "cell_update_interval" : 2,
+        "neighbor_update_interval" : 2,
+        "neighbor_cutoff" : 3.5
     },
     "output" :
     {
@@ -75,5 +76,11 @@
         "dir" : ".",
         "filename" : "typical.h5",
         "key" : "HEAD"
+    },
+    "analysis":
+    {
+        "volume_max_grid" : 80,
+        "DBSCAN_eps" : 1.2,
+        "neighbor_cutoff" : 1.2
     }
 }

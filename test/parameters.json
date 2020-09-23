@@ -98,5 +98,11 @@
         "dir" : "test",
         "filename" : "data.h5",
         "key" : "HEAD"
+    },
+    "analysis":
+    {
+        "volume_max_grid" : 80,
+        "DBSCAN_eps" : 1.2,
+        "neighbor_cutoff" : 1.2
     }
 }

@@ -17,19 +17,47 @@
 
 
 
-import numpy as np
 import pandas as pd
-import h5py
-import time
-
-from sklearn.cluster import DBSCAN
+import numpy as np
 from MDAnalysis.lib.distances import distance_array
+from sklearn.cluster import DBSCAN
 
 
 
-def analyze_df(df):
-    DBSCAN()
-    return
+def fullAnalysis(
+        df : pd.DataFrame, 
+        prms : dict
+    ):
+    assert("x" in df.columns)
+    assert("y" in df.columns)
+    assert("z" in df.columns)
+
+    analysis_prms = prms.get("analysis")
+    DBSCAN_eps = analysis_prms["DBSCAN_eps"]
+    neighbor_cutoff = analysis_prms["neighbor_cutoff"]
+
+    system_prms = prms.get("system")
+    box_prms = system_prms.get("box")
+    dimensions = [box_prms["x"], box_prms["y"], box_prms["z"], 90, 90, 90]
+
+    distances = distance_array(df.filter(["x","y","z"]).values, df.filter(["x","y","z"]).values, box=dimensions)
+    
+    df["cluster"] = DBSCAN(min_samples=2, eps=DBSCAN_eps, metric="precomputed", n_jobs=-1).fit(distances).labels_.astype(np.int32)
+    df["subcluster"] = df.groupby("cluster").apply(lambda group: _subclusterLabels(group.name, group, DBSCAN_eps))["subcluster"].astype(np.uint8)
+    df["neighbors"] = np.count_nonzero(distances <= neighbor_cutoff, axis=1).astype(np.int16) - 1
+    # print("\n",df)
+
+    return df
 
 
 
+def _subclusterLabels(label, group, eps):
+    group["subcluster"] = 0
+    if label == -1:
+        return group
+    else:
+        # arange a DBSCAN without PBC to get subclusters
+        coms = group.filter(["x","y","z"])
+        distances_array = distance_array(coms.values, coms.values, box=None)
+        group["subcluster"] = DBSCAN(min_samples=1, eps=eps, metric="precomputed", n_jobs=1).fit(distances_array).labels_
+        return group

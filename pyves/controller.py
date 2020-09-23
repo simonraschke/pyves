@@ -32,7 +32,7 @@ import re
 
 from .signal_handler import SignalHandler, ProgramState
 from .point_distributions import *
-from .analysis import analyze_df
+from .analysis import fullAnalysis
 
 
 
@@ -274,6 +274,7 @@ class Controller(object):
                     )
                 # print("writing...")
                 self.writeTrajectoryHDF(timestats=timestats)
+                print(f"epot = {self.system.potentialEnergyConcurrent():.2f}", end="")
                 if timestats: print()
                 if SignalHandler.ProgramState is ProgramState.SHUTDOWN:
                     print("shutting down")
@@ -295,6 +296,7 @@ class Controller(object):
                                 end=""
                             )
                         self.writeTrajectoryHDF(timestats=timestats)
+                        print(f"epot = {self.system.potentialEnergyConcurrent():.2f}", end="")
                         if timestats: print()
 
                     if SignalHandler.ProgramState is ProgramState.SHUTDOWN:
@@ -304,7 +306,7 @@ class Controller(object):
 
 
 
-    def writeTrajectoryHDF(self, log=False, timestats=False):
+    def writeTrajectoryHDF(self, log=False, timestats=False, analysis=True):
         if self.output["filename"] == None:
             return
 
@@ -316,25 +318,28 @@ class Controller(object):
 
         df = pd.DataFrame(dict(
             name = [p.name for p in self.system.particles],
-            x = [p[0] for p in positions],
-            y = [p[1] for p in positions],
-            z = [p[2] for p in positions],
-            ux = [p.ux for p in self.system.particles],
-            uy = [p.uy for p in self.system.particles],
-            uz = [p.uz for p in self.system.particles],
-            initial_x = [p[0] for p in initial_positions],
-            initial_y = [p[1] for p in initial_positions],
-            initial_z = [p[2] for p in initial_positions],
-            translation_bound_sq = [p.translation_bound_sq for p in self.system.particles],
-            initial_ux = [p[0] for p in initial_orientations],
-            initial_uy = [p[1] for p in initial_orientations],
-            initial_uz = [p[2] for p in initial_orientations],
-            rotation_bound = [p.rotation_bound for p in self.system.particles],
-            sigma = [p.sigma for p in self.system.particles],
-            epsilon = [p.epsilon for p in self.system.particles],
-            kappa = [p.kappa for p in self.system.particles],
-            gamma = [p.gamma for p in self.system.particles]
+            x = np.array([p[0] for p in positions], dtype=np.float32),
+            y = np.array([p[1] for p in positions], dtype=np.float32),
+            z = np.array([p[2] for p in positions], dtype=np.float32),
+            ux = np.array([p.ux for p in self.system.particles], dtype=np.float32),
+            uy = np.array([p.uy for p in self.system.particles], dtype=np.float32),
+            uz = np.array([p.uz for p in self.system.particles], dtype=np.float32),
+            initial_x = np.array([p[0] for p in initial_positions], dtype=np.float32),
+            initial_y = np.array([p[1] for p in initial_positions], dtype=np.float32),
+            initial_z = np.array([p[2] for p in initial_positions], dtype=np.float32),
+            translation_bound_sq = np.array([p.translation_bound_sq for p in self.system.particles], dtype=np.float32),
+            initial_ux = np.array([p[0] for p in initial_orientations], dtype=np.float32),
+            initial_uy = np.array([p[1] for p in initial_orientations], dtype=np.float32),
+            initial_uz = np.array([p[2] for p in initial_orientations], dtype=np.float32),
+            rotation_bound = np.array([p.rotation_bound for p in self.system.particles], dtype=np.float32),
+            sigma = np.array([p.sigma for p in self.system.particles], dtype=np.float32),
+            epsilon = np.array([p.epsilon for p in self.system.particles], dtype=np.float32),
+            kappa = np.array([p.kappa for p in self.system.particles], dtype=np.float32),
+            gamma = np.array([p.gamma for p in self.system.particles], dtype=np.float32)
         ))
+
+        if analysis:
+            df = fullAnalysis(df, self.prms_complete)
 
         df.to_hdf(
             path_or_buf=os.path.join(self.output["dir"], self.output["filename"]),
@@ -367,5 +372,5 @@ class Controller(object):
             
         if timestats:
             endtime = time.perf_counter()
-            print(f" write HDF5 took {endtime-starttime:.4f} s", end="")
+            print(f" write HDF5 took {endtime-starttime:.4f} s  |  ", end="")
         

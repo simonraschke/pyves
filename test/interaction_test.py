@@ -203,9 +203,9 @@ class MainTest(unittest.TestCase):
 
         res = [r1,r2]
 
-        print("\n\nINTERACTION RESULTS")
-        print( "1 thread   ", r1)
-        print(f"{ctrl.system.threads} threads  ", r2)
+        # print("\n\nINTERACTION RESULTS")
+        # print( "1 thread   ", r1)
+        # print(f"{ctrl.system.threads} threads  ", r2)
         
         for i, resi in enumerate(res):
             for j, resj in enumerate(res):
