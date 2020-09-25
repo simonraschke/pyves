@@ -102,6 +102,7 @@
     "analysis":
     {
         "volume_max_grid" : 80,
+        "volume_points_per_sigma" : 3,
         "DBSCAN_eps" : 1.2,
         "neighbor_cutoff" : 1.2
     }
