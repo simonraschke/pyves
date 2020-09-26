@@ -1,9 +1,36 @@
 #include "interaction.hpp"
 
 
-namespace _pyves
+namespace _pyves::interaction
 {
-    REAL interaction(const Particle& p1, const Particle& p2, const Box<PBC::ON>& box, REAL cutoff)
+    REAL chi(const Particle& p1, const Particle& p2, const Box<PBC::ON>& box, REAL cutoff)
+    {
+        CARTESIAN distance_vec = box.distanceVector(p1.position, p2.position);
+        REAL r2 = 1.f/(distance_vec.squaredNorm());
+
+        if(r2 < 1.f/(cutoff*cutoff)) return 0.f;
+
+        distance_vec.normalize();
+        const CARTESIAN p1_orien_kappa = p1.getOrientation().normalized()*p1.kappa/2;
+        const CARTESIAN p2_orien_kappa = p2.getOrientation().normalized()*p2.kappa/2;
+
+        const Eigen::AngleAxis<REAL> rotation1 (p1.gamma, CARTESIAN::UnitZ());
+        const Eigen::AngleAxis<REAL> rotation2 (p2.gamma, -CARTESIAN::UnitZ());
+        const REAL a  = (-(rotation1*(CARTESIAN::UnitY()*p1.kappa/2)) + CARTESIAN::UnitX() + (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
+        const REAL b  = (  rotation1*(CARTESIAN::UnitY()*p1.kappa/2)  + CARTESIAN::UnitX() - (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
+        const REAL c1 = (-(rotation1*(CARTESIAN::UnitY()*p1.kappa/2)) + CARTESIAN::UnitX() - (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
+        const REAL c2 = (  rotation1*(CARTESIAN::UnitY()*p1.kappa/2)  + CARTESIAN::UnitX() + (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
+        
+        return static_cast<REAL>(
+              std::pow(CARTESIAN( -p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - a,  2)
+            + std::pow(CARTESIAN(  p1_orien_kappa + distance_vec - p2_orien_kappa ).norm() - b,  2)
+            + std::pow(CARTESIAN( -p1_orien_kappa + distance_vec - p2_orien_kappa ).norm() - c1, 2)
+            + std::pow(CARTESIAN(  p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - c2, 2));
+    }
+
+
+
+    REAL potentialEnergy(const Particle& p1, const Particle& p2, const Box<PBC::ON>& box, REAL cutoff)
     {
         CARTESIAN distance_vec = box.distanceVector(p1.position, p2.position);
         // std::cout << "\n\ndistance_vec " << distance_vec.format(ROWFORMAT) << std::endl;
@@ -116,7 +143,8 @@ namespace _pyves
 
     void bind_interaction(py::module& m) 
     {
-        m.def("interaction", &interaction);
+        m.def("interaction", &potentialEnergy);
+        m.def("chi", &chi);
         // m.def("interactionWithLookup", &interactionWithLookup);
         // m.def("interaction", &interaction<PBC::OFF>);
     }

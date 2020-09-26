@@ -155,7 +155,16 @@ void Particle::updateNeighborList(const ParticleRefContainer& particles, const B
 REAL Particle::potentialEnergy(const Box<PBC::ON>& box, REAL cutoff) const
 {
     return std::accumulate(std::begin(neighbors), std::end(neighbors), REAL(0), [&](REAL val, const Particle& other){
-        return val + interaction(*this, other, box, cutoff);
+        return val + interaction::potentialEnergy(*this, other, box, cutoff);
+    });
+}
+
+
+
+REAL Particle::chi(const Box<PBC::ON>& box, REAL cutoff) const
+{
+    return std::accumulate(std::begin(neighbors), std::end(neighbors), REAL(0), [&](REAL val, const Particle& other){
+        return val + interaction::chi(*this, other, box, cutoff);
     });
 }
 

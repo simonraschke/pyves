@@ -19,8 +19,8 @@
 
 import json
 import os
-from os import initgroups
-from sqlite3.dbapi2 import TimestampFromTicks
+# from os import initgroups
+# from sqlite3.dbapi2 import TimestampFromTicks
 import sys
 import _pyves
 import numpy as np
@@ -84,6 +84,8 @@ class Controller(object):
 
         self.output = _prms["output"]
         self.input = _prms["input"]
+
+        self.direct_analysis = self.output.get("direct_analysis", False)
 
         assert(self.system.neighbor_cutoff >= self.system.interaction_cutoff)
         assert(self.cell_min_size >= self.system.interaction_cutoff)
@@ -207,16 +209,17 @@ class Controller(object):
 
 
 
-    def prepareFromData(self, path):
-        if self.input["key"].lower() == "head":
-            with h5py.File(path, 'r') as h5file:
-                key = sorted([s for s in h5file.keys() if s.startswith("time")], key=lambda x:int(re.findall('(?<=time)\d+', x)[0]))[-1]
-        else:
-            key = self.input["key"]
+    def prepareFromData(self, path, df = None):
+        if isinstance(df, type(None)):
+            if self.input["key"].lower() == "head":
+                with h5py.File(path, 'r') as h5file:
+                    key = sorted([s for s in h5file.keys() if s.startswith("time")], key=lambda x:int(re.findall('(?<=time)\d+', x)[0]))[-1]
+            else:
+                key = self.input["key"]
 
-        df = pd.read_hdf(path_or_buf=path, key=key)
+            df = pd.read_hdf(path_or_buf=path, key=key)
         
-        self.time_actual = int(re.findall('(?<=time)\d+', key)[0])
+            self.time_actual = int(re.findall('(?<=time)\d+', key)[0])
 
         for _, row in df.iterrows():
             self.system.particles.append(_pyves.Particle([row["x"], row["y"], row["z"]], [row["ux"], row["uy"], row["uz"]], 
@@ -251,7 +254,7 @@ class Controller(object):
 
 
 
-    def sample(self, steps=None, timestats=False):
+    def sample(self, steps=None, timestats=False, analysis=False):
         if not SignalHandler.ProgramState == ProgramState.SHUTDOWN:
             SignalHandler.ProgramState = ProgramState.RUNNING
 
@@ -273,7 +276,7 @@ class Controller(object):
                         end=""
                     )
                 # print("writing...")
-                self.writeTrajectoryHDF(timestats=timestats)
+                self.writeTrajectoryHDF(timestats=timestats, analysis=analysis)
                 print(f"epot = {self.system.potentialEnergyConcurrent():.2f}", end="")
                 if timestats: print()
                 if SignalHandler.ProgramState is ProgramState.SHUTDOWN:
@@ -295,7 +298,7 @@ class Controller(object):
                                 f"{(self.sample_endtime-self.sample_starttime)*1000*1000/len(self.system.particles)/self.time_delta:.4f} ns /particle/step", " | ", 
                                 end=""
                             )
-                        self.writeTrajectoryHDF(timestats=timestats)
+                        self.writeTrajectoryHDF(timestats=timestats, analysis=analysis)
                         print(f"epot = {self.system.potentialEnergyConcurrent():.2f}", end="")
                         if timestats: print()
 
@@ -306,7 +309,7 @@ class Controller(object):
 
 
 
-    def writeTrajectoryHDF(self, log=False, timestats=False, analysis=True):
+    def writeTrajectoryHDF(self, log=False, timestats=False, analysis=False):
         if self.output["filename"] == None:
             return
 
@@ -338,8 +341,12 @@ class Controller(object):
             gamma = np.array([p.gamma for p in self.system.particles], dtype=np.float32)
         ))
 
-        if analysis:
-            df = fullAnalysis(df, self.prms_complete)
+        if analysis or self.direct_analysis:
+            if timestats:
+                analysis_starttime = time.perf_counter()
+            df = fullAnalysis(df, self.prms_complete, self.system)
+            if timestats:
+                analysis_endtime = time.perf_counter()
 
         df.to_hdf(
             path_or_buf=os.path.join(self.output["dir"], self.output["filename"]),
@@ -350,7 +357,8 @@ class Controller(object):
             complevel=1,
         )
 
-        node = h5py.File(os.path.join(self.output["dir"], self.output["filename"]), mode="a").get(f"/time{self.time_actual}")
+        h5pyFile = h5py.File(os.path.join(self.output["dir"], self.output["filename"]), mode="a")
+        node = h5pyFile.get(f"/time{self.time_actual}")
         node.attrs["box.x"] = self.system.box.x
         node.attrs["box.y"] = self.system.box.y
         node.attrs["box.z"] = self.system.box.z
@@ -366,11 +374,15 @@ class Controller(object):
         except:
             node.attrs["simulation_walltime"] = time.perf_counter()
 
+        h5pyFile.close()
+
         if log:
             print(df)
             print(df.info())
             
         if timestats:
             endtime = time.perf_counter()
-            print(f" write HDF5 took {endtime-starttime:.4f} s  |  ", end="")
-        
+            if analysis or self.direct_analysis:
+                print(f" write HDF5 took {endtime-starttime:.4f} s  ({(analysis_endtime-analysis_starttime)/(endtime-starttime)*100:.0f}% analysis) |  ", end="")
+            else:
+                print(f" write HDF5 took {endtime-starttime:.4f} s  |  ", end="")

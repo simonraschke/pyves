@@ -98,6 +98,7 @@ namespace _pyves
         void updateNeighborList(const ParticleRefContainer&, const Box<PBC::ON>&, REAL);
 
         REAL potentialEnergy(const Box<PBC::ON>&, REAL) const;
+        REAL chi(const Box<PBC::ON>&, REAL) const;
 
         bool operator==(const Particle& other) const;
         bool operator!=(const Particle& other) const;

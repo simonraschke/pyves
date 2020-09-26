@@ -215,6 +215,30 @@ namespace _pyves
 
 
     
+    Eigen::Matrix<REAL,Eigen::Dynamic, 1> System::particleEnergies() const
+    {
+        Eigen::Matrix<REAL,Eigen::Dynamic, 1> energies(particles.size());
+        for(std::size_t i = 0; i < particles.size(); ++i)
+        {
+            energies(i) = particles[i].potentialEnergy(box, interaction_cutoff)/2;
+        }
+        return energies;
+    }
+
+
+    
+    Eigen::Matrix<REAL,Eigen::Dynamic, 1> System::particleChiValues() const
+    {
+        Eigen::Matrix<REAL,Eigen::Dynamic, 1> chis(particles.size());
+        for(std::size_t i = 0; i < particles.size(); ++i)
+        {
+            chis(i) = particles[i].chi(box, interaction_cutoff)/2;
+        }
+        return chis;
+    }
+
+
+    
     REAL System::potentialEnergyConcurrent()
     {
 #ifdef PYVES_USE_TBB
@@ -377,7 +401,7 @@ namespace _pyves
     void System::makeInteractionLookupTable(ParticleContainer unqiues)
     {
         lookup_table.clear();
-        lookup_table = calculateInteractionLookupTable(unqiues);
+        lookup_table = interaction::calculateInteractionLookupTable(unqiues);
     }
 
 
@@ -452,6 +476,8 @@ namespace _pyves
             .def("potentialEnergy", &System::potentialEnergy)
             .def("potentialEnergyConcurrent", &System::potentialEnergyConcurrent)
             .def("benchmark", &System::benchmark)
+            .def("particleEnergies", &System::particleEnergies)
+            .def("particleChiValues", &System::particleChiValues)
         ;
     }
 }

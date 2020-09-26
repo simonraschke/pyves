@@ -176,7 +176,7 @@ namespace _pyves
         {
             return __val + std::accumulate(std::begin(cell.particles), std::end(cell.particles), REAL(0), [&](REAL _val, const Particle& compare)
             {
-                return particle == compare ? _val : _val + interaction(particle, compare, box, cutoff);
+                return particle == compare ? _val : _val + interaction::potentialEnergy(particle, compare, box, cutoff);
             });
         });
     }
@@ -202,7 +202,7 @@ namespace _pyves
     //     //             }
     //     //             catch(...)
     //     //             {
-    //     //                 result = interaction(particle, compare, box, cutoff);
+    //     //                 result = interaction::potentialEnergy(particle, compare, box, cutoff);
     //     //             }
     //     //             return _val + result;
     //     //         }
@@ -211,7 +211,7 @@ namespace _pyves
 
     //     return std::accumulate(std::begin(particle.neighbors), std::end(particle.neighbors), REAL(0), [&](REAL __val, const Particle& compare)
     //     {
-    //         return __val + interaction(particle, compare, box, cutoff);
+    //         return __val + interaction::potentialEnergy(particle, compare, box, cutoff);
     //     });
     // }
 

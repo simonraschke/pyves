@@ -14,7 +14,7 @@ PYBIND11_MODULE(_pyves, m)
     _pyves::bind_cell(m);
     _pyves::bind_sw_alignment_unit(m);
     _pyves::bind_system(m);
-    _pyves::bind_interaction(m);
+    _pyves::interaction::bind_interaction(m);
 
     m.def("concurrency_model", []() -> py::str {
         #ifdef PYVES_USE_TBB

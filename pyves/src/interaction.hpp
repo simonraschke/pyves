@@ -31,9 +31,10 @@ PYBIND11_MAKE_OPAQUE(_pyves::LookupTable_t)
 
 
 
-namespace _pyves
+namespace _pyves::interaction
 {
-    REAL interaction(const Particle& p1, const Particle& p2, const Box<PBC::ON>& box, REAL cutoff);
+    REAL chi(const Particle& p1, const Particle& p2, const Box<PBC::ON>& box, REAL cutoff);
+    REAL potentialEnergy(const Particle& p1, const Particle& p2, const Box<PBC::ON>& box, REAL cutoff);
 
     REAL calculateInteractionOptimumA(const Particle& p1, const Particle& p2);
     REAL calculateInteractionOptimumB(const Particle& p1, const Particle& p2);

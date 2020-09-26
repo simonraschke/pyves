@@ -75,6 +75,8 @@ namespace _pyves
         REAL potentialEnergyBruteForce() const;
         REAL potentialEnergyConcurrent();
         REAL potentialEnergyConcurrentBruteForce();
+        Eigen::Matrix<REAL, Eigen::Dynamic, 1> particleEnergies() const;
+        Eigen::Matrix<REAL, Eigen::Dynamic, 1> particleChiValues() const;
 
         void benchmark(std::size_t);
 

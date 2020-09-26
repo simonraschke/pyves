@@ -22,7 +22,7 @@ TEST_CASE("Interaction Test")
         p1.sigma = 1;
         p2.sigma = 2;
         auto box = Box<PBC::ON>(10,10,10);
-        auto e = interaction(p1, p2, box, 3);
+        auto e = interaction::potentialEnergy(p1, p2, box, 3);
         CHECK(e == Approx(-1));
     }
     {
@@ -37,7 +37,7 @@ TEST_CASE("Interaction Test")
         p1.sigma = 1;
         p2.sigma = 2;
         auto box = Box<PBC::ON>(10,10,10);
-        auto e = interaction(p1, p2, box, 3);
+        auto e = interaction::potentialEnergy(p1, p2, box, 3);
         CHECK(e == Approx(-1));
     }
     {
@@ -52,7 +52,7 @@ TEST_CASE("Interaction Test")
         p1.sigma = 1;
         p2.sigma = 2;
         auto box = Box<PBC::ON>(10,10,10);
-        auto e = interaction(p1, p2, box, 3);
+        auto e = interaction::potentialEnergy(p1, p2, box, 3);
         CHECK(e == Approx(-1));
     }
     {
@@ -67,7 +67,7 @@ TEST_CASE("Interaction Test")
         p1.sigma = 1;
         p2.sigma = 2;
         auto box = Box<PBC::ON>(10,10,10);
-        auto e = interaction(p1, p2, box, 3);
+        auto e = interaction::potentialEnergy(p1, p2, box, 3);
         CHECK(e == Approx(-1));
     }
     {
@@ -82,7 +82,7 @@ TEST_CASE("Interaction Test")
         p1.sigma = 1;
         p2.sigma = 1;
         auto box = Box<PBC::ON>(10,10,10);
-        auto e = interaction(p1, p2, box, 3);
+        auto e = interaction::potentialEnergy(p1, p2, box, 3);
         CHECK(e == Approx(-1));
     }
     {
@@ -97,7 +97,7 @@ TEST_CASE("Interaction Test")
         p1.sigma = 1;
         p2.sigma = 1;
         auto box = Box<PBC::ON>(10,10,10);
-        auto e = interaction(p1, p2, box, 3);
+        auto e = interaction::potentialEnergy(p1, p2, box, 3);
         CHECK(e == Approx(-1));
     }
 }
