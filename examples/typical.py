@@ -32,3 +32,8 @@ pyves.hdf2gro(
 )
 
 pyves.writeVMDrc(outdir=ctrl.output["dir"], num_bonds=len(ctrl.system.particles))
+
+pyves.analyzeTrajectory(
+    prmspath = os.path.join(os.path.dirname(__file__),"typical_parameters.json"),
+    timestats = True
+)

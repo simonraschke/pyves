@@ -61,15 +61,16 @@
         "time_delta" : 1000,
         "time_max" : 100000,
         "cell_min_size" : 3.5,
-        "cell_update_interval" : 2,
-        "neighbor_update_interval" : 2,
+        "cell_update_interval" : 3,
+        "neighbor_update_interval" : 3,
         "neighbor_cutoff" : 3.5
     },
     "output" :
     {
         "dir" : ".",
         "filename" : "typical.h5",
-        "mode" : "append"
+        "mode" : "append",
+        "direct_analysis" : false
     },
     "input" :
     {
@@ -80,6 +81,7 @@
     "analysis":
     {
         "volume_max_grid" : 80,
+        "volume_points_per_sigma" : 3,
         "DBSCAN_eps" : 1.2,
         "neighbor_cutoff" : 1.2
     }

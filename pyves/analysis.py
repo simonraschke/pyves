@@ -37,7 +37,7 @@ def analyzeTrajectory(
     inpath = None,
     outpath = None,
     prmspath = "parameters.json",
-    threads = 1,
+    threads = -1,
     timestats = False
 ):
     if not isinstance(inpath, type(None)):
@@ -52,6 +52,8 @@ def analyzeTrajectory(
     prmspath = os.path.abspath(prmspath)
     with open(prmspath, 'r') as prms_file:
         prms = json.loads(prms_file.read())
+    if threads == -1:
+        threads = prms["hardware"].get("threads", 1)
 
     if inpath == outpath and len(outpath) > 0:
         pass
@@ -92,7 +94,7 @@ def analyzeTrajectory(
                 key = future_to_key[future]
                 try:
                     df, execution_time = future.result()
-                    if timestats: print(f"wrote to {outpath}{key} in {execution_time:.2f} s")
+                    if timestats: print(f"analysis took {execution_time:.2f} s | written to {outpath}{key}")
                     df.to_hdf(
                         path_or_buf=outpath,
                         key=key,
