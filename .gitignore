@@ -4,6 +4,8 @@
 *.gro
 vmd.rc
 .vmdrc
+test/submit*.py
+
 
 
 ### C++
