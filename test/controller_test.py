@@ -1,6 +1,4 @@
-import enum
-from os import times
-from time import time
+
 import unittest
 import pyves
 import os
@@ -90,6 +88,16 @@ class MainTest(unittest.TestCase):
             timestats=True,
             threads=3
         )
+
+
+
+    def test_complete_flow(self):
+        try:
+            os.remove("test/data.h5")
+        except Exception as e:
+            print("no data.h5 to remove",e)
+        ctrl = pyves.Controller.completeFlow("test/parameters.json")
+
 
 
 if __name__ == '__main__':

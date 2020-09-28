@@ -196,10 +196,6 @@ def makeSystem(
     for _, row in df.iterrows():
         system.particles.append(_pyves.Particle([row["x"], row["y"], row["z"]], [row["ux"], row["uy"], row["uz"]], 
             sigma=row["sigma"], kappa=row["kappa"], eps=row["epsilon"], gamma=row["gamma"], name=row["name"]))
-        # system.particles[-1].initial_position = [row["initial_x"], row["initial_y"], row["initial_z"]]
-        # system.particles[-1].initial_orientation = [row["initial_ux"], row["initial_uy"], row["initial_uz"]]
-        # system.particles[-1].translation_bound_sq = row["translation_bound_sq"]
-        # system.particles[-1].rotation_bound = row["rotation_bound"]
     
     # Setup cells
     box_dims = np.array([system.box.x, system.box.y, system.box.z])
@@ -233,7 +229,7 @@ def makeSystem(
                 cell_place_counter += 1
                 break
     assert(cell_place_counter == len(system.particles))
-    # assert(system.assertIntegrity())
+    
     return system
 
 

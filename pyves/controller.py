@@ -22,6 +22,8 @@ import os
 # from os import initgroups
 # from sqlite3.dbapi2 import TimestampFromTicks
 import sys
+
+from pandas.core.dtypes.common import classes_and_not_datetimelike
 import _pyves
 import numpy as np
 import pandas as pd
@@ -32,17 +34,35 @@ import re
 
 from .signal_handler import SignalHandler, ProgramState
 from .point_distributions import *
-from .analysis import analyzeSnapshot
+from .analysis import analyzeSnapshot, analyzeTrajectory
 
 
 
-class Controller(object):
+class Controller():
     def __init__(self) -> None:
         SignalHandler.ProgramState = ProgramState.STARTUP
         self.system = _pyves.System()
         self.signal_handler = SignalHandler()
         self.time_actual = 0
         return
+
+    
+
+    @classmethod
+    def completeFlow(
+        cls, 
+        prmspath,
+        timestats = True,
+        analysis = True,
+        analysis_inline = False,
+    ):
+        ctrl = cls()
+        ctrl.readParameters(prmspath)
+        ctrl.prepareSimulation()
+        ctrl.sample(timestats=timestats, analysis=analysis_inline)
+        if analysis and not analysis_inline:
+            analyzeTrajectory(prmspath=prmspath, timestats=timestats, threads=-1)
+        return ctrl
 
 
 
