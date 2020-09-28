@@ -1,6 +1,6 @@
-from binascii import a2b_qp
 import enum
-from symbol import atom
+from os import times
+from time import time
 import unittest
 import pyves
 import os
@@ -45,7 +45,7 @@ class MainTest(unittest.TestCase):
         cells_per_dim = np.array(box_dims/control.cell_min_size).astype(int)
         self.assertEqual(len(control2.system.cells), np.cumprod(cells_per_dim)[-1])
 
-        control2.sample(timestats=True)
+        control2.sample(timestats=True, analysis=True)
         control2.system.prepareSimulationStep()
 
         # self.assertEqual(control2.system.numParticlesInCells(), 100)
@@ -55,10 +55,6 @@ class MainTest(unittest.TestCase):
             self.assertTrue(c.assertIntegrity(), f"cell {i}")
         
         self.assertTrue(control2.system.assertIntegrity())
-
-        # for p1 in control2.system.particles:
-        #     for p2 in control2.system.particles:
-        #         pyves.interaction(p1, p2, control2.system.box, control2.system.interaction_cutoff)
 
         pyves.hdf2gro(
             inpath = os.path.join(control2.output["dir"], control2.output["filename"]),
@@ -86,6 +82,14 @@ class MainTest(unittest.TestCase):
         )
         
         pyves.writeVMDrc(outdir=control2.output["dir"], traj_file_name="trajectory.gro", num_bonds=len(control2.system.particles))
+        
+        pyves.analyzeTrajectory(
+            # inpath = os.path.join(control2.input["dir"], control2.input["filename"]),
+            # outpath = os.path.join(control2.output["dir"], "data2.h5"),
+            prmspath = "test/parameters.json",
+            timestats=True,
+            threads=3
+        )
 
 
 if __name__ == '__main__':

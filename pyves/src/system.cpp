@@ -289,10 +289,10 @@ namespace _pyves
             return std::chrono::duration<double>(stop - start).count();
         };
 
-        std::cout << "num x potentialEnergy                " <<  timeFuncInvocation(num, [&]{potentialEnergy();})<< " s\n"; 
-        std::cout << "num x potentialEnergyConcurrent      " <<  timeFuncInvocation(num, [&]{potentialEnergyConcurrent();}) << " s\n";
-        std::cout << "num x singleSimulationStep           " <<  timeFuncInvocation(num, [&]{singleSimulationStep();}) << " s\n";
-        std::cout << "multipleSimulationSteps(num)         " <<  timeFuncInvocation(1, [&]{multipleSimulationSteps(num);}) << " s\n";
+        std::cout << num << " x potentialEnergy                " <<  timeFuncInvocation(num, [&]{potentialEnergy();})<< " s\n"; 
+        std::cout << num << " x potentialEnergyConcurrent      " <<  timeFuncInvocation(num, [&]{potentialEnergyConcurrent();}) << " s\n";
+        std::cout << num << " x singleSimulationStep           " <<  timeFuncInvocation(num, [&]{singleSimulationStep();}) << " s\n";
+        std::cout << "multipleSimulationSteps(" << num << ")         " <<  timeFuncInvocation(1, [&]{multipleSimulationSteps(num);}) << " s\n";
     }
 
 

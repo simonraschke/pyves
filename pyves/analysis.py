@@ -17,8 +17,14 @@
 
 
 
+import os
+import re
+import time
+import json
+import tables
 import pandas as pd
 import numpy as np
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from numpy.linalg import svd
 from scipy import ndimage
 from MDAnalysis.lib.distances import distance_array
@@ -27,10 +33,83 @@ from sklearn.preprocessing import normalize
 
 
 
-def fullAnalysis(
+def analyzeTrajectory(
+    inpath = None,
+    outpath = None,
+    prmspath = "parameters.json",
+    threads = 1,
+    timestats = False
+):
+    if not isinstance(inpath, type(None)):
+        inpath = os.path.abspath(inpath)
+    else:
+        inpath = ""
+    if not isinstance(outpath, type(None)):
+        outpath = os.path.abspath(outpath)
+    else:
+        outpath = ""
+        
+    prmspath = os.path.abspath(prmspath)
+    with open(prmspath, 'r') as prms_file:
+        prms = json.loads(prms_file.read())
+
+    if inpath == outpath and len(outpath) > 0:
+        pass
+    elif len(outpath) == 0 and os.path.exists(inpath):
+        outpath = inpath
+    elif len(inpath) == 0 and len(outpath) > 0:
+        inpath = os.path.join(prms["output"]["dir"], prms["output"]["filename"])
+    elif len(outpath) == 0 and len(inpath) == 0:
+        inpath = os.path.join(prms["output"]["dir"], prms["output"]["filename"])
+        outpath = os.path.join(prms["output"]["dir"], prms["output"]["filename"])
+    elif os.path.exists(inpath) and not os.path.exists(outpath):
+        pass
+    else:
+        raise NotImplementedError(f"{inpath}, {outpath}")
+
+    print("analyze trajectory")
+    print("input      path:", inpath)
+    print("output     path:", outpath)
+    print("parameters path:", prmspath)
+    
+    tables.file._open_files.close_all()
+    store = pd.HDFStore(inpath, mode="r")
+    keys = [s for s in store.keys() if s.startswith("/time")]
+    keys = sorted(keys, key=lambda x:int(re.findall('(?<=time)\d+', x)[0]))
+    store.close()
+    store = None
+
+    def chunker(seq, size):
+        return (seq[pos:pos + size] for pos in range(0, len(seq), size))
+
+    for group in chunker(keys, threads):
+        dfchunk = [(key, pd.read_hdf(path_or_buf=inpath, key=key)) for key in group]
+        with ProcessPoolExecutor(max_workers=threads) as executor:
+            future_to_key = {}
+            for key, df in dfchunk:
+                future_to_key[executor.submit(analyzeSnapshot, df, prms, timestats=True)] = key
+            for future in as_completed(future_to_key):
+                key = future_to_key[future]
+                try:
+                    df, execution_time = future.result()
+                    if timestats: print(f"wrote to {outpath}{key} in {execution_time:.2f} s")
+                    df.to_hdf(
+                        path_or_buf=outpath,
+                        key=key,
+                        mode="a",
+                        format="table",
+                        complevel=1,
+                    )
+                except Exception as e:
+                    print(e)
+
+
+
+def analyzeSnapshot(
         df : pd.DataFrame, 
         prms : dict,
-        system = None
+        system = None,
+        timestats = False
     ):
     assert("x" in df.columns)
     assert("y" in df.columns)
@@ -42,6 +121,8 @@ def fullAnalysis(
     assert("epsilon" in df.columns)
     assert("kappa" in df.columns)
     assert("gamma" in df.columns)
+    
+    starttime = time.perf_counter()
 
     analysis_prms = prms.get("analysis")
     DBSCAN_eps = analysis_prms.get("DBSCAN_eps", 1.2)
@@ -81,7 +162,11 @@ def fullAnalysis(
     df["epot"] = system.particleEnergies()
     df["chi"] = system.particleChiValues()
 
-    return df
+    endtime = time.perf_counter()
+    if timestats: 
+        return df, endtime-starttime
+    else:
+        return df
 
 
 

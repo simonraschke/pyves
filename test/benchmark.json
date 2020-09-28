@@ -1,7 +1,7 @@
 {
     "hardware" : 
     {
-        "threads" : 1
+        "threads" : 4
     },
     "system" : 
     {

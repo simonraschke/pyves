@@ -32,7 +32,7 @@ import re
 
 from .signal_handler import SignalHandler, ProgramState
 from .point_distributions import *
-from .analysis import fullAnalysis
+from .analysis import analyzeSnapshot
 
 
 
@@ -344,7 +344,7 @@ class Controller(object):
         if analysis or self.direct_analysis:
             if timestats:
                 analysis_starttime = time.perf_counter()
-            df = fullAnalysis(df, self.prms_complete, self.system)
+            df = analyzeSnapshot(df, self.prms_complete, self.system)
             if timestats:
                 analysis_endtime = time.perf_counter()
 
