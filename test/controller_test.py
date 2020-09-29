@@ -96,7 +96,7 @@ class MainTest(unittest.TestCase):
             os.remove("test/data.h5")
         except Exception as e:
             print("no data.h5 to remove",e)
-        ctrl = pyves.Controller.completeFlow("test/parameters.json")
+        ctrl = pyves.Controller.StaticFlow("test/parameters.json")
 
 
 

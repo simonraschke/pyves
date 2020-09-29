@@ -35,7 +35,7 @@ An even simpler example
 ```Python
 import pyves
 
-ctrl = pyves.Controller.completeFlow("some_parameters.json")
+ctrl = pyves.Controller.StaticFlow("some_parameters.json")
 ```
 
 ### Working with slurm
@@ -58,7 +58,7 @@ path_to_submit_script = pyves.slurmSubmitScript(
         nice = 0,
         requeue = True                      # will submit the job until it exits with not SIGUSR2 (12)
     )
-pyves.sbatchSubmitScript(path_to_submit_script, "some-job-name")
+jobid = pyves.sbatchSubmitScript(path_to_submit_script, "some-job-name")
 ```
 
 ### Paramters

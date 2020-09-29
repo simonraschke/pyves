@@ -1,6 +1,9 @@
 import os
 import sys
 import io
+import re
+from subprocess import check_output
+from shutil import which
 
 
 
@@ -19,13 +22,17 @@ def slurmSubmitScript(
     requeue = None,
     python_path = sys.executable,
 ):
-    assert(hours_min <= hours)
+    """
+    will return submit script path
+    """
     
     # if isinstance(python_path, type(None)):
     #     python_path = sys.executable
 
     if hours_min == None:
         hours_min = hours
+
+    assert(hours_min <= hours)
 
     filepath = os.path.join(os.path.abspath(dirpath), filename)
     _it = 0
@@ -35,7 +42,7 @@ def slurmSubmitScript(
         _it += 1
     
     prmspath = os.path.abspath(prmspath)
-    command = f"{python_path} -c \\\"import pyves; pyves.Controller.completeFlow('{prmspath}', analysis=False)\\\""
+    command = f"{python_path} -c \\\"import pyves; pyves.Controller.StaticFlow('{prmspath}', analysis=False)\\\""
     days, hours = divmod(hours, 24)
     mindays, minhours = divmod(hours_min, 24)
 
@@ -85,7 +92,22 @@ def slurmSubmitScript(
 
 def sbatchSubmitScript(
     scriptpath,
-    name
+    name="pyves job"
 ):
-    
-    return
+    """
+    will return job id
+    """
+    sbatchpath = which("sbatch")
+    print("sbatchpath", sbatchpath)
+    if sbatchpath == None:
+        raise RuntimeError("sbatch not found")
+
+    out = check_output(f"{sbatchpath} -J \"{name}\" {scriptpath}")
+    # out should look lik 
+    # Submitted batch job 7154194
+
+    try:
+        id = int(re.search(r'\d+', out).group())
+    except Exception as e:
+        raise RuntimeError("no jobid in sbatch output")
+    return id

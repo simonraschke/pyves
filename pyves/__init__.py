@@ -21,5 +21,5 @@ from _pyves import *
 from .controller import Controller
 from .converter import hdf2gro, writeVMDrc
 from .analysis import analyzeSnapshot, analyzeTrajectory
-from .slurm_helper import slurmSubmitScript
+from .slurm_helper import slurmSubmitScript, sbatchSubmitScript
 from ._version import __version__

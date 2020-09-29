@@ -9,9 +9,9 @@ class MainTest(unittest.TestCase):
         try:
             os.remove("test/submit.py")
         except Exception as e:
-            print("no submit.py to remove",e)
+            print("no submit.py to remove")
 
-        pyves.slurmSubmitScript(
+        path_to_submit_script = pyves.slurmSubmitScript(
             filename = "submit.py",
             dirpath = "test",
             prmspath = "test/parameters.json",
@@ -25,7 +25,18 @@ class MainTest(unittest.TestCase):
             requeue = True
             # python_path = sys.executable,
         )
+        self.assertTrue(os.path.exists(path_to_submit_script))
 
+        try:
+            jobid = pyves.sbatchSubmitScript(path_to_submit_script, "some-job-name")
+        except Exception as e:
+            print(e)
+            print("but should be fine on a cluster")
+
+        try:
+            os.remove("test/submit.py")
+        except Exception as e:
+            print("no submit.py to remove")
 
 
 if __name__ == '__main__':

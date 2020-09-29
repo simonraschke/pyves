@@ -50,7 +50,7 @@ class Controller():
     
 
     @classmethod
-    def completeFlow(
+    def StaticFlow(
         cls, 
         prmspath,
         timestats = True,
@@ -66,6 +66,21 @@ class Controller():
         if analysis and not analysis_inline:
             analyzeTrajectory(prmspath=prmspath, timestats=timestats, threads=-1)
         return ctrl
+
+        
+
+    @classmethod
+    def GradientFlow(
+        cls, 
+        prmspath,
+        timestats = True,
+        analysis = True,
+        analysis_inline = False,
+    ):
+        print("pyves version:", __version__)
+        print("pyves concurrency model:", _pyves.concurrency_model())
+        
+        raise NotImplementedError("GradientFlow not implemented")
 
 
 
