@@ -20,7 +20,7 @@ def slurmSubmitScript(
     python_path = sys.executable,
 ):
     assert(hours_min <= hours)
-
+    
     # if isinstance(python_path, type(None)):
     #     python_path = sys.executable
 
@@ -80,3 +80,12 @@ def slurmSubmitScript(
         print(string.getvalue(), file=slurmfile)
         
     return filepath
+
+
+
+def sbatchSubmitScript(
+    scriptpath,
+    name
+):
+    
+    return

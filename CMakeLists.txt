@@ -87,7 +87,7 @@ target_compile_options(_pyves
         $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -O3 -Wextra -Wpedantic -ferror-limit=2>
         $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -O3 -Wextra -Wpedantic -fmax-errors=2>
 )
-target_link_options(_pyves PRIVATE -W -Wno-undef)
+target_link_options(_pyves PRIVATE -W -Wno-undef -static-libgcc -static-libstdc++)
 target_link_libraries(_pyves PRIVATE pthread)
 if(${TBB_FOUND})
     message("${PROJECT_NAME} linking ${TBB_LIBRARIES}")

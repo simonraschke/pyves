@@ -25,6 +25,7 @@ import sys
 
 from pandas.core.dtypes.common import classes_and_not_datetimelike
 import _pyves
+from ._version import __version__
 import numpy as np
 import pandas as pd
 import signal
@@ -56,6 +57,8 @@ class Controller():
         analysis = True,
         analysis_inline = False,
     ):
+        print("pyves version:", __version__)
+        print("pyves concurrency model:", _pyves.concurrency_model())
         ctrl = cls()
         ctrl.readParameters(prmspath)
         ctrl.prepareSimulation()
@@ -301,7 +304,7 @@ class Controller():
                 if timestats: print()
                 if SignalHandler.ProgramState is ProgramState.SHUTDOWN:
                     print("shutting down")
-                    sys.exit(0)
+                    sys.exit(SignalHandler.signal)
 
             else:
                 sampling_time_points = np.arange(self.time_actual, self.time_max, self.time_delta)
@@ -324,7 +327,7 @@ class Controller():
 
                     if SignalHandler.ProgramState is ProgramState.SHUTDOWN:
                         print("shutting down")
-                        sys.exit(0)
+                        sys.exit(SignalHandler.signal)
                     self.sample_starttime = time.perf_counter()
 
 

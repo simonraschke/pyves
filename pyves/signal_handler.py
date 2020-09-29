@@ -36,6 +36,7 @@ class ProgramState(Enum):
 class SignalHandler(object):
     num_terminate_calls = 0
     program_state = ProgramState.UNDEFINED
+    signal = None
 
     @classmethod 
     def recieved_exit_signal(cls, sig, frame):
@@ -57,6 +58,8 @@ class SignalHandler(object):
             print(":  Wow, rude! Shutting down immediately!")
             sys.exit(sig)
 
+        cls.signal = sig
+
             
 
     @classmethod
@@ -77,7 +80,7 @@ class SignalHandler(object):
         # signal.signal(signal.SIGKILL, SignalHandler.recieved_exit_signal)
         signal.signal(signal.SIGUSR1, SignalHandler.recieved_noaction_signal)
         signal.signal(signal.SIGSEGV, SignalHandler.recieved_exit_signal)
-        signal.signal(signal.SIGUSR2, SignalHandler.recieved_noaction_signal)
+        signal.signal(signal.SIGUSR2, SignalHandler.recieved_exit_signal)
         signal.signal(signal.SIGPIPE, SignalHandler.recieved_noaction_signal)
         signal.signal(signal.SIGALRM, SignalHandler.recieved_noaction_signal)
         signal.signal(signal.SIGTERM, SignalHandler.recieved_exit_signal)
