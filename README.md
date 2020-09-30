@@ -46,18 +46,22 @@ All slurm jobs will be executed in the python environment you are currently in!
 import pyves
 
 path_to_submit_script = pyves.slurmSubmitScript(
-        filename = "submit.py",
-        dirpath = "/path/to/my/job/dir/",
-        prmspath = "/path/to/my/job/dir/parameters.json",
-        partition = "sbatch partition",
-        threads = 4,
-        memory = "4G",
-        hours = 24,
-        hours_min = 23,                     # must be smaller than hours
-        email = "someone@somewhere.lol",    # get an email if job failed
-        nice = 0,
-        requeue = True                      # will submit the job until it exits with not SIGUSR2 (12)
-    )
+    filename = "submit.py",
+    dirpath = "/path/to/my/job/dir/",
+    prmspath = "/path/to/my/job/dir/parameters.json",
+    partition = "sbatch partition",
+    threads = 4,
+    memory = "4G",
+    hours = 24,
+    hours_min = 23,                               # must be smaller than hours
+    email = "someone@somewhere.lol",              # get an email if job failed
+    nice = 0,
+    requeue = True                                # will submit the job until it exits with not SIGUSR2 (12)
+    # python_path = sys.executable,               # will use current environment executable by default
+    # controller = "pyves.Controller.StaticFlow", # the default Controller
+    # controller_kwargs = dict(analysis=True)     # controller argument dict
+)
+
 jobid = pyves.sbatchSubmitScript(path_to_submit_script, "some-job-name")
 ```
 

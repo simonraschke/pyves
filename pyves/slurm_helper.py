@@ -3,8 +3,15 @@ import sys
 import io
 import re
 from subprocess import check_output
-from shutil import which
+from shutil import which, copy2
 
+
+
+def kwargs2string(**kwargs):
+    if not kwargs:
+        return ""
+    else:
+        return " ".join(f'{x[0]}={x[1]!r}' for x in kwargs.items())
 
 
 def slurmSubmitScript(
@@ -21,6 +28,10 @@ def slurmSubmitScript(
     group = None,
     requeue = None,
     python_path = sys.executable,
+    controller = "pyves.Controller.StaticFlow",
+    controller_kwargs = dict(analysis=True),
+    dryrun = False,
+    mkdir = True
 ):
     """
     will return submit script path
@@ -34,17 +45,50 @@ def slurmSubmitScript(
 
     assert(hours_min <= hours)
 
-    filepath = os.path.join(os.path.abspath(dirpath), filename)
+
+    
+    # make new directory
+    dirpath = os.path.realpath(dirpath)
+    if mkdir and not dryrun:
+        if os.path.exists(dirpath):
+            dirpath += "_0"
+        _it = 1
+        while os.path.exists(dirpath):
+            dirpath = dirpath.split("_")[-2] + f"_{_it}"
+            _it += 1
+        os.makedirs(dirpath)
+
+    # verify that there is a directory
+    if not mkdir and not dryrun:
+        if not os.path.exists(dirpath):
+            raise OSError(f"{dirpath} does not exist")
+    
+
+
+    # define target submit script name
+    filepath = os.path.join(dirpath, filename)
     _it = 0
     while os.path.exists(filepath):
-        filepath = os.path.join(os.path.abspath(dirpath), filename)
+        filepath = os.path.join(dirpath, filename)
         filepath = filepath.split(".")[-2]+f"{_it}."+filepath.split(".")[-1]
         _it += 1
     
-    prmspath = os.path.abspath(prmspath)
-    command = f"{python_path} -c \\\"import pyves; pyves.Controller.StaticFlow('{prmspath}', analysis=False)\\\""
+
+
+    prmspath = os.path.realpath(prmspath)
+    kwargs_string = kwargs2string(**controller_kwargs)
+    command = f"{python_path} -c \\\"import pyves; {controller}('{prmspath}', {kwargs_string})\\\""
     days, hours = divmod(hours, 24)
     mindays, minhours = divmod(hours_min, 24)
+
+
+
+    if os.path.dirname(os.path.realpath(prmspath)) != dirpath and not dryrun:
+        if not os.path.isdir(dirpath):
+            raise OSError(f"cant copy {filename} to {dirpath}  it does not exist")
+        copy2(prmspath, dirpath)
+
+
 
     string = io.StringIO()
     print(f"#!{python_path}", file=string)
@@ -83,8 +127,11 @@ def slurmSubmitScript(
     print(f"    rcode = (rstatus >> 8) & 0xFF", file=string)
     print(f"    sys.exit(rcode)", file=string)
     
-    with open(filepath, "w") as slurmfile:
-        print(string.getvalue(), file=slurmfile)
+    if dryrun:
+        print(string.getvalue())
+    else:
+        with open(filepath, "w") as slurmfile:
+            print(string.getvalue(), file=slurmfile)
         
     return filepath
 
@@ -92,22 +139,37 @@ def slurmSubmitScript(
 
 def sbatchSubmitScript(
     scriptpath,
-    name="pyves job"
+    name = "pyves job",
+    dryrun = False
 ):
     """
     will return job id
     """
+    
     sbatchpath = which("sbatch")
     print("sbatchpath", sbatchpath)
     if sbatchpath == None:
         raise RuntimeError("sbatch not found")
+    
+    # start job from inside job dir
+    cwd = os.path.realpath( os.getcwd() )
+    if not os.path.exists(sbatchpath):
+        raise RuntimeError(f"path does not exist: {sbatchpath}")
+    if not dryrun:
+        os.chdir(os.path.dirname( os.path.realpath( scriptpath )) )
 
-    out = check_output(f"{sbatchpath} -J \"{name}\" {scriptpath}")
-    # out should look lik 
-    # Submitted batch job 7154194
+        out = check_output([f"{sbatchpath}", "-J", f"{name}", f"{scriptpath}"])
+        # out should look like
+        # Submitted batch job 7154194
 
-    try:
-        id = int(re.search(r'\d+', out).group())
-    except Exception as e:
-        raise RuntimeError("no jobid in sbatch output")
+        os.chdir( cwd )
+
+        try:
+            id = int(re.search(r'\d+', out).group())
+        except Exception as e:
+            raise RuntimeError("no jobid in sbatch output")
+    else:
+        id = 1337
+        
+    assert(id>15)
     return id
