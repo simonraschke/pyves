@@ -165,11 +165,11 @@ def sbatchSubmitScript(
         os.chdir( cwd )
 
         try:
-            id = int(re.search(r'\d+', out).group())
+            id = int(re.search(r'\d+', out.decode("utf-8")).group())
         except Exception as e:
             raise RuntimeError("no jobid in sbatch output")
     else:
         id = 1337
-        
+
     assert(id>15)
     return id
