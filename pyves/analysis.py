@@ -24,6 +24,9 @@ import json
 import tables
 import pandas as pd
 import numpy as np
+
+from .signal_handler import SignalHandler, ProgramState
+
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from numpy.linalg import svd
 from scipy import ndimage
@@ -89,21 +92,27 @@ def analyzeTrajectory(
         with ProcessPoolExecutor(max_workers=threads) as executor:
             future_to_key = {}
             for key, df in dfchunk:
-                future_to_key[executor.submit(analyzeSnapshot, df, prms, timestats=True)] = key
+                if not SignalHandler.ProgramState is ProgramState.SHUTDOWN:
+                    future_to_key[executor.submit(analyzeSnapshot, df, prms, timestats=True)] = key
+                else:
+                    break
             for future in as_completed(future_to_key):
-                key = future_to_key[future]
-                try:
-                    df, execution_time = future.result()
-                    if timestats: print(f"analysis took {execution_time:.2f} s | written to {outpath}{key}")
-                    df.to_hdf(
-                        path_or_buf=outpath,
-                        key=key,
-                        mode="a",
-                        format="table",
-                        complevel=1,
-                    )
-                except Exception as e:
-                    print(e)
+                if not SignalHandler.ProgramState is ProgramState.SHUTDOWN:
+                    key = future_to_key[future]
+                    try:
+                        df, execution_time = future.result()
+                        if timestats: print(f"analysis took {execution_time:.2f} s | written to {outpath}{key}")
+                        df.to_hdf(
+                            path_or_buf=outpath,
+                            key=key,
+                            mode="a",
+                            format="table",
+                            complevel=1,
+                        )
+                    except Exception as e:
+                        print(e)
+                else:
+                    break
 
 
 
@@ -333,11 +342,11 @@ def volume(label, group, max_points, eps, pps):
         gridpoints = np.vstack(np.meshgrid(x_vector, y_vector, z_vector)).reshape(3,-1).T
         #calculate the distance array with centres of masses of particles
         coms_cluster = group.filter(['shiftx','shifty','shiftz'])
-        volume.distances_array_volume = distance_array(gridpoints, coms_cluster.values, box=None).astype(np.float32)
+        distances_array_volume = distance_array(gridpoints, coms_cluster.values, box=None).astype(np.float32)
         mask = np.repeat([group["sigma"].values*eps], gridpoints.shape[0], axis=0)
         # check if any point in distance array row is close enough, then reshape to meshgrid
         # result is a binary meshgrid with 1 for the cluster shell region
-        isclose = np.where(volume.distances_array_volume <= mask, True, False).any(axis=1).reshape(x_vector.shape[0], y_vector.shape[0], z_vector.shape[0])
+        isclose = np.where(distances_array_volume <= mask, True, False).any(axis=1).reshape(x_vector.shape[0], y_vector.shape[0], z_vector.shape[0])
         # fill hole inside the shell region
         isclose = ndimage.morphology.binary_fill_holes(isclose).astype(bool)
         # calc volum from all points inside cluster
