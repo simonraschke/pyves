@@ -25,7 +25,8 @@ class MainTest(unittest.TestCase):
             email = "someone@somewhere.lol",
             nice = 0,
             requeue = True,
-            mkdir = True
+            mkdir = True,
+            log = True
             # python_path = sys.executable,
         )
 
@@ -58,7 +59,8 @@ class MainTest(unittest.TestCase):
             email = "someone@somewhere.lol",
             nice = 0,
             requeue = True,
-            mkdir = True
+            mkdir = True,
+            log = True
             # python_path = sys.executable,
         )
 
