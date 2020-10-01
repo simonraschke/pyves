@@ -11,7 +11,7 @@ def kwargs2string(**kwargs):
     if not kwargs:
         return ""
     else:
-        return " ".join(f'{x[0]}={x[1]!r}' for x in kwargs.items())
+        return ", ".join(f'{x[0]}={x[1]!r}' for x in kwargs.items())[1:]
 
 
 def slurmSubmitScript(
@@ -54,7 +54,7 @@ def slurmSubmitScript(
             dirpath += "_0"
         _it = 1
         while os.path.exists(dirpath):
-            dirpath = dirpath.split("_")[-2] + f"_{_it}"
+            dirpath = dirpath.rsplit("_",1)[0] + f"_{_it}"
             _it += 1
         os.makedirs(dirpath)
 
@@ -70,7 +70,7 @@ def slurmSubmitScript(
     _it = 0
     while os.path.exists(filepath):
         filepath = os.path.join(dirpath, filename)
-        filepath = filepath.split(".")[-2]+f"{_it}."+filepath.split(".")[-1]
+        filepath = filepath.rsplit(".",1)[0] + f"{_it}." + filepath.rsplit(".",1)[-1]
         _it += 1
     
 
