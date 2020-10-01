@@ -19,13 +19,8 @@
 
 import json
 import os
-# from os import initgroups
-# from sqlite3.dbapi2 import TimestampFromTicks
 import sys
-
-from pandas.core.dtypes.common import classes_and_not_datetimelike
 import _pyves
-from ._version import __version__
 import numpy as np
 import pandas as pd
 import signal
@@ -33,6 +28,7 @@ import time
 import h5py
 import re
 
+from ._version import __version__
 from .signal_handler import SignalHandler, ProgramState
 from .point_distributions import *
 from .analysis import analyzeSnapshot, analyzeTrajectory
@@ -47,7 +43,22 @@ class Controller():
         self.time_actual = 0
         return
 
+
     
+    @staticmethod
+    def printRuntimeInfo():
+        print("pyves version:", __version__)
+        print("pyves concurrency model:", _pyves.concurrency_model())
+        condaenv = os.environ.get("CONDA_DEFAULT_ENV", None)
+        if not isinstance(condaenv, type(None)):
+            print("conda environment:", condaenv)
+        virtualenv = os.environ.get("VIRTUAL_ENV", None)
+        if not isinstance(virtualenv, type(None)):
+            print("virtual environment:", virtualenv)
+        if isinstance(condaenv, type(None)) and isinstance(virtualenv, type(None)):
+            print("running in default python environment:", sys.executable)
+
+
 
     @classmethod
     def StaticFlow(
@@ -57,8 +68,7 @@ class Controller():
         analysis = True,
         analysis_inline = False,
     ):
-        print("pyves version:", __version__)
-        print("pyves concurrency model:", _pyves.concurrency_model())
+        Controller.printRuntimeInfo()
         ctrl = cls()
         ctrl.readParameters(prmspath)
         ctrl.prepareSimulation()

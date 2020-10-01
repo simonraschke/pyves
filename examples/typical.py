@@ -1,15 +1,13 @@
 import pyves
 import os
 
-print("pyves typical use example")
-print("pyves version:", pyves.__version__)
-print("pyves concurrency model:", pyves.concurrency_model())
+pyves.Controller.printRuntimeInfo()
 
 print("create Controller")
 ctrl = pyves.Controller()
 
 print("read parameters")
-ctrl.readParameters(os.path.join(os.path.dirname(__file__),"typical_parameters.json"))
+ctrl.readParameters(os.path.join(os.path.dirname(__file__),"typical.json"))
 
 print("prepare simulation")
 ctrl.prepareSimulation()
@@ -19,10 +17,10 @@ print("start sampling")
 ctrl.sample(timestats=True)
 
 pyves.analyzeTrajectory(
-    prmspath = os.path.join(os.path.dirname(__file__),"typical_parameters.json"),
+    prmspath = os.path.join(os.path.dirname(__file__),"typical.json"),
     timestats = True
 )
-# ctrl = pyves.Controller.StaticFlow("typical_parameters.json")
+# ctrl = pyves.Controller.StaticFlow("typical.json")
 
 print("make gro file from data")
 pyves.hdf2gro(

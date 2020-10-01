@@ -1,0 +1,88 @@
+{
+    "hardware" : 
+    {
+        "threads" : 4
+    },
+    "system" : 
+    {
+        "temperature" : 0.23,
+        "box" : 
+        {
+            "x" : 40.0,
+            "y" : 40.0,
+            "z" : 40.0
+        },
+        "translation" :
+        {
+            "min" : 0.2,
+            "max" : 0.2,
+            "target" : 0.3,
+            "interval" : 10000
+        },
+        "rotation" :
+        {
+            "min" : 0.2,
+            "max" : 0.2,
+            "target" : 0.3,
+            "interval" : 10000
+        },
+        "particles" :
+        {
+            "MOBILE" : 
+            {
+                "number" : 1500,
+                "dist" : "random",
+                "sigma" : 1.0,
+                "kappa" : 1.0,
+                "epsilon" : 1.0,
+                "gamma" : 0.1914626,
+                "bound_translation" : null,
+                "bound_rotation" : null
+            },
+            "FRAME" : 
+            {
+                "number" : 0,
+                "dist" : "sphere100",
+                "sigma" : 1.0,
+                "kappa" : 1.0,
+                "epsilon" : 1.0,
+                "gamma" : 0.1914626,
+                "bound_translation" : 0.2,
+                "bound_rotation" : 0.2
+            }
+        },
+        "interaction" : 
+        {
+            "cutoff" : 3.0
+        }
+    },
+    "control" : 
+    {
+        "time_delta" : 1000,
+        "time_max" : 50000,
+        "cell_min_size" : 3.5,
+        "cell_update_interval" : 3,
+        "neighbor_update_interval" : 3,
+        "neighbor_cutoff" : 3.5
+    },
+    "output" :
+    {
+        "dir" : ".",
+        "filename" : "typical.h5",
+        "mode" : "append",
+        "direct_analysis" : false
+    },
+    "input" :
+    {
+        "dir" : ".",
+        "filename" : "typical.h5",
+        "key" : "HEAD"
+    },
+    "analysis":
+    {
+        "volume_max_grid" : 80,
+        "volume_points_per_sigma" : 3,
+        "DBSCAN_eps" : 1.2,
+        "neighbor_cutoff" : 1.2
+    }
+}
