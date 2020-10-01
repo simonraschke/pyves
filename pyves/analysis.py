@@ -194,6 +194,7 @@ def makeSystem(
     import _pyves
 
     system = _pyves.System()
+    system.threads = 1 #prms["hardware"].get("threads", 1)
     system.box.x = prms["system"]["box"]["x"]
     system.box.y = prms["system"]["box"]["y"]
     system.box.z = prms["system"]["box"]["z"]

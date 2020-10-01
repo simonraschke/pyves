@@ -106,6 +106,10 @@ namespace _pyves
 #ifdef PYVES_USE_TBB
         tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
 #else
+        if(!executor)
+        {
+            setThreads(1);
+        }
         tf::Taskflow taskflow;
         taskflow.for_each_static(std::begin(cells), std::end(cells), [&] (Cell& cell) 
 #endif
@@ -125,6 +129,10 @@ namespace _pyves
 #ifdef PYVES_USE_TBB
         tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
 #else
+        if(!executor)
+        {
+            setThreads(1);
+        }
         tf::Taskflow taskflow;
         taskflow.for_each_static(std::begin(cells), std::end(cells), [&] (Cell& cell) 
 #endif
@@ -169,6 +177,10 @@ namespace _pyves
 #ifdef PYVES_USE_TBB
         tbb::parallel_for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
 #else
+        if(!executor)
+        {
+            setThreads(1);
+        }
         tf::Taskflow taskflow;
         taskflow.for_each(std::begin(cells), std::end(cells), [&] (Cell& cell) 
 #endif
@@ -258,6 +270,10 @@ namespace _pyves
         });
         return sum/2;
 #else 
+        if(!executor)
+        {
+            setThreads(1);
+        }
         REAL sum = 0;
         tf::Taskflow taskflow;
         taskflow.transform_reduce_static(
