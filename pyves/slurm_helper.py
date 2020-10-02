@@ -167,21 +167,25 @@ def sbatchSubmitScript(
     cwd = os.path.realpath( os.getcwd() )
     if not os.path.exists(sbatchpath):
         raise RuntimeError(f"path does not exist: {sbatchpath}")
-    if not dryrun:
-        os.chdir(os.path.dirname( os.path.realpath( scriptpath )) )
+    try:
+        if not dryrun:
+            os.chdir(os.path.dirname( os.path.realpath( scriptpath )) )
 
-        out = check_output([f"{sbatchpath}", "-J", f"{name}", f"{scriptpath}"])
-        # out should look like
-        # Submitted batch job 7154194
+            out = check_output([f"{sbatchpath}", "-J", f"{name}", f"{scriptpath}"])
+            # out should look like
+            # Submitted batch job 7154194
 
-        os.chdir( cwd )
+            os.chdir( cwd )
 
-        try:
-            id = int(re.search(r'\d+', out.decode("utf-8")).group())
-        except Exception as e:
-            raise RuntimeError("no jobid in sbatch output")
-    else:
-        id = 1337
+            try:
+                id = int(re.search(r'\d+', out.decode("utf-8")).group())
+            except Exception as e:
+                raise RuntimeError("no jobid in sbatch output")
+        else:
+            id = 1337
+    except Exception as e:
+        os.chdir(cwd)
+        raise e
 
     assert(id>15)
     return id

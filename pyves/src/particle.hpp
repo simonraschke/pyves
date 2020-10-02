@@ -4,6 +4,7 @@
 #include "utility.hpp"
 #include "box.hpp"
 #include "interaction.hpp"
+#include "external_potential.hpp"
 #include <limits>
 #include <exception>
 #include <cmath>
@@ -62,9 +63,13 @@ namespace _pyves
         REAL epsilon = std::numeric_limits<REAL>::signaling_NaN();
         REAL kappa = std::numeric_limits<REAL>::signaling_NaN();
         REAL gamma = std::numeric_limits<REAL>::signaling_NaN();
-        std::string name = "UNDEFINED";
         REAL position_bound_radius_squared = std::numeric_limits<REAL>::max();
         REAL orientation_bound_radiant = std::numeric_limits<REAL>::max();
+        
+        REAL surface_affinity_translation = 0;
+        REAL surface_affinity_rotation = 0;
+
+        std::string name = "UNDEFINED";
 
         ParticleRefContainer neighbors;
         
@@ -99,6 +104,7 @@ namespace _pyves
 
         REAL potentialEnergy(const Box<PBC::ON>&, REAL) const;
         REAL chi(const Box<PBC::ON>&, REAL) const;
+        REAL externalPotential(const Box<PBC::ON>&, REAL cutoff, REAL surface_width) const;
 
         bool operator==(const Particle& other) const;
         bool operator!=(const Particle& other) const;

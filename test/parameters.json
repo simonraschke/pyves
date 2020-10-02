@@ -28,7 +28,9 @@
         },
         "interaction" : 
         {
-            "cutoff" : 3.0
+            "cutoff" : 3.0,
+            "z_surface" : true,
+            "z_surface_width" : 1.0
         },
         "particles" :
         {
@@ -74,7 +76,9 @@
                 "epsilon" : 1.0,
                 "gamma" : 0.1914626,
                 "bound_translation" : null,
-                "bound_rotation" : null
+                "bound_rotation" : null,
+                "surface_affinity_translation" : 0.5,
+                "surface_affinity_rotation" : 0.5
             }
         }
     },

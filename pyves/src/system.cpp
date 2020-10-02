@@ -344,7 +344,7 @@ namespace _pyves
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
                 // last_energy_value = cell.potentialEnergy(particle, interaction_cutoff);
-                last_energy_value = particle.potentialEnergy(box, interaction_cutoff);
+                last_energy_value = particle.potentialEnergy(box, interaction_cutoff) + interaction::external_potential(particle, box, 1, interaction_cutoff);
 
                 if(particle.trySetPosition(particle.position+translation))
                 {

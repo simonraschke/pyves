@@ -170,6 +170,12 @@ REAL Particle::chi(const Box<PBC::ON>& box, REAL cutoff) const
 
 
 
+REAL Particle::externalPotential(const Box<PBC::ON>& box, REAL cutoff, REAL surface_width) const
+{
+    return interaction::external_potential(*this, box, surface_width, cutoff);
+}
+
+
 
 bool Particle::operator==(const Particle& other) const 
 { 
@@ -229,9 +235,9 @@ Particle::Particle(const Particle& other)
     , epsilon(other.epsilon)
     , kappa(other.kappa)
     , gamma(other.gamma)
-    , name(other.name)
     , position_bound_radius_squared(other.position_bound_radius_squared)
     , orientation_bound_radiant(other.orientation_bound_radiant)
+    , name(other.name)
 {
     if (other.initial_position)
     {
@@ -335,6 +341,9 @@ void bind_particle(py::module& m)
         .def_property("position", &Particle::getPosition, &Particle::trySetPosition)
         .def_property("orientation", &Particle::getOrientation, &Particle::trySetOrientation)
         .def("forceSetOrientation", &Particle::setOrientation)
+        .def("potentialEnergy", &Particle::potentialEnergy)
+        .def("chi", &Particle::chi)
+        .def("externalPotential", &Particle::externalPotential)
         .def_property("initial_position", &Particle::getInitialPosition, &Particle::setInitialPosition)
         .def_property("initial_orientation", &Particle::getInitialOrientation, &Particle::setInitialOrientation)
         .def_readwrite("translation_bound_sq", &Particle::position_bound_radius_squared)
@@ -344,6 +353,8 @@ void bind_particle(py::module& m)
         .def_readwrite("kappa", &Particle::kappa)
         .def_readwrite("gamma", &Particle::gamma)
         .def_readwrite("name", &Particle::name)
+        .def_readwrite("surface_affinity_translation", &Particle::surface_affinity_translation)
+        .def_readwrite("surface_affinity_rotation", &Particle::surface_affinity_rotation)
         .def_readonly("neighbors", &Particle::neighbors)
         .def_property_readonly("x", &Particle::getx)//, &Particle::setx)
         .def_property_readonly("y", &Particle::gety)//, &Particle::sety)

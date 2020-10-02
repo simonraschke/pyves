@@ -4,6 +4,7 @@
 #include "particle.hpp"
 #include "cell.hpp"
 #include "interaction.hpp"
+#include "external_potential.hpp"
 #include "metropolis.hpp"
 #include "utility.hpp"
 
