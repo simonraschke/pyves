@@ -29,14 +29,16 @@ namespace _pyves
 
     bool System::particleIsFree(const Particle& subject) const
     {
-        return std::all_of(std::begin(particles), std::end(particles), [&](const auto& p)
-        {
-            if(std::isnan(subject.sigma) || std::isnan(p.sigma))
+        return (interaction::external_potential(subject, box, 1, interaction_cutoff) < 1e-3) && 
+            std::all_of(std::begin(particles), std::end(particles), [&](const Particle& p)
             {
-                throw std::logic_error("System::particleIsFree found particle where sigma is NaN");
+                if(std::isnan(subject.sigma) || std::isnan(p.sigma))
+                {
+                    throw std::logic_error("System::particleIsFree found particle where sigma is NaN");
+                }
+                return subject == p ? true : box.distance(subject.position, p.position) > 1.1224f*(subject.sigma+p.sigma)/2;
             }
-            return subject == p ? true : box.distance(subject.position, p.position) > 1.1224f*(subject.sigma+p.sigma)/2;
-        });
+        );
     }
 
 
@@ -44,10 +46,12 @@ namespace _pyves
     bool System::particleIsFree(const Particle& subject, REAL cutoff) const
     {
         const REAL cutoff_squared = cutoff*cutoff;
-        return std::all_of(std::begin(particles), std::end(particles), [&](const auto& p)
-        { 
-            return subject == p ? true : box.squaredDistance(subject.position, p.position) > cutoff_squared;
-        });
+        return (interaction::external_potential(subject, box, 1, interaction_cutoff) < 1e-3) && 
+            std::all_of(std::begin(particles), std::end(particles), [&](const Particle& p)
+            { 
+                return subject == p ? true : box.squaredDistance(subject.position, p.position) > cutoff_squared && interaction::external_potential(p, box, 1, interaction_cutoff) < 1e-3;
+            }
+        );
     }
 
 
@@ -63,8 +67,8 @@ namespace _pyves
     {
         return all(
             numParticlesInCells() == particles.size(),
-            std::all_of(std::begin(particles), std::end(particles), [](const auto& p) { return p.assertIntegrity(); }),
-            std::all_of(std::begin(cells), std::end(cells), [](auto& c) { return c.assertIntegrity(); }),
+            std::all_of(std::begin(particles), std::end(particles), [](const Particle& p) { return p.assertIntegrity(); }),
+            std::all_of(std::begin(cells), std::end(cells), [](Cell& c) { return c.assertIntegrity(); }),
             std::isfinite(threads),
             std::isfinite(temperature)
         );
@@ -251,6 +255,30 @@ namespace _pyves
 
 
     
+    Eigen::Matrix<REAL,Eigen::Dynamic, 1> System::particleSurfacePotentialValues() const
+    {
+        Eigen::Matrix<REAL,Eigen::Dynamic, 1> values(particles.size());
+        for(std::size_t i = 0; i < particles.size(); ++i)
+        {
+            values(i) = interaction::surface_potential(particles.at(i), box, interaction_surface_width, interaction_cutoff);
+        }
+        return values;
+    }
+
+
+    
+    Eigen::Matrix<REAL,Eigen::Dynamic, 1> System::particleExternalPotentialValues() const
+    {
+        Eigen::Matrix<REAL,Eigen::Dynamic, 1> values(particles.size());
+        for(std::size_t i = 0; i < particles.size(); ++i)
+        {
+            values(i) = interaction::external_potential(particles.at(i), box, interaction_surface_width, interaction_cutoff);
+        }
+        return values;
+    }
+
+
+    
     REAL System::potentialEnergyConcurrent()
     {
 #ifdef PYVES_USE_TBB
@@ -349,7 +377,7 @@ namespace _pyves
                 if(particle.trySetPosition(particle.position+translation))
                 {
                     // energy_after = cell.potentialEnergy(particle, interaction_cutoff);
-                    energy_after = particle.potentialEnergy(box, interaction_cutoff);                
+                    energy_after = particle.potentialEnergy(box, interaction_cutoff) + interaction::external_potential(particle, box, 1, interaction_cutoff);                
 
                     // rejection
                     if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -387,7 +415,7 @@ namespace _pyves
             if(particle.trySetOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation()))
             {
                 // energy_after = cell.potentialEnergy(particle, interaction_cutoff);
-                energy_after = particle.potentialEnergy(box, interaction_cutoff);
+                energy_after = particle.potentialEnergy(box, interaction_cutoff) + interaction::external_potential(particle, box, 1, interaction_cutoff);
 
                 // rejection
                 if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -474,6 +502,8 @@ namespace _pyves
             .def_readwrite("box", &System::box)
             .def_readwrite("particles", &System::particles)
             .def_readwrite("interaction_cutoff", &System::interaction_cutoff)
+            .def_readwrite("interaction_surface", &System::interaction_surface)
+            .def_readwrite("interaction_surface_width", &System::interaction_surface_width)
             .def_readwrite("cells", &System::cells)
             .def_readwrite("cell_update_interval", &System::cell_update_interval)
             .def_readwrite("neighbor_update_interval", &System::neighbor_update_interval)
@@ -494,6 +524,8 @@ namespace _pyves
             .def("benchmark", &System::benchmark)
             .def("particleEnergies", &System::particleEnergies)
             .def("particleChiValues", &System::particleChiValues)
+            .def("particleSurfacePotentialValues", &System::particleSurfacePotentialValues)
+            .def("particleExternalPotentialValues", &System::particleExternalPotentialValues)
         ;
     }
 }

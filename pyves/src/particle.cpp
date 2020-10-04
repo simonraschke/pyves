@@ -200,6 +200,8 @@ bool Particle::assertIntegrity() const
         std::isfinite(epsilon),
         std::isfinite(kappa),
         std::isfinite(gamma),
+        std::isfinite(surface_affinity_translation),
+        std::isfinite(surface_affinity_rotation),
         name != "UNDEFINED"
     );
 }
@@ -212,7 +214,7 @@ std::string Particle::repr() const
     ss  << "<Particle " << name << " (REAL=" << type_name<REAL>() << ") at " << position.format(VECTORFORMAT)
         << " in " << orientation.format(VECTORFORMAT) << " direction>";
     return ss.str();
-}  
+}
 
 
 
@@ -220,9 +222,9 @@ std::string Particle::detailed_repr() const
 {
     return repr() + 
     #if __cplusplus <= 201703L
-        string_format(") direction with sigma=%f eps=%f kappa=%f gamma=%f >", sigma, epsilon, kappa, gamma);
+        string_format(") direction with sigma=%f eps=%f kappa=%f gamma=%f>", sigma, epsilon, kappa, gamma);
     #else
-        std::format(") direction with sigma={} eps={} kappa={} gamma={} >", sigma, epsilon, kappa, gamma);
+        std::format(") direction with sigma={} eps={} kappa={} gamma={}>", sigma, epsilon, kappa, gamma);
     #endif
 }  
 
@@ -241,12 +243,12 @@ Particle::Particle(const Particle& other)
 {
     if (other.initial_position)
     {
-        CARTESIAN copy = CARTESIAN(*other.initial_position.get());
+        const CARTESIAN copy = CARTESIAN(*other.initial_position.get());
         initial_position = std::make_unique<CARTESIAN>(CARTESIAN(copy));
     }
     if (other.initial_orientation)
     {
-        CARTESIAN copy = CARTESIAN(*other.initial_orientation.get());
+        const CARTESIAN copy = CARTESIAN(*other.initial_orientation.get());
         initial_orientation = std::make_unique<CARTESIAN>(CARTESIAN(copy));
     }
 }
@@ -295,12 +297,12 @@ Particle& Particle::operator=(const Particle& other)
     
     if(other.initial_position)
     {
-        CARTESIAN copy = CARTESIAN(*other.initial_position.get());
+        const CARTESIAN copy = CARTESIAN(*other.initial_position.get());
         initial_position = std::make_unique<CARTESIAN>(CARTESIAN(copy));
     }
     if(other.initial_orientation)
     {
-        CARTESIAN copy = CARTESIAN(*other.initial_orientation.get());
+        const CARTESIAN copy = CARTESIAN(*other.initial_orientation.get());
         initial_orientation = std::make_unique<CARTESIAN>(CARTESIAN(copy));
     }
     return *this;

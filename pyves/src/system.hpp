@@ -49,6 +49,8 @@ namespace _pyves
         StepwidthAlignmentUnit rotation_alignment;
     
         REAL interaction_cutoff = make_nan<REAL>();
+        bool interaction_surface = false;
+        REAL interaction_surface_width = 0;
         REAL temperature = make_nan<REAL>();
         REAL neighbor_cutoff = make_nan<REAL>();
         std::size_t threads = make_nan<std::size_t>();
@@ -78,6 +80,8 @@ namespace _pyves
         REAL potentialEnergyConcurrentBruteForce();
         Eigen::Matrix<REAL, Eigen::Dynamic, 1> particleEnergies() const;
         Eigen::Matrix<REAL, Eigen::Dynamic, 1> particleChiValues() const;
+        Eigen::Matrix<REAL, Eigen::Dynamic, 1> particleSurfacePotentialValues() const;
+        Eigen::Matrix<REAL, Eigen::Dynamic, 1> particleExternalPotentialValues() const;
 
         void benchmark(std::size_t);
 

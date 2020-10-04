@@ -120,6 +120,8 @@ class Controller():
         self.system.rotation.setup(rotation["interval"], rotation["min"], rotation["max"], rotation["target"])
 
         self.system.interaction_cutoff = _prms["system"]["interaction"]["cutoff"]
+        self.system.interaction_surface = _prms["system"]["interaction"].get("z_surface", False)
+        self.system.interaction_surface_width = _prms["system"]["interaction"].get("z_surface_width", 0)
 
         self.system.cell_update_interval = _prms["control"]["cell_update_interval"]
         self.system.neighbor_update_interval = _prms["control"]["neighbor_update_interval"]
@@ -219,6 +221,10 @@ class Controller():
                         self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
                     if particle_ff["bound_rotation"] != None:
                         self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
+                    if self.system.interaction_surface:
+                        self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
+                        self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
+
             
             elif "plane" in particle_ff["dist"]:
                 points = grid_plane_points(particle_ff["number"])
@@ -231,6 +237,9 @@ class Controller():
                         self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
                     if particle_ff["bound_rotation"] != None:
                         self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
+                    if self.system.interaction_surface:
+                        self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
+                        self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
 
             elif particle_ff["dist"] == "random":
                 for _ in range(particle_ff["number"]):
@@ -248,6 +257,9 @@ class Controller():
                         self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
                     if particle_ff["bound_rotation"] != None:
                         self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
+                    if self.system.interaction_surface:
+                        self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
+                        self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
             else:
                 raise NotImplementedError(f"Particle distribution {particle_ff['dist']} not implemented.")
 
@@ -276,6 +288,8 @@ class Controller():
             self.system.particles[-1].initial_orientation = [row["initial_ux"], row["initial_uy"], row["initial_uz"]]
             self.system.particles[-1].translation_bound_sq = row["translation_bound_sq"]
             self.system.particles[-1].rotation_bound = row["rotation_bound"]
+            self.system.particles[-1].surface_affinity_translation = row["surface_affinity_translation"]
+            self.system.particles[-1].surface_affinity_rotation = row["surface_affinity_rotation"]
         
         self.setupCells()
         self.placeParticlesInCells()
@@ -386,7 +400,9 @@ class Controller():
             sigma = np.array([p.sigma for p in self.system.particles], dtype=np.float32),
             epsilon = np.array([p.epsilon for p in self.system.particles], dtype=np.float32),
             kappa = np.array([p.kappa for p in self.system.particles], dtype=np.float32),
-            gamma = np.array([p.gamma for p in self.system.particles], dtype=np.float32)
+            gamma = np.array([p.gamma for p in self.system.particles], dtype=np.float32),
+            surface_affinity_translation = np.array([p.surface_affinity_translation for p in self.system.particles], dtype=np.float32),
+            surface_affinity_rotation = np.array([p.surface_affinity_rotation for p in self.system.particles], dtype=np.float32)
         ))
 
         if analysis or self.direct_analysis:
@@ -415,6 +431,8 @@ class Controller():
         node.attrs["translation_step"] = self.system.translation()
         node.attrs["rotation_step"] = self.system.rotation()
         node.attrs["interaction.cutoff"] = self.system.interaction_cutoff
+        node.attrs["interaction_surface"] = int(self.system.interaction_surface)
+        node.attrs["interaction_surface_width"] = self.system.interaction_surface_width
         node.attrs["time"] = self.time_actual
         node.attrs["cell_min_size"] = self.prms_complete["control"]["cell_min_size"]
         try:
