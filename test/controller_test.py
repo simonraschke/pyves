@@ -78,8 +78,11 @@ class MainTest(unittest.TestCase):
             box = control2.system.box,
             with_direction = True
         )
+        self.assertTrue(os.path.exists(os.path.join(control2.output["dir"], "trajectory.gro")))
         
         pyves.writeVMDrc(outdir=control2.output["dir"], traj_file_name="trajectory.gro", num_bonds=len(control2.system.particles))
+        self.assertTrue(os.path.exists(os.path.join(control2.output["dir"], ".vmdrc")))
+        self.assertTrue(os.path.exists(os.path.join(control2.output["dir"], "vmd.rc")))
         
         pyves.analyzeTrajectory(
             # inpath = os.path.join(control2.input["dir"], control2.input["filename"]),
@@ -88,6 +91,11 @@ class MainTest(unittest.TestCase):
             timestats=True,
             threads=3
         )
+        self.assertTrue(os.path.exists(os.path.join(control2.output["dir"], "data.h5")))
+        import pandas as pd
+        pd.options.display.max_rows = None
+        print(pd.read_hdf(os.path.join(control2.output["dir"], "data.h5"), key="/time2500")[["z","clustersize","surfacepot"]])
+        # print(control2.system.interaction_surface_width)
 
 
 

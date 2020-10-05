@@ -1,7 +1,7 @@
 {
     "hardware" : 
     {
-        "threads" : 4
+        "threads" : 8
     },
     "system" : 
     {
@@ -10,7 +10,7 @@
         {
             "x" : 15.0,
             "y" : 15.0,
-            "z" : 50.0
+            "z" : 40.0
         },
         "translation" :
         {
@@ -30,7 +30,7 @@
         {
             "MOBILE" : 
             {
-                "number" : 500,
+                "number" : 300,
                 "dist" : "random",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
@@ -38,8 +38,8 @@
                 "gamma" : 0.1914626,
                 "bound_translation" : null,
                 "bound_rotation" : null,
-                "surface_affinity_translation" : 1,
-                "surface_affinity_rotation" : 1
+                "surface_affinity_translation" : 0.2,
+                "surface_affinity_rotation" : 0.2
             }
         },
         "interaction" : 
@@ -51,8 +51,8 @@
     },
     "control" : 
     {
-        "time_delta" : 1000,
-        "time_max" : 5000,
+        "time_delta" : 50,
+        "time_max" : 30000,
         "cell_min_size" : 3.5,
         "cell_update_interval" : 3,
         "neighbor_update_interval" : 3,
@@ -62,7 +62,7 @@
     {
         "dir" : ".",
         "filename" : "surface.h5",
-        "mode" : "append",
+        "mode" : "overwrite",
         "direct_analysis" : false
     },
     "input" :

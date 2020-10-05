@@ -1,8 +1,7 @@
 import pyves
 import os, sys
 
-pyves.Controller.printRuntimeInfo()
-ctrl = pyves.Controller.StaticFlow("surface.json", analysis_inline=True)
+ctrl = pyves.Controller.StaticFlow("surface.json", analysis=True)
 
 print("make gro file from data")
 pyves.hdf2gro(

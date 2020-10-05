@@ -87,8 +87,7 @@ class Controller():
         analysis = True,
         analysis_inline = False,
     ):
-        print("pyves version:", __version__)
-        print("pyves concurrency model:", _pyves.concurrency_model())
+        Controller.printRuntimeInfo()
         
         raise NotImplementedError("GradientFlow not implemented")
 

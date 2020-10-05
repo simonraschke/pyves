@@ -273,6 +273,7 @@ namespace _pyves
         for(std::size_t i = 0; i < particles.size(); ++i)
         {
             values(i) = interaction::external_potential(particles.at(i), box, interaction_surface_width, interaction_cutoff);
+            // std::cout << particles.at(i).repr() << "  " << values(i) << std::endl;;
         }
         return values;
     }
@@ -343,10 +344,6 @@ namespace _pyves
 
     void System::cellStep(const Cell& cell)
     {
-        // TODO:FIXME:TODO:FIXME: CAUTION: this function is exactly what it should look like.
-        // do not change order or modify any function call
-
-        // std::cout << cell.repr() << "\n";
         REAL last_energy_value;
         REAL energy_after;
         std::uniform_real_distribution<REAL> dist_coords(-translation_alignment(),translation_alignment());
@@ -372,13 +369,15 @@ namespace _pyves
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
                 // last_energy_value = cell.potentialEnergy(particle, interaction_cutoff);
-                last_energy_value = particle.potentialEnergy(box, interaction_cutoff) + interaction::external_potential(particle, box, 1, interaction_cutoff);
+                last_energy_value = particle.potentialEnergy(box, interaction_cutoff) 
+                                  + interaction::surface_potential(particle, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0);
 
                 if(particle.trySetPosition(particle.position+translation))
                 {
                     // energy_after = cell.potentialEnergy(particle, interaction_cutoff);
-                    energy_after = particle.potentialEnergy(box, interaction_cutoff) + interaction::external_potential(particle, box, 1, interaction_cutoff);                
-
+                    energy_after = particle.potentialEnergy(box, interaction_cutoff) 
+                                 + interaction::surface_potential(particle, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0);
+                                  
                     // rejection
                     if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
                     {
@@ -399,9 +398,6 @@ namespace _pyves
                 }
             }
 
-        // TODO:FIXME:TODO:FIXME: CAUTION: this function is exactly what it should look like.
-        // do not change order or modify any function call
-
             do
             {
                 random_vector = CARTESIAN::Random();
@@ -415,8 +411,8 @@ namespace _pyves
             if(particle.trySetOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation()))
             {
                 // energy_after = cell.potentialEnergy(particle, interaction_cutoff);
-                energy_after = particle.potentialEnergy(box, interaction_cutoff) + interaction::external_potential(particle, box, 1, interaction_cutoff);
-
+                energy_after = particle.potentialEnergy(box, interaction_cutoff) 
+                             + interaction::surface_potential(particle, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0);
                 // rejection
                 if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
                 {
@@ -435,9 +431,6 @@ namespace _pyves
                 rotation_alignment.rejected();
             }
         }
-
-        // TODO:FIXME:TODO:FIXME: CAUTION: this function is exactly what it should look like.
-        // do not change order or modify any function call
     }
 
 

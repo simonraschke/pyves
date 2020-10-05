@@ -172,6 +172,8 @@ def analyzeSnapshot(
         system.makeNeighborLists()
     df["epot"] = system.particleEnergies()
     df["chi"] = system.particleChiValues()
+    df["surfacepot"] = system.particleSurfacePotentialValues()
+    df["externalpot"] = system.particleExternalPotentialValues()
 
     endtime = time.perf_counter()
     if timestats: 
@@ -202,10 +204,14 @@ def makeSystem(
     system.cell_update_interval = prms["control"]["cell_update_interval"]
     system.neighbor_update_interval = prms["control"]["neighbor_update_interval"]
     system.neighbor_cutoff = prms["control"]["neighbor_cutoff"]
+    system.interaction_surface = bool(prms["system"]["interaction"]["z_surface"])
+    system.interaction_surface_width = prms["system"]["interaction"]["z_surface_width"]
 
     for _, row in df.iterrows():
         system.particles.append(_pyves.Particle([row["x"], row["y"], row["z"]], [row["ux"], row["uy"], row["uz"]], 
             sigma=row["sigma"], kappa=row["kappa"], eps=row["epsilon"], gamma=row["gamma"], name=row["name"]))
+        system.particles[-1].surface_affinity_translation = row["surface_affinity_translation"]
+        system.particles[-1].surface_affinity_rotation = row["surface_affinity_rotation"]
     
     # Setup cells
     box_dims = np.array([system.box.x, system.box.y, system.box.z])
@@ -322,6 +328,39 @@ def planeFit(points):
 
 
 
+
+# @numba.jit(nopython=False)
+def _volume_calculation(shiftx, shifty, shiftz, sigma, clustersize, max_points, eps, pps):
+    xmin = np.min(shiftx) - np.max(shiftx)*eps 
+    xmax = np.max(shiftx) + np.max(shiftx)*eps
+    ymin = np.min(shifty) - np.max(shifty)*eps 
+    ymax = np.max(shifty) + np.max(shifty)*eps
+    zmin = np.min(shiftz) - np.max(shiftz)*eps 
+    zmax = np.max(shiftz) + np.max(shiftz)*eps
+
+    x_vector = np.linspace(xmin, xmax, np.min(np.array([int((xmax-xmin)*pps), max_points])))
+    y_vector = np.linspace(ymin, ymax, np.min(np.array([int((ymax-ymin)*pps), max_points])))
+    z_vector = np.linspace(zmin, zmax, np.min(np.array([int((zmax-zmin)*pps), max_points])))
+
+    gridpoints = np.vstack(np.meshgrid(x_vector, y_vector, z_vector)).reshape(3,-1).T
+    #calculate the distance array with centres of masses of particles
+    # coms_cluster = group.filter(['shiftx','shifty','shiftz'])
+    coms_cluster = np.row_stack([shiftx,shifty,shiftz]).T
+    # print(coms_cluster)
+    distances_array_volume = distance_array(gridpoints, coms_cluster, box=None)
+
+    mask = np.repeat([sigma*eps], gridpoints.shape[0], axis=0)
+    # check if any point in distance array row is close enough, then reshape to meshgrid
+    # result is a binary meshgrid with 1 for the cluster shell region
+    isclose = np.where(distances_array_volume <= mask, True, False).any(axis=1).reshape(x_vector.shape[0], y_vector.shape[0], z_vector.shape[0])
+    # fill hole inside the shell region
+    isclose = ndimage.morphology.binary_fill_holes(isclose).astype(bool)
+    # calc volum from all points inside cluster
+    return np.diff(x_vector)[0] * np.diff(y_vector)[0] * np.diff(z_vector)[0] * np.count_nonzero(isclose) / clustersize
+
+
+
+
 def volume(label, group, max_points, eps, pps):
     """
     ppp : points per sigma
@@ -353,3 +392,14 @@ def volume(label, group, max_points, eps, pps):
         # calc volum from all points inside cluster
         group["volume"] = np.diff(x_vector)[0] * np.diff(y_vector)[0] * np.diff(z_vector)[0] * np.count_nonzero(isclose) / group["clustersize"]
         return group
+        # coms_cluster = np.array([group['shiftx'].values, group['shifty'].values, group['shiftz'].values])
+
+        # group["volume"] = _volume_calculation(
+        #     group['shiftx'].values, 
+        #     group['shifty'].values, 
+        #     group['shiftz'].values, 
+        #     group['sigma'].values,
+        #     group['clustersize'].values, 
+        #     max_points, eps, pps
+        # )
+        # return group
