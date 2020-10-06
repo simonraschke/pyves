@@ -37,8 +37,11 @@ namespace _pyves
     template<typename DERIVED1, typename DERIVED2>
     constexpr float directed_angle(const DERIVED1& v1, const DERIVED2& v2)
     {
-        assert(std::isfinite(std::atan2(v2.normalized()(1), v2.normalized()(0)) - std::atan2(v1.normalized()(1), v1.normalized()(0))));
-        return std::atan2(v2.normalized()(1), v2.normalized()(0)) - std::atan2(v1.normalized()(1), v1.normalized()(0));
+        // assert(std::isfinite(std::atan2(v2.normalized()(1), v2.normalized()(0)) - std::atan2(v1.normalized()(1), v1.normalized()(0))));
+
+            // return np.arccos(np.sum(np.dot(v1, v2)) / (np.linalg.norm(v1)*np.linalg.norm(v2)))
+        return std::acos( v1.normalized().dot(v2.normalized()) / (v1.norm()*v2.norm()) );
+        // return std::atan2(v2.normalized()(1), v2.normalized()(0)) - std::atan2(v1.normalized()(1), v1.normalized()(0));
     }
     
 

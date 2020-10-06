@@ -8,8 +8,8 @@
         "temperature" : 0.23,
         "box" : 
         {
-            "x" : 15.0,
-            "y" : 15.0,
+            "x" : 20.0,
+            "y" : 20.0,
             "z" : 40.0
         },
         "translation" :
@@ -38,20 +38,20 @@
                 "gamma" : 0.1914626,
                 "bound_translation" : null,
                 "bound_rotation" : null,
-                "surface_affinity_translation" : 0.2,
-                "surface_affinity_rotation" : 0.2
+                "surface_affinity_translation" : 1,
+                "surface_affinity_rotation" : 2
             }
         },
         "interaction" : 
         {
             "cutoff" : 3.0,
             "z_surface" : true,
-            "z_surface_width" : 1.0
+            "z_surface_width" : 3.0
         }
     },
     "control" : 
     {
-        "time_delta" : 50,
+        "time_delta" : 500,
         "time_max" : 30000,
         "cell_min_size" : 3.5,
         "cell_update_interval" : 3,

@@ -91,7 +91,7 @@
     "control" : 
     {
         "time_delta" : 1000,
-        "time_max" : 2500,
+        "time_max" : 1500,
         "cell_min_size" : 3.5,
         "cell_update_interval" : 5,
         "neighbor_update_interval" : 5,

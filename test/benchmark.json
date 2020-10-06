@@ -8,9 +8,9 @@
         "temperature" : 0.20,
         "box" : 
         {
-            "x" : 50,
-            "y" : 50,
-            "z" : 50
+            "x" : 21,
+            "y" : 21,
+            "z" : 21
         },
         "translation" :
         {
@@ -30,7 +30,7 @@
         {
             "RAND" :
             {
-                "number" : 2500,
+                "number" : 1000,
                 "dist" : "random",
                 "sigma" : 1.0,
                 "kappa" : 1.0,

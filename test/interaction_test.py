@@ -1,4 +1,5 @@
 import unittest
+# import _pyves as pyves
 import pyves
 import numpy as np
 
@@ -191,8 +192,6 @@ class MainTest(unittest.TestCase):
 
     
     def test_interaction_integrity(self):
-        
-        import pyves
         ctrl = pyves.Controller()
         ctrl.readParameters("test/benchmark.json")
         ctrl.prepareSimulation()
@@ -216,7 +215,6 @@ class MainTest(unittest.TestCase):
 
 
     def test_interaction_benchmark(self):
-        import pyves
         ctrl = pyves.Controller()
         ctrl.readParameters("test/benchmark.json")
         ctrl.prepareSimulation()
@@ -225,6 +223,90 @@ class MainTest(unittest.TestCase):
         print("\n\nINTERACTION TIMES")
         ctrl.system.benchmark(100)
 
+
+
+    def test_surface_potential(self):
+
+        def angle(v1, v2):
+            v1 /= np.linalg.norm(v1)
+            v2 /= np.linalg.norm(v2)
+            return np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1)*np.linalg.norm(v2)))
+
+
+        surface_width = 2
+        interaction_cutoff = 3
+        UNIT_Z = [0,0,1]
+
+        p = pyves.Particle([1,1,19.999999], [0,0,1])
+        p.surface_affinity_translation = 1
+        p.surface_affinity_rotation = 1
+
+        box = pyves.BoxPBC(10,10,20)
+
+        _a = pyves.internal_angle_pow2_penalty(p)
+        self.assertAlmostEqual(_a, 0, 5)
+        
+        o = [0,0,-1]
+        p.forceSetOrientation(o)
+        _a = pyves.internal_angle_pow2_penalty(p)
+        self.assertAlmostEqual(_a, np.pi*np.pi, 5)
+        self.assertAlmostEqual(_a, angle(p.orientation, UNIT_Z)*angle(p.orientation, UNIT_Z), 5)
+        
+        o = [1,0,1]
+        p.forceSetOrientation(o)
+        _a = pyves.internal_angle_pow2_penalty(p)
+        self.assertTrue(_a > 0)
+        self.assertAlmostEqual(_a, angle(p.orientation, UNIT_Z)*angle(p.orientation, UNIT_Z), 5)
+
+        o = [-1,-1,1]
+        p.forceSetOrientation(o)
+        _a = pyves.internal_angle_pow2_penalty(p)
+        self.assertTrue(_a > 0)
+        self.assertAlmostEqual(_a, angle(p.orientation, UNIT_Z)*angle(p.orientation, UNIT_Z), 5)
+
+        o = [1,0,0]
+        p.forceSetOrientation(o)
+        _a = pyves.internal_angle_pow2_penalty(p)
+        self.assertAlmostEqual(_a, np.pi*np.pi/4, 5)
+        self.assertAlmostEqual(_a, angle(p.orientation, UNIT_Z)*angle(p.orientation, UNIT_Z), 5)
+
+        p.forceSetOrientation(UNIT_Z)
+        value = pyves.internal_z_direction_energy(p.z, box, surface_width, interaction_cutoff)
+        self.assertAlmostEqual(value, -(p.z- (box.z-surface_width))/surface_width, 5)
+        self.assertAlmostEqual(value, -1, 5)
+
+        surface_width = 2
+        p.forceSetPosition([1,1,19])
+        p.forceSetOrientation(UNIT_Z)
+        value = pyves.internal_z_direction_energy(p.z, box, surface_width, interaction_cutoff)
+        self.assertAlmostEqual(value, -(p.z- (box.z-surface_width))/surface_width, 5)
+        self.assertAlmostEqual(value, -0.5, 5)
+
+        surface_width = 1
+        p.forceSetOrientation(UNIT_Z)
+        value = pyves.internal_z_direction_energy(p.z, box, surface_width, interaction_cutoff)
+        self.assertAlmostEqual(value, -(p.z- (box.z-surface_width))/surface_width, 5)
+        self.assertAlmostEqual(value, 0, 5)
+
+        p.forceSetPosition([1,1,19.5])
+        p.forceSetOrientation(UNIT_Z)
+        value = pyves.internal_z_direction_energy(p.z, box, surface_width, interaction_cutoff)
+        self.assertAlmostEqual(value, -(p.z- (box.z-surface_width))/surface_width, 5)
+        self.assertAlmostEqual(value, -0.5, 5)
+
+        p.forceSetPosition([1,1,19.75])
+        p.forceSetOrientation(UNIT_Z)
+        value = pyves.internal_z_direction_energy(p.z, box, surface_width, interaction_cutoff)
+        self.assertAlmostEqual(value, -(p.z- (box.z-surface_width))/surface_width, 5)
+        self.assertAlmostEqual(value, -0.75, 5)
+        self.assertAlmostEqual(value, pyves.surface_potential(p, box, surface_width, interaction_cutoff), 5)
+        self.assertAlmostEqual(value, pyves.external_potential(p, box, surface_width, interaction_cutoff), 5)
+        
+        p.surface_affinity_translation = 0.2
+        p.forceSetPosition([1,1,19.999999])
+        self.assertAlmostEqual(-0.2, pyves.surface_potential(p, box, surface_width, interaction_cutoff), 5)
+        self.assertAlmostEqual(-0.2, pyves.external_potential(p, box, surface_width, interaction_cutoff), 5)
+        
 
 
 if __name__ == '__main__':

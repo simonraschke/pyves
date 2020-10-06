@@ -94,7 +94,7 @@ class MainTest(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(control2.output["dir"], "data.h5")))
         import pandas as pd
         pd.options.display.max_rows = None
-        print(pd.read_hdf(os.path.join(control2.output["dir"], "data.h5"), key="/time2500")[["z","clustersize","surfacepot"]])
+        # print(pd.read_hdf(os.path.join(control2.output["dir"], "data.h5"), key="/time1500")[["z","clustersize","surfacepot"]])
         # print(control2.system.interaction_surface_width)
 
 

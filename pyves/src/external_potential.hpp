@@ -19,6 +19,8 @@ namespace _pyves
 
 namespace _pyves::interaction
 {
+    REAL _z_direction_energy(REAL z, const Box<PBC::ON>& box, REAL surface_width, REAL cutoff);
+    REAL _angle_pow2_penalty(const Particle& p);
     REAL surface_potential(const Particle& p, const Box<PBC::ON>& box, REAL surface_width, REAL cutoff);
     REAL external_potential(const Particle& p, const Box<PBC::ON>& box, REAL surface_width, REAL cutoff);
 

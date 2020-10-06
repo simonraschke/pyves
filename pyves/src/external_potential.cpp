@@ -11,7 +11,7 @@ namespace _pyves::interaction
         }
         else if(z > box.getLengthZ()-surface_width)
         {
-            return -(box.getLengthZ()-z) / surface_width;
+            return -std::abs(z-(box.getLengthZ()-surface_width)) / surface_width;
         }
         else
         {
@@ -23,7 +23,7 @@ namespace _pyves::interaction
 
     REAL _angle_pow2_penalty(const Particle& p)
     {
-        const REAL angle = ::_pyves::absolute_angle(p.getOrientation(), CARTESIAN::UnitZ());
+        const REAL angle = ::_pyves::directed_angle(p.getOrientation(), CARTESIAN::UnitZ());
         return angle*angle;
     }
 
@@ -61,5 +61,7 @@ namespace _pyves::interaction
     {        
         m.def("surface_potential", &surface_potential);
         m.def("external_potential", &external_potential);
+        m.def("internal_angle_pow2_penalty", &_angle_pow2_penalty);
+        m.def("internal_z_direction_energy", &_z_direction_energy);
     }
 }
