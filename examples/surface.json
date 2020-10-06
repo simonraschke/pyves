@@ -8,9 +8,9 @@
         "temperature" : 0.23,
         "box" : 
         {
-            "x" : 20.0,
-            "y" : 20.0,
-            "z" : 40.0
+            "x" : 30.0,
+            "y" : 30.0,
+            "z" : 15.0
         },
         "translation" :
         {
@@ -30,7 +30,7 @@
         {
             "MOBILE" : 
             {
-                "number" : 300,
+                "number" : 500,
                 "dist" : "random",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
@@ -39,14 +39,14 @@
                 "bound_translation" : null,
                 "bound_rotation" : null,
                 "surface_affinity_translation" : 1,
-                "surface_affinity_rotation" : 2
+                "surface_affinity_rotation" : 1
             }
         },
         "interaction" : 
         {
             "cutoff" : 3.0,
             "z_surface" : true,
-            "z_surface_width" : 3.0
+            "z_surface_width" : 2.0
         }
     },
     "control" : 

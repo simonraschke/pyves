@@ -307,6 +307,27 @@ class MainTest(unittest.TestCase):
         self.assertAlmostEqual(-0.2, pyves.surface_potential(p, box, surface_width, interaction_cutoff), 5)
         self.assertAlmostEqual(-0.2, pyves.external_potential(p, box, surface_width, interaction_cutoff), 5)
         
+        surface_width = 2
+        p.surface_affinity_translation = 1
+        p.forceSetPosition([1,1,2.99])
+        self.assertTrue(pyves.surface_potential(p, box, surface_width, interaction_cutoff) > 1e5 )
+        self.assertTrue(pyves.external_potential(p, box, surface_width, interaction_cutoff) > 1e5 )
+
+        p.forceSetPosition([1,1,18.5])
+        self.assertTrue(pyves.surface_potential(p, box, surface_width, interaction_cutoff) < 1e5 )
+        self.assertTrue(pyves.external_potential(p, box, surface_width, interaction_cutoff) < 1e5 )
+
+        p.forceSetPosition([1,1,interaction_cutoff+0.001])
+        self.assertAlmostEqual(pyves.surface_potential(p, box, surface_width, interaction_cutoff), 0)
+        self.assertAlmostEqual(pyves.external_potential(p, box, surface_width, interaction_cutoff), 0 )
+
+        p.forceSetPosition([1,1,interaction_cutoff-0.001])
+        self.assertTrue(pyves.surface_potential(p, box, surface_width, interaction_cutoff) > 1e5 )
+        self.assertTrue(pyves.external_potential(p, box, surface_width, interaction_cutoff) > 1e5 )
+
+        p.forceSetPosition([1,1,.5])
+        self.assertTrue(pyves.surface_potential(p, box, surface_width, interaction_cutoff) > 1e5 )
+        self.assertTrue(pyves.external_potential(p, box, surface_width, interaction_cutoff) > 1e5 )
 
 
 if __name__ == '__main__':

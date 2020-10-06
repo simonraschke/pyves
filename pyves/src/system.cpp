@@ -261,6 +261,16 @@ namespace _pyves
         for(std::size_t i = 0; i < particles.size(); ++i)
         {
             values(i) = interaction::surface_potential(particles.at(i), box, interaction_surface_width, interaction_cutoff);
+            if(values(i) < 1e5)
+            {
+                auto z = particles.at(i).getz();
+                while(z > box.getLengthZ())
+                {
+                    z -= box.getLengthZ();
+                }
+                if(z   < interaction_surface_width)
+                throw std::logic_error("impossible surface potential value " + particles.at(i).repr());
+            }
         }
         return values;
     }
@@ -273,7 +283,6 @@ namespace _pyves
         for(std::size_t i = 0; i < particles.size(); ++i)
         {
             values(i) = interaction::external_potential(particles.at(i), box, interaction_surface_width, interaction_cutoff);
-            // std::cout << particles.at(i).repr() << "  " << values(i) << std::endl;;
         }
         return values;
     }

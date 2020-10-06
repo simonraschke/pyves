@@ -172,8 +172,14 @@ def analyzeSnapshot(
         system.makeNeighborLists()
     df["epot"] = system.particleEnergies()
     df["chi"] = system.particleChiValues()
+    print(system.interaction_surface_width)
     df["surfacepot"] = system.particleSurfacePotentialValues()
     df["externalpot"] = system.particleExternalPotentialValues()
+    try:
+        assert df[df.z < 3]['surfacepot'].le(1e5).all()
+    except AssertionError as e:
+        print(df[df.z < 3][["z","surfacepot"]])
+        raise e
 
     endtime = time.perf_counter()
     if timestats: 

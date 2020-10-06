@@ -5,7 +5,7 @@ namespace _pyves::interaction
 {
     REAL _z_direction_energy(REAL z, const Box<PBC::ON>& box, REAL surface_width, REAL cutoff)
     {
-        if(z < cutoff)
+        if(z <= cutoff)
         {
             return 999'999;
         }
@@ -37,15 +37,25 @@ namespace _pyves::interaction
             z -= box.getLengthZ();
         }
 
-        if(z <= box.getLengthZ()-surface_width or surface_width < 1e-3)
+        if((z > cutoff) and (z <= (box.getLengthZ()-surface_width))) // z between |---_________v|
         {
+            // std::cout << "z " << z 
+            //           << "  return 0 from (z > cutoff) " << std::boolalpha << (z > cutoff) 
+            //           << "  (z <= (box.getLengthZ()-surface_width)) " << (z <= (box.getLengthZ()-surface_width)) 
+            //           << "  ((z > cutoff) and (z <= (box.getLengthZ()-surface_width))) " << ((z > cutoff) and (z <= (box.getLengthZ()-surface_width)))
+            //           << "  all " << (((z > cutoff) and (z <= (box.getLengthZ()-surface_width))) or (surface_width < 1e-3)) << "\n";
+            return 0;
+        }
+        else if (surface_width < 1e-3)
+        {
+            // std::cout << "surface width " << surface_width << "  " << (surface_width < 1e-3) << "\n";
             return 0;
         }
 
         const auto _z_pot = p.surface_affinity_translation * _z_direction_energy(z, box, surface_width, cutoff);
         const auto _a_pot = p.surface_affinity_rotation * _angle_pow2_penalty(p);
         
-        return _z_pot + _a_pot * (box.getLengthZ()-z) / surface_width;
+        return _z_pot + _a_pot * (std::abs(z-(box.getLengthZ()-surface_width)) / surface_width);
     }
 
 
