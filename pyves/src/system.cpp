@@ -27,9 +27,23 @@ namespace _pyves
 
 
 
+    bool System::particleIsFree(const Particle& subject, REAL cutoff) const
+    {
+        const REAL cutoff_squared = cutoff*cutoff;
+        return (interaction::external_potential(subject, box, interaction_surface_width, interaction_cutoff) < 1e-3) && 
+            std::all_of(std::begin(particles), std::end(particles), [&](const Particle& p)
+            { 
+                return subject == p ? true : box.squaredDistance(subject.position, p.position) > cutoff_squared;
+            }
+        );
+    }
+
+
+
     bool System::particleIsFree(const Particle& subject) const
     {
-        return (interaction::external_potential(subject, box, 1, interaction_cutoff) < 1e-3) && 
+        // return particleIsFree(subject, 1.1224f*(subject.sigma+p.sigma)/2);
+        return (interaction::external_potential(subject, box, interaction_surface_width, interaction_cutoff) < 1e-3) && 
             std::all_of(std::begin(particles), std::end(particles), [&](const Particle& p)
             {
                 if(std::isnan(subject.sigma) || std::isnan(p.sigma))
@@ -37,19 +51,6 @@ namespace _pyves
                     throw std::logic_error("System::particleIsFree found particle where sigma is NaN");
                 }
                 return subject == p ? true : box.distance(subject.position, p.position) > 1.1224f*(subject.sigma+p.sigma)/2;
-            }
-        );
-    }
-
-
-
-    bool System::particleIsFree(const Particle& subject, REAL cutoff) const
-    {
-        const REAL cutoff_squared = cutoff*cutoff;
-        return (interaction::external_potential(subject, box, 1, interaction_cutoff) < 1e-3) && 
-            std::all_of(std::begin(particles), std::end(particles), [&](const Particle& p)
-            { 
-                return subject == p ? true : box.squaredDistance(subject.position, p.position) > cutoff_squared && interaction::external_potential(p, box, 1, interaction_cutoff) < 1e-3;
             }
         );
     }
@@ -268,8 +269,15 @@ namespace _pyves
                 {
                     z -= box.getLengthZ();
                 }
-                if(z   < interaction_surface_width)
-                throw std::logic_error("impossible surface potential value " + particles.at(i).repr());
+                if(
+                    interaction_surface and 
+                    z < interaction_cutoff and
+                    particles.at(i).surface_affinity_translation > 1e-3
+                )
+                throw std::logic_error("impossible surface potential = " + std::to_string(values(i)) 
+                                       + " for " + particles.at(i).repr() + " z=" +std::to_string(z)
+                                       + " with surface_width " + std::to_string(interaction_surface_width)
+                                       + " and cutoff " + std::to_string(interaction_cutoff) );
             }
         }
         return values;

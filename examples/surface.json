@@ -5,12 +5,12 @@
     },
     "system" : 
     {
-        "temperature" : 0.23,
+        "temperature" : 0.25,
         "box" : 
         {
-            "x" : 30.0,
-            "y" : 30.0,
-            "z" : 15.0
+            "x" : 20.0,
+            "y" : 20.0,
+            "z" : 50.0
         },
         "translation" :
         {
@@ -51,8 +51,8 @@
     },
     "control" : 
     {
-        "time_delta" : 500,
-        "time_max" : 30000,
+        "time_delta" : 1000,
+        "time_max" : 50000,
         "cell_min_size" : 3.5,
         "cell_update_interval" : 3,
         "neighbor_update_interval" : 3,

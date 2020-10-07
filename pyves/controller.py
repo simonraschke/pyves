@@ -216,13 +216,13 @@ class Controller():
                 for point in points:
                     self.system.particles.append(_pyves.Particle(point*radius+box_dims/2, point, 
                         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                    if self.system.interaction_surface:
+                        self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
+                        self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
                     if particle_ff["bound_translation"] != None:
                         self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
                     if particle_ff["bound_rotation"] != None:
                         self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
-                    if self.system.interaction_surface:
-                        self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
-                        self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
 
             
             elif "plane" in particle_ff["dist"]:
@@ -232,18 +232,21 @@ class Controller():
                 for point in points:
                     self.system.particles.append(_pyves.Particle(point*edge/2+box_dims/2, [0,0,1], 
                         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                    if self.system.interaction_surface:
+                        self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
+                        self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
                     if particle_ff["bound_translation"] != None:
                         self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
                     if particle_ff["bound_rotation"] != None:
                         self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
-                    if self.system.interaction_surface:
-                        self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
-                        self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
 
             elif particle_ff["dist"] == "random":
                 for _ in range(particle_ff["number"]):
                     self.system.particles.append(_pyves.Particle(np.random.rand(3)*box_dims, np.random.uniform(-1,1,3), 
                         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                    if self.system.interaction_surface:
+                        self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
+                        self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
                     # repeat until particle is free
                     particle_try_set_count = 0
                     while not self.system.particleIsFree(self.system.particles[-1]):
@@ -256,9 +259,6 @@ class Controller():
                         self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
                     if particle_ff["bound_rotation"] != None:
                         self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
-                    if self.system.interaction_surface:
-                        self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
-                        self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
             else:
                 raise NotImplementedError(f"Particle distribution {particle_ff['dist']} not implemented.")
 

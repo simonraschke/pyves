@@ -51,6 +51,10 @@ namespace _pyves::interaction
             // std::cout << "surface width " << surface_width << "  " << (surface_width < 1e-3) << "\n";
             return 0;
         }
+        else if(z <= cutoff)
+        {
+            return 999'999;
+        }
 
         const auto _z_pot = p.surface_affinity_translation * _z_direction_energy(z, box, surface_width, cutoff);
         const auto _a_pot = p.surface_affinity_rotation * _angle_pow2_penalty(p);
