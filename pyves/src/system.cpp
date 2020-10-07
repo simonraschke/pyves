@@ -43,7 +43,7 @@ namespace _pyves
     bool System::particleIsFree(const Particle& subject) const
     {
         // return particleIsFree(subject, 1.1224f*(subject.sigma+p.sigma)/2);
-        return (interaction::external_potential(subject, box, interaction_surface_width, interaction_cutoff) < 1e-3) && 
+        return (interaction::external_potential(subject, box, interaction_surface_width, interaction_cutoff) < 1e-3) and 
             std::all_of(std::begin(particles), std::end(particles), [&](const Particle& p)
             {
                 if(std::isnan(subject.sigma) || std::isnan(p.sigma))

@@ -30,7 +30,7 @@
         {
             "MOBILE" : 
             {
-                "number" : 500,
+                "number" : 700,
                 "dist" : "random",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
@@ -38,8 +38,8 @@
                 "gamma" : 0.1914626,
                 "bound_translation" : null,
                 "bound_rotation" : null,
-                "surface_affinity_translation" : 1,
-                "surface_affinity_rotation" : 1
+                "surface_affinity_translation" : 1.5,
+                "surface_affinity_rotation" : 0.5
             }
         },
         "interaction" : 
@@ -52,7 +52,7 @@
     "control" : 
     {
         "time_delta" : 1000,
-        "time_max" : 50000,
+        "time_max" : 1000000,
         "cell_min_size" : 3.5,
         "cell_update_interval" : 3,
         "neighbor_update_interval" : 3,

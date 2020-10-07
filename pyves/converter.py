@@ -141,7 +141,7 @@ def writeVMDrc(outdir=".", traj_file_name="trajectory.gro", num_bonds=0):
             print("color change rgb 11 0.60 0.10 0.60 ;# purple", file=VMDRC)
             print("color change rgb 16 0.15 0.15 0.15 ;# black", file=VMDRC)
             print("after idle {", file=VMDRC)
-            print("  pbc box -color black -width 1", file=VMDRC)
+            print("  pbc box -color black", file=VMDRC)
             print("  # set colors", file=VMDRC)
             print("  # create dummy molecule with one atom", file=VMDRC)
             print("  set mol [mol new atoms 1]", file=VMDRC)
