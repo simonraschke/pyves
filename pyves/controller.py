@@ -28,10 +28,13 @@ import time
 import h5py
 import re
 
+from more_itertools import windowed
+
 from ._version import __version__
 from .signal_handler import SignalHandler, ProgramState
 from .point_distributions import *
 from .analysis import analyzeSnapshot, analyzeTrajectory
+from .utility import h5store, h5load
 
 
 
@@ -80,16 +83,56 @@ class Controller():
         
 
     @classmethod
-    def GradientFlow(
+    def DynamicSystemFlow(
         cls, 
         prmspath,
+        attr,
+        times,
+        values,
         timestats = True,
         analysis = True,
         analysis_inline = False,
     ):
+        assert len(times) == np.unique(times).size
+
         Controller.printRuntimeInfo()
+        ctrl = cls()
+        ctrl.readParameters(prmspath)
+        ctrl.time_max = max(times)
+        ctrl.prepareSimulation()
         
-        raise NotImplementedError("GradientFlow not implemented")
+        assert hasattr(ctrl.system, attr), attr
+
+        times = np.array(times, dtype=np.int64)
+        values = np.array(values)
+        time_indices = times.argsort()
+        times = times[time_indices]
+        values = values[time_indices]
+
+        print(*zip(times, values))
+
+        if ctrl.time_actual < min(times):
+            ctrl.sample(steps=min(times)-ctrl.time_actual, timestats=timestats, analysis=analysis_inline)
+        setattr(ctrl.system, attr, values[times.tolist().index(ctrl.time_actual)])
+
+        for start, end in windowed(times, 2):
+            if ctrl.time_actual < end and ctrl.time_actual >= start:
+                ctrl.sample(steps=end-ctrl.time_actual, timestats=timestats, analysis=analysis_inline)
+                assert ctrl.time_actual == end, ctrl.time_actual
+                assert end in times, end
+                assert hasattr(ctrl.system, attr), attr
+
+                setattr(ctrl.system, attr, values[times.tolist().index(ctrl.time_actual)])
+
+                assert abs(getattr(ctrl.system, attr) - values[times.tolist().index(ctrl.time_actual)]) < 1e-5, abs(getattr(ctrl.system, attr) - values[times.tolist().index(ctrl.time_actual)])
+                assert abs(ctrl.getMetadata()[attr] - values[times.tolist().index(ctrl.time_actual)]) < 1e-5, abs(ctrl.getMetadata()[attr] - values[times.tolist().index(ctrl.time_actual)])                
+                assert attr in h5load(os.path.join(ctrl.output["dir"], ctrl.output["filename"]), f"time{ctrl.time_actual}")[1]
+                assert abs(h5load(os.path.join(ctrl.output["dir"], ctrl.output["filename"]), f"time{ctrl.time_actual}")[1][attr] - values[times.tolist().index(ctrl.time_actual)-1]) < 1e-5
+
+        if analysis and not analysis_inline:
+            analyzeTrajectory(prmspath=prmspath, timestats=timestats, threads=-1)
+
+        return ctrl
 
 
 
@@ -139,6 +182,17 @@ class Controller():
         assert(self.system.neighbor_cutoff >= self.system.interaction_cutoff)
         assert(self.cell_min_size >= self.system.interaction_cutoff)
     
+
+
+    def setForAllParticles(self, attr=dict(), condition=dict()):
+        assert isinstance(attr, dict)
+        assert isinstance(condition, dict)
+        print("setting all", condition, "particles to", attr)
+        for particle in self.system.particles:
+            if sum([ getattr(particle, k) == v for k,v in condition.items() ]) == len(condition.items()):
+                for k, v in attr.items():
+                    setattr(particle, k, v)
+
 
 
     def setupCells(self):
@@ -276,9 +330,10 @@ class Controller():
             else:
                 key = self.input["key"]
 
-            df = pd.read_hdf(path_or_buf=path, key=key)
-        
+            # df, metadata = pd.read_hdf(path_or_buf=path, key=key)
+            df, metadata = h5load(path, key)
             self.time_actual = int(re.findall('(?<=time)\d+', key)[0])
+            self.setFromMetadata(metadata)
 
         for _, row in df.iterrows():
             self.system.particles.append(_pyves.Particle([row["x"], row["y"], row["z"]], [row["ux"], row["uy"], row["uz"]], 
@@ -321,7 +376,7 @@ class Controller():
 
             self.sample_starttime = time.perf_counter()
 
-            if isinstance(steps, int):
+            if not isinstance(steps, type(None)):
                 for i in range(steps):
                     if not SignalHandler.ProgramState is ProgramState.SHUTDOWN:
                         self.system.assertIntegrity()
@@ -370,6 +425,37 @@ class Controller():
 
 
 
+    def setFromMetadata(self, metadata):
+        self.system.box.x = metadata["box.x"]
+        self.system.box.y = metadata["box.y"]
+        self.system.box.z = metadata["box.z"]
+        self.system.temperature = metadata["temperature"]
+        self.time_actual = metadata["time"]
+
+
+
+    def getMetadata(self):
+        metadata = {}
+        metadata["box.x"] = self.system.box.x
+        metadata["box.y"] = self.system.box.y
+        metadata["box.z"] = self.system.box.z
+        metadata["threads"] = self.system.threads
+        metadata["temperature"] = self.system.temperature
+        metadata["translation_step"] = self.system.translation()
+        metadata["rotation_step"] = self.system.rotation()
+        metadata["interaction.cutoff"] = self.system.interaction_cutoff
+        metadata["interaction.surface"] = int(self.system.interaction_surface)
+        metadata["interaction.surface_width"] = self.system.interaction_surface_width
+        metadata["time"] = self.time_actual
+        metadata["cell_min_size"] = self.prms_complete["control"]["cell_min_size"]
+        try:
+            metadata["simulation_walltime"] = time.perf_counter() - self.sample_starttime
+        except:
+            metadata["simulation_walltime"] = time.perf_counter()
+        return metadata
+
+
+
     def writeTrajectoryHDF(self, log=False, timestats=False, analysis=False):
         if self.output["filename"] == None:
             return
@@ -407,39 +493,52 @@ class Controller():
         if analysis or self.direct_analysis:
             if timestats:
                 analysis_starttime = time.perf_counter()
-            df = analyzeSnapshot(df, self.prms_complete, self.system)
+            df = analyzeSnapshot(
+                df = df, 
+                prms = self.prms_complete, 
+                metadata = self.getMetadata(),
+                system = self.system
+            )
             if timestats:
                 analysis_endtime = time.perf_counter()
 
-        df.to_hdf(
-            path_or_buf=os.path.join(self.output["dir"], self.output["filename"]),
-            key=f"/time{self.time_actual}",
-            mode="a",# if self.output["mode"] == "append" else "w",
-            # append=True if self.output["mode"] == "append" else False,
-            format="table",
-            complevel=1,
+        h5store(
+            os.path.join(self.output["dir"], self.output["filename"]),
+            f"/time{self.time_actual}",
+            df,
+            **self.getMetadata()
         )
+        
+        # df.to_hdf(
+        #     path_or_buf=os.path.join(self.output["dir"], self.output["filename"]),
+        #     key=f"/time{self.time_actual}",
+        #     mode="a",# if self.output["mode"] == "append" else "w",
+        #     # append=True if self.output["mode"] == "append" else False,
+        #     format="table",
+        #     complevel=1,
+        # )
 
-        h5pyFile = h5py.File(os.path.join(self.output["dir"], self.output["filename"]), mode="a")
-        node = h5pyFile.get(f"/time{self.time_actual}")
-        node.attrs["box.x"] = self.system.box.x
-        node.attrs["box.y"] = self.system.box.y
-        node.attrs["box.z"] = self.system.box.z
-        node.attrs["threads"] = self.system.threads
-        node.attrs["temperature"] = self.system.temperature
-        node.attrs["translation_step"] = self.system.translation()
-        node.attrs["rotation_step"] = self.system.rotation()
-        node.attrs["interaction.cutoff"] = self.system.interaction_cutoff
-        node.attrs["interaction_surface"] = int(self.system.interaction_surface)
-        node.attrs["interaction_surface_width"] = self.system.interaction_surface_width
-        node.attrs["time"] = self.time_actual
-        node.attrs["cell_min_size"] = self.prms_complete["control"]["cell_min_size"]
-        try:
-            node.attrs["simulation_walltime"] = time.perf_counter() - self.sample_starttime
-        except:
-            node.attrs["simulation_walltime"] = time.perf_counter()
 
-        h5pyFile.close()
+        # h5pyFile = h5py.File(os.path.join(self.output["dir"], self.output["filename"]), mode="a")
+        # node = h5pyFile.get(f"time{self.time_actual}")
+        # node.attrs["box.x"] = self.system.box.x
+        # node.attrs["box.y"] = self.system.box.y
+        # node.attrs["box.z"] = self.system.box.z
+        # node.attrs["threads"] = self.system.threads
+        # node.attrs["temperature"] = self.system.temperature
+        # node.attrs["translation_step"] = self.system.translation()
+        # node.attrs["rotation_step"] = self.system.rotation()
+        # node.attrs["interaction.cutoff"] = self.system.interaction_cutoff
+        # node.attrs["interaction_surface"] = int(self.system.interaction_surface)
+        # node.attrs["interaction_surface_width"] = self.system.interaction_surface_width
+        # node.attrs["time"] = self.time_actual
+        # node.attrs["cell_min_size"] = self.prms_complete["control"]["cell_min_size"]
+        # try:
+        #     node.attrs["simulation_walltime"] = time.perf_counter() - self.sample_starttime
+        # except:
+        #     node.attrs["simulation_walltime"] = time.perf_counter()
+
+        # h5pyFile.close()
 
         if log:
             print(df)

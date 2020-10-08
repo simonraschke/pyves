@@ -5,3 +5,4 @@ scikit-learn>=0.22
 MDAnalysis>=1.0
 tables
 h5py
+more_itertools

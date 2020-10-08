@@ -19,12 +19,14 @@
 
 import os
 import re
+import sys
 import time
 import json
 import tables
 import pandas as pd
 import numpy as np
 
+from pyves import utility
 from .signal_handler import SignalHandler, ProgramState
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -84,31 +86,26 @@ def analyzeTrajectory(
     store.close()
     store = None
 
-    def chunker(seq, size):
-        return (seq[pos:pos + size] for pos in range(0, len(seq), size))
 
-    for group in chunker(keys, threads):
-        dfchunk = [(key, pd.read_hdf(path_or_buf=inpath, key=key)) for key in group]
+    for group in utility.chunker(keys, threads):
+        # dfchunk is (key, df, metadata)
+        dfchunk = [(key, *utility.h5load(inpath, key=key)) for key in group]
         with ProcessPoolExecutor(max_workers=threads) as executor:
             future_to_key = {}
-            for key, df in dfchunk:
+            for key, df, metadata in dfchunk:
+                assert isinstance(metadata, dict)
                 if not SignalHandler.ProgramState is ProgramState.SHUTDOWN:
-                    future_to_key[executor.submit(analyzeSnapshot, df, prms, timestats=True)] = key
+                    future_to_key[executor.submit(analyzeSnapshot, df=df, prms=prms, metadata=metadata, timestats=True)] = (key, metadata)
                 else:
                     break
             for future in as_completed(future_to_key):
                 if not SignalHandler.ProgramState is ProgramState.SHUTDOWN:
-                    key = future_to_key[future]
+                    key, metadata = future_to_key[future]
+                    assert isinstance(metadata, dict)
                     try:
                         df, execution_time = future.result()
                         if timestats: print(f"analysis took {execution_time:.2f} s | written to {outpath}{key}")
-                        df.to_hdf(
-                            path_or_buf=outpath,
-                            key=key,
-                            mode="a",
-                            format="table",
-                            complevel=1,
-                        )
+                        utility.h5store(outpath, key, df, **metadata)
                     except Exception as e:
                         print(e)
                 else:
@@ -119,6 +116,7 @@ def analyzeTrajectory(
 def analyzeSnapshot(
         df : pd.DataFrame, 
         prms : dict,
+        metadata : dict,
         system = None,
         timestats = False
     ):
@@ -132,6 +130,8 @@ def analyzeSnapshot(
     assert("epsilon" in df.columns)
     assert("kappa" in df.columns)
     assert("gamma" in df.columns)
+    assert isinstance(prms, dict)
+    assert isinstance(metadata, dict)
     
     starttime = time.perf_counter()
 
@@ -168,7 +168,7 @@ def analyzeSnapshot(
 
 
     if isinstance(system, type(None)):
-        system = makeSystem(df,prms)
+        system = makeSystem(df, prms, metadata)
         system.makeNeighborLists()
     df["epot"] = system.particleEnergies()
     df["chi"] = system.particleChiValues()
@@ -190,7 +190,8 @@ def analyzeSnapshot(
 
 def makeSystem(
         df : pd.DataFrame, 
-        prms : dict
+        prms : dict,
+        metadata : dict
     ):
     assert("x" in df.columns)
     assert("y" in df.columns)
@@ -198,19 +199,23 @@ def makeSystem(
     assert("ux" in df.columns)
     assert("uy" in df.columns)
     assert("uz" in df.columns)
-    import _pyves
+    assert isinstance(prms, dict)
+    assert isinstance(metadata, dict)
 
+    import _pyves
     system = _pyves.System()
+    assert isinstance(system, _pyves.System)
     system.threads = 1 #prms["hardware"].get("threads", 1)
-    system.box.x = prms["system"]["box"]["x"]
-    system.box.y = prms["system"]["box"]["y"]
-    system.box.z = prms["system"]["box"]["z"]
-    system.interaction_cutoff = prms["system"]["interaction"]["cutoff"]
+    system.box.x = metadata["box.x"]
+    system.box.y = metadata["box.y"]
+    system.box.z = metadata["box.z"]
+    system.temperature = metadata["temperature"]
+    system.interaction_cutoff = metadata["interaction.cutoff"]
     system.cell_update_interval = prms["control"]["cell_update_interval"]
     system.neighbor_update_interval = prms["control"]["neighbor_update_interval"]
     system.neighbor_cutoff = prms["control"]["neighbor_cutoff"]
-    system.interaction_surface = bool(prms["system"]["interaction"]["z_surface"])
-    system.interaction_surface_width = prms["system"]["interaction"]["z_surface_width"]
+    system.interaction_surface = bool(metadata["interaction.surface"])
+    system.interaction_surface_width = metadata["interaction.surface_width"]
 
     for _, row in df.iterrows():
         system.particles.append(_pyves.Particle([row["x"], row["y"], row["z"]], [row["ux"], row["uy"], row["uz"]], 
@@ -220,7 +225,7 @@ def makeSystem(
     
     # Setup cells
     box_dims = np.array([system.box.x, system.box.y, system.box.z])
-    cells_per_dim = np.array(box_dims/prms["control"]["cell_min_size"]).astype(int)
+    cells_per_dim = np.array(box_dims/metadata["cell_min_size"]).astype(int)
     cell_actual_size = box_dims/cells_per_dim
 
     for x in np.arange(0, box_dims[0], cell_actual_size[0]):
@@ -250,7 +255,7 @@ def makeSystem(
                 cell_place_counter += 1
                 break
     assert(cell_place_counter == len(system.particles))
-    
+   
     return system
 
 

@@ -1,36 +1,36 @@
 {
     "hardware" : 
     {
-        "threads" : 8
+        "threads" : 4
     },
     "system" : 
     {
-        "temperature" : 0.25,
+        "temperature" : 0.20,
         "box" : 
         {
-            "x" : 20.0,
-            "y" : 20.0,
-            "z" : 50.0
+            "x" : 10,
+            "y" : 10,
+            "z" : 10
         },
         "translation" :
         {
-            "min" : 0.2,
+            "min" : 0.01,
             "max" : 0.2,
             "target" : 0.3,
-            "interval" : 10000
+            "interval" : 1000
         },
         "rotation" :
         {
-            "min" : 0.2,
+            "min" : 0.01,
             "max" : 0.2,
             "target" : 0.3,
-            "interval" : 10000
+            "interval" : 1000
         },
         "particles" :
         {
-            "MOBILE" : 
+            "RAND" :
             {
-                "number" : 700,
+                "number" : 10,
                 "dist" : "random",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
@@ -45,36 +45,35 @@
         "interaction" : 
         {
             "cutoff" : 3.0,
-            "z_surface" : true,
-            "z_surface_width" : 2.0
+            "z_surface" : false,
+            "z_surface_width" : 1.0
         }
     },
     "control" : 
     {
-        "time_delta" : 1000,
-        "time_max" : 1200000,
-        "cell_min_size" : 3.5,
-        "cell_update_interval" : 3,
-        "neighbor_update_interval" : 3,
+        "time_delta" : 100010,
+        "time_max" : 100,
+        "cell_min_size" : 3.0,
+        "cell_update_interval" : 5,
+        "neighbor_update_interval" : 5,
         "neighbor_cutoff" : 3.5
-    },
+    },  
     "output" :
     {
-        "dir" : ".",
-        "filename" : "surface.h5",
-        "mode" : "overwrite",
-        "direct_analysis" : false
+        "dir" : "test",
+        "filename" : "gradient.h5",
+        "mode" : "overwrite"
     },
     "input" :
     {
-        "dir" : ".",
-        "filename" : "surface.h5",
+        "dir" : "test",
+        "filename" : "gradient.h5",
         "key" : "HEAD"
     },
     "analysis":
     {
         "volume_max_grid" : 80,
-        "volume_points_per_sigma" : 3,
+        "volume_points_per_sigma" : 5,
         "DBSCAN_eps" : 1.2,
         "neighbor_cutoff" : 1.2
     }

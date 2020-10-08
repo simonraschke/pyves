@@ -1,4 +1,4 @@
-
+from pyves import utility
 import unittest
 import pyves
 import os
@@ -105,6 +105,42 @@ class MainTest(unittest.TestCase):
         except Exception as e:
             print("no data.h5 to remove",e)
         ctrl = pyves.Controller.StaticFlow("test/parameters.json")
+
+
+
+    def test_system_gradient_flow(self):
+        try:
+            os.remove("test/gradient.h5")
+        except Exception as e:
+            print("no gradient.h5 to remove",e)
+
+
+
+        times = np.linspace(0,100,10, dtype=int)
+        attribute = "temperature"
+        values = [0.2 for i in range(5)] + [0.3 for i in range(5)]
+        
+        ctrl = pyves.Controller.DynamicSystemFlow("test/gradient.json", attr=attribute, times=times, values=values)
+        self.assertEqual(ctrl.time_actual, 100)
+        
+        for i, time in list(enumerate(times))[1:]:
+            _, metadata = utility.h5load("test/gradient.h5", f"/time{time}")
+            self.assertAlmostEqual(values[i-1], metadata["temperature"], 5)
+
+        del ctrl
+
+
+        times = np.linspace(101,200,11, dtype=int)
+        attribute = "temperature"
+        values = [0.2 for i in range(6)] + [0.3 for i in range(5)]
+        
+        ctrl = pyves.Controller.DynamicSystemFlow("test/gradient.json", attr=attribute, times=times, values=values)
+        self.assertEqual(ctrl.time_actual, 200)
+        
+        for i, time in list(enumerate(times))[1:]:
+            _, metadata = utility.h5load("test/gradient.h5", f"/time{time}")
+            self.assertAlmostEqual(values[i-1], metadata["temperature"], 5)
+
 
 
 
