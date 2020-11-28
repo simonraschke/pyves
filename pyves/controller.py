@@ -80,7 +80,7 @@ class Controller():
             analyzeTrajectory(prmspath=prmspath, timestats=timestats, threads=-1)
         return ctrl
 
-        
+
 
     @classmethod
     def DynamicSystemFlow(
@@ -131,6 +131,60 @@ class Controller():
 
         if analysis and not analysis_inline:
             analyzeTrajectory(prmspath=prmspath, timestats=timestats, threads=-1)
+
+        return ctrl
+
+
+
+    @classmethod
+    def DynamicParticleFlow(
+        cls, 
+        prmspath,
+        attr,
+        times,
+        values,
+        timestats = True,
+        analysis = True,
+        analysis_inline = False,
+    ):
+        # assert len(times) == np.unique(times).size
+
+        Controller.printRuntimeInfo()
+        ctrl = cls()
+        # ctrl.readParameters(prmspath)
+        # ctrl.time_max = max(times)
+        # ctrl.prepareSimulation()
+        
+        # assert hasattr(ctrl.system, attr), attr
+
+        # times = np.array(times, dtype=np.int64)
+        # values = np.array(values)
+        # time_indices = times.argsort()
+        # times = times[time_indices]
+        # values = values[time_indices]
+
+        # print(*zip(times, values))
+
+        # if ctrl.time_actual < min(times):
+        #     ctrl.sample(steps=min(times)-ctrl.time_actual, timestats=timestats, analysis=analysis_inline)
+        # setattr(ctrl.system, attr, values[times.tolist().index(ctrl.time_actual)])
+
+        # for start, end in windowed(times, 2):
+        #     if ctrl.time_actual < end and ctrl.time_actual >= start:
+        #         ctrl.sample(steps=end-ctrl.time_actual, timestats=timestats, analysis=analysis_inline)
+        #         assert ctrl.time_actual == end, ctrl.time_actual
+        #         assert end in times, end
+        #         assert hasattr(ctrl.system, attr), attr
+
+        #         setattr(ctrl.system, attr, values[times.tolist().index(ctrl.time_actual)])
+
+        #         assert abs(getattr(ctrl.system, attr) - values[times.tolist().index(ctrl.time_actual)]) < 1e-5, abs(getattr(ctrl.system, attr) - values[times.tolist().index(ctrl.time_actual)])
+        #         assert abs(ctrl.getMetadata()[attr] - values[times.tolist().index(ctrl.time_actual)]) < 1e-5, abs(ctrl.getMetadata()[attr] - values[times.tolist().index(ctrl.time_actual)])                
+        #         assert attr in h5load(os.path.join(ctrl.output["dir"], ctrl.output["filename"]), f"time{ctrl.time_actual}")[1]
+        #         assert abs(h5load(os.path.join(ctrl.output["dir"], ctrl.output["filename"]), f"time{ctrl.time_actual}")[1][attr] - values[times.tolist().index(ctrl.time_actual)-1]) < 1e-5
+
+        # if analysis and not analysis_inline:
+        #     analyzeTrajectory(prmspath=prmspath, timestats=timestats, threads=-1)
 
         return ctrl
 
@@ -226,12 +280,15 @@ class Controller():
         for name, particle_ff in self.particle_prms.items():
             if not force_zero and particle_ff["number"] == 0:
                 continue
-            particles.append(_pyves.Particle([0,0,0], [0,1,0], 
-                sigma=particle_ff["sigma"], 
-                kappa=particle_ff["kappa"], 
-                eps=particle_ff["epsilon"], 
-                gamma=particle_ff["gamma"], 
-                name=name)
+            particles.append(
+                _pyves.Particle(
+                    [0,0,0], [0,1,0], 
+                    sigma=particle_ff["sigma"], 
+                    kappa=particle_ff["kappa"], 
+                    eps=particle_ff["epsilon"], 
+                    gamma=particle_ff["gamma"], 
+                    name=name
+                )
             )
         self.system.makeLookupTableFrom(particles)
         # import pprint
@@ -254,8 +311,34 @@ class Controller():
 
 
     def prepareNew(self):
+        def _additional_particle_setup(particle, ff):
+            if self.system.interaction_surface:
+                particle.surface_affinity_translation = particle_ff["surface_affinity_translation"]
+                particle.surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
+            if particle_ff["bound_translation"] != None:
+                particle.translation_bound_sq  = particle_ff["bound_translation"]**2
+            if particle_ff["bound_rotation"] != None:
+                particle.rotation_bound = particle_ff["bound_rotation"]
+
         box_dims = np.array([self.system.box.x, self.system.box.y, self.system.box.z])
 
+        count_hexplane = sum([1 for _, particle_ff in self.particle_prms.items() if "hexplane" in particle_ff["dist"]])
+        if count_hexplane > 0:
+            average_sigma = sum([particle_ff["sigma"] for _, particle_ff in self.particle_prms.items() if "hexplane" in particle_ff["dist"]])/count_hexplane
+            points = hexagonal_lattice_points(x=box_dims[0], y=box_dims[1], distance=average_sigma*2.0**(1.0/6))
+            possible_names = [k for k,v in self.particle_prms.items() if "hexplane" in v["dist"]]
+            possibilities = np.array([v["number"] for _,v in self.particle_prms.items() if "hexplane" in v["dist"]])
+            possibilities = possibilities / np.cumsum(possibilities)[-1]
+            namearray = np.random.choice(possible_names, len(points), p=possibilities)
+
+            for name, point in zip(namearray, points):
+                particle_ff = self.particle_prms[name]
+                point[2] = box_dims[2]/2
+                self.system.particles.append(_pyves.Particle(point, [0,0,1], 
+                    sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                _additional_particle_setup(self.system.particles[-1], particle_ff)
+
+        
         # distribute particles
         for name, particle_ff in self.particle_prms.items():
             
@@ -280,19 +363,29 @@ class Controller():
 
             
             elif "plane" in particle_ff["dist"]:
-                points = grid_plane_points(particle_ff["number"])
-                area = float(re.findall('(?<=plane)\d+', particle_ff["dist"])[0])
-                edge = np.sqrt(area)
-                for point in points:
-                    self.system.particles.append(_pyves.Particle(point*edge/2+box_dims/2, [0,0,1], 
-                        sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
-                    if self.system.interaction_surface:
-                        self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
-                        self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
-                    if particle_ff["bound_translation"] != None:
-                        self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
-                    if particle_ff["bound_rotation"] != None:
-                        self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
+                if "hex" in particle_ff["dist"]:
+                    continue
+                    # points = hexagonal_lattice_points(x=box_dims[0], y=box_dims[1], distance=particle_ff["sigma"]*2.0**(1.0/6))
+                    # count_hexplane += 1
+                    # for point in points:
+                    #     point[2] = box_dims[2]/2
+                    #     self.system.particles.append(_pyves.Particle(point, [0,0,1], 
+                    #         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                    #     _additional_particle_setup(self.system.particles[-1], particle_ff)
+                else:
+                    points = grid_plane_points(particle_ff["number"])
+                    area = float(re.findall('(?<=plane)\d+', particle_ff["dist"])[0])
+                    edge = np.sqrt(area)
+                    for point in points:
+                        self.system.particles.append(_pyves.Particle(point*edge/2+box_dims/2, [0,0,1], 
+                            sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                        if self.system.interaction_surface:
+                            self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
+                            self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
+                        if particle_ff["bound_translation"] != None:
+                            self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
+                        if particle_ff["bound_rotation"] != None:
+                            self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
 
             elif particle_ff["dist"] == "random":
                 for _ in range(particle_ff["number"]):

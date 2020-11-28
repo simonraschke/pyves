@@ -44,7 +44,7 @@ def sunflower_sphere_points(samples=1):
 
     phi = np.arccos(1 - 2*indices/samples)
     theta = np.pi * (1 + 5**0.5) * indices
-
+    
     x, y, z = np.cos(theta) * np.sin(phi), np.sin(theta) * np.sin(phi), np.cos(phi);
     return np.array([x,y,z]).transpose()
 
@@ -58,6 +58,25 @@ def grid_plane_points(samples=1):
     yvals = np.linspace(-1, 1, per_dim, endpoint=True)
     zvals = np.array([0])
     grid = np.meshgrid(xvals, yvals, zvals)
-    # grid = np.meshgrid(xx, yy, zz)
     points = np.array(grid).transpose().reshape(per_dim**2, 3)
     return points
+
+
+
+def hexagonal_lattice_points(x=1.0, y=1.0, distance=1.0):
+    def rotate(vec, angle_in_deg):
+        from scipy.spatial.transform import Rotation as R
+        return R.from_euler('z', angle_in_deg, degrees=True).apply(vec)
+        
+    baserow = np.array([np.arange(0, x, distance), np.zeros_like(np.arange(0, x, distance)), np.zeros_like(np.arange(0, x, distance))]).T
+    rowheight = rotate([distance,0,0], 30)[0]
+    rowoffset = rotate([distance,0,0], 60)[0]
+    y_heights = np.arange(0, y, rowheight)
+    grid = baserow.copy()
+    for i, y_val in enumerate(y_heights[1:]):
+        newrow = baserow.copy()
+        newrow[:,1] = y_val
+        if i % 2 == 0:
+            newrow[:,0] += rowoffset
+        grid = np.append(grid, newrow, axis=0)    
+    return grid

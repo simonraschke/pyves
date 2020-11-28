@@ -3,8 +3,9 @@ import pandas as pd
 
 
 def h5store(filename, key, df, **kwargs):
+    from pathlib import Path
     store = pd.HDFStore(filename, mode="a", complevel=1)
-    store.put(key, df)
+    store.put(key, df, format="table")
     store.get_storer(key).attrs.metadata = kwargs
     store.close()
 

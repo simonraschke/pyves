@@ -33,18 +33,26 @@ ctrl.sample(timestats=True)
 
 An even simpler example
 ```Python
-import pyves
-
 ctrl = pyves.Controller.StaticFlow("some_parameters.json")
 ```
+
+Using a control flow, that changes system parameters at certain time steps
+
+```Python
+ctrl = pyves.Controller.DynamicSystemFlow(
+    "some_parameters.json", 
+    attr = "temperature",     # the attribute to modify
+    times = [0,10000,20000],  # change after these time values
+    values = [0.25,0.24,0.23] # the values attr is set to
+)
+```
+
 
 ### Working with slurm
 
 Direct control for single jobs.
 All slurm jobs will be executed in the python environment you are currently in!
 ```Python
-import pyves
-
 path_to_submit_script = pyves.slurmSubmitScript(
     filename = "submit.py",
     dirpath = "/path/to/my/job/dir/",
