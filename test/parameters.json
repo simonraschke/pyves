@@ -6,6 +6,8 @@
     "system" : 
     {
         "temperature" : 0.20,
+        "global_exchange_ratio" : 0.05,
+        "global_exchange_epot_theshold" : -1.0,
         "box" : 
         {
             "x" : 20,

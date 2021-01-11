@@ -1,15 +1,15 @@
 {
     "hardware" : 
     {
-        "threads" : 10
+        "threads" : 8
     },
     "system" : 
     {
-        "temperature" : 0.25,
+        "temperature" : 0.23,
         "box" : 
         {
-            "x" : 40.0,
-            "y" : 40.0,
+            "x" : 30.0,
+            "y" : 30.0,
             "z" : 15.0
         },
         "translation" :
@@ -21,7 +21,7 @@
         },
         "rotation" :
         {
-            "min" : 0.2,
+            "min" : 0.1,
             "max" : 0.2,
             "target" : 0.3,
             "interval" : 10000
@@ -35,7 +35,7 @@
                 "sigma" : 1.0,
                 "kappa" : 1.0,
                 "epsilon" : 1.0,
-                "gamma" : -0.1,
+                "gamma" : -0.14,
                 "bound_translation" : null,
                 "bound_rotation" : null
             },
@@ -57,7 +57,7 @@
                 "sigma" : 1.0,
                 "kappa" : 1.0,
                 "epsilon" : 1.0,
-                "gamma" : 0.1,
+                "gamma" : 0.14,
                 "bound_translation" : null,
                 "bound_rotation" : null
             }
@@ -69,8 +69,8 @@
     },
     "control" : 
     {
-        "time_delta" : 10000,
-        "time_max" : 20000,
+        "time_delta" : 1000,
+        "time_max" : 200000,
         "cell_min_size" : 3.5,
         "cell_update_interval" : 3,
         "neighbor_update_interval" : 3,
@@ -94,6 +94,7 @@
         "volume_max_grid" : 80,
         "volume_points_per_sigma" : 3,
         "DBSCAN_eps" : 1.2,
-        "neighbor_cutoff" : 1.2
+        "neighbor_cutoff" : 1.2,
+        "curvature_cutoff" : 1.8
     }
 }

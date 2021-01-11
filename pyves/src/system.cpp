@@ -89,6 +89,8 @@ namespace _pyves
         prepareSimulationStep();
         applyToCells([&](const Cell& c){ cellStep(c);});
 #endif
+        globalExchange();
+
         ++_cell_update_step_count;
         ++_neighbor_update_step_count;
     }
@@ -205,13 +207,13 @@ namespace _pyves
 
     void System::prepareSimulationStep()
     {
-        if( _cell_update_step_count >= cell_update_interval )
+        if( _cell_update_step_count >= cell_update_interval or global_exchange_ratio > 1e-4)
         {
             reorderCells();
             shuffle();
             _cell_update_step_count = 0;
         }
-        if( _neighbor_update_step_count >= neighbor_update_interval )
+        if( _neighbor_update_step_count >= neighbor_update_interval or global_exchange_ratio > 1e-4)
         {
             makeNeighborLists();
             _neighbor_update_step_count = 0;
@@ -451,6 +453,109 @@ namespace _pyves
     }
 
 
+    ParticleRefContainer System::randomParticles(std::size_t num)
+    {
+        if(num > particles.size())
+        {
+            throw std::runtime_error("cant find more random particles than the total number of particles");
+        }
+
+        ParticleRefContainer sample;
+        std::sample(std::begin(particles), std::end(particles), std::back_inserter(sample), num, RandomEngine.pseudo_engine);
+        return sample;
+    }
+
+
+
+    // std::pair<_pyves::Particle&, _pyves::Particle&> System::randomParticlePair()
+    // {
+    //     std::uniform_int_distribution<std::size_t> randint(0, particles.size()-1);
+    //     return {particles.at(randint(RandomEngine.pseudo_engine)), particles.at(randint(RandomEngine.pseudo_engine))};
+    // }
+
+    void System::exchangeParticles(Particle& a, Particle& b)
+    {
+        Particle proxy(a);
+        a = b;
+        b = proxy;
+    }
+
+
+
+    void System::globalExchange()
+    {
+        if(std::isnan(global_exchange_ratio))
+        {
+            throw std::runtime_error("System::global_exchange_ratio is NaN");
+        }
+        else if(global_exchange_ratio > 1e-5 && std::isnan(global_exchange_epot_theshold))
+        {
+            throw std::runtime_error("System::global_exchange_epot_theshold is NaN");
+        }
+
+        
+
+        auto is_valid = [&](const Particle& p) -> bool { 
+            return p.potentialEnergy(box, interaction_cutoff) + interaction::surface_potential(p, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0)  <  global_exchange_epot_theshold  &&  p.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2  &&  p.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2;
+        };
+
+        std::size_t num_particle_exchanges = particles.size()*global_exchange_ratio;
+        // if(global_exchange_ratio > 1e-5)
+        //     std::cout << "\n\n\n" <<particles.size() << "  " << global_exchange_ratio << "  " << num_particle_exchanges << "\n";
+
+        while(num_particle_exchanges--)
+        {
+            ParticleRefContainer candidates = randomParticles(2);
+            // std::cout << "\nnum_particle_exchanges " << num_particle_exchanges << "\n";
+            
+            {
+                std::size_t not_found = 0; 
+                while(!is_valid(candidates.at(0)))
+                {
+                    candidates[0] = randomParticles(1).at(0);
+                    if(++not_found > particles.size())
+                    {
+                        return;
+                    }
+                }
+                // std::cout << "1 not found " << not_found  << "  " << candidates[0].get().repr() << "\n";
+            }
+            
+            {
+                std::size_t not_found = 0;
+                while((!is_valid(candidates.at(1))) or (candidates[0].get() == candidates[1].get()))
+                {
+                    candidates[1] = randomParticles(1).at(0);
+                    if(++not_found > particles.size())
+                    {
+                        return;
+                    }
+                }
+                // std::cout << "2 not found " << not_found  << "  " << candidates[1].get().repr() << "\n";
+            }
+            
+            {
+                const auto epot_before = potentialEnergyConcurrent();
+                // std::cout << "pre exchange" << "\n" << candidates[0].get().repr() << "\n" << candidates[1].get().repr() << "\n";
+                exchangeParticles(candidates[0], candidates[1]);
+                // std::cout << "post exchange" << "\n" << candidates[0].get().repr() << "\n" << candidates[1].get().repr() << "\n";
+                const auto epot_after = potentialEnergyConcurrent();
+
+                const bool accepted = ((epot_after - epot_before) < 0) ? true : acceptByMetropolis(epot_after - epot_before, temperature);
+                if(!accepted)
+                {
+                    exchangeParticles(candidates[0], candidates[1]);
+                }
+                else
+                {
+                    // std::cout << "exchange accepted. delta E " << epot_after - epot_before << "\n";
+                }
+            }
+        }
+        // std::cout << "\n\n";
+    }
+
+
 
     void System::makeInteractionLookupTable(ParticleContainer unqiues)
     {
@@ -504,11 +609,12 @@ namespace _pyves
 
         py::bind_map<LookupTable_t>(m, "LookupTable");
 
-
         py::class_<System>(m, "System", py::dynamic_attr())
             .def(py::init<>())
             .def_property("threads", [](const System& s){ return s.threads; }, &System::setThreads)
             .def_readwrite("temperature", &System::temperature)
+            .def_readwrite("global_exchange_ratio", &System::global_exchange_ratio)
+            .def_readwrite("global_exchange_epot_theshold", &System::global_exchange_epot_theshold)
             .def_readwrite("box", &System::box)
             .def_readwrite("particles", &System::particles)
             .def_readwrite("interaction_cutoff", &System::interaction_cutoff)
@@ -527,6 +633,9 @@ namespace _pyves
             .def("prepareSimulationStep", &System::prepareSimulationStep)
             .def("singleSimulationStep", &System::singleSimulationStep)
             .def("multipleSimulationSteps", &System::multipleSimulationSteps)
+            .def("exchangeParticles", &System::exchangeParticles)
+            .def("globalExchange", &System::globalExchange)
+            .def("randomParticles", &System::randomParticles)
             .def("makeLookupTableFrom", &System::makeInteractionLookupTable)
             .def("makeNeighborLists", &System::makeNeighborLists)
             .def("potentialEnergy", &System::potentialEnergy)

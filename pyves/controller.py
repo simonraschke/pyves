@@ -204,7 +204,9 @@ class Controller():
         self.prms_complete = _prms
         self.system.threads = _prms["hardware"]["threads"]
 
-        self.system.temperature = _prms["system"]["temperature"]
+        self.system.temperature = _prms["system"]["temperature"]        
+        self.system.global_exchange_ratio = _prms["system"].get("global_exchange_ratio", 0.0)
+        self.system.global_exchange_epot_theshold = _prms["system"].get("global_exchange_epot_theshold", -1.0)
         self.system.box.x = _prms["system"]["box"]["x"]
         self.system.box.y = _prms["system"]["box"]["y"]
         self.system.box.z = _prms["system"]["box"]["z"]
@@ -337,7 +339,6 @@ class Controller():
                 self.system.particles.append(_pyves.Particle(point, [0,0,1], 
                     sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
                 _additional_particle_setup(self.system.particles[-1], particle_ff)
-
         
         # distribute particles
         for name, particle_ff in self.particle_prms.items():
@@ -365,13 +366,6 @@ class Controller():
             elif "plane" in particle_ff["dist"]:
                 if "hex" in particle_ff["dist"]:
                     continue
-                    # points = hexagonal_lattice_points(x=box_dims[0], y=box_dims[1], distance=particle_ff["sigma"]*2.0**(1.0/6))
-                    # count_hexplane += 1
-                    # for point in points:
-                    #     point[2] = box_dims[2]/2
-                    #     self.system.particles.append(_pyves.Particle(point, [0,0,1], 
-                    #         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
-                    #     _additional_particle_setup(self.system.particles[-1], particle_ff)
                 else:
                     points = grid_plane_points(particle_ff["number"])
                     area = float(re.findall('(?<=plane)\d+', particle_ff["dist"])[0])
@@ -523,6 +517,8 @@ class Controller():
         self.system.box.y = metadata["box.y"]
         self.system.box.z = metadata["box.z"]
         self.system.temperature = metadata["temperature"]
+        self.system.global_exchange_ratio = metadata["global_exchange_ratio"]
+        self.system.global_exchange_epot_theshold = metadata["global_exchange_epot_theshold"]
         self.time_actual = metadata["time"]
 
 
@@ -534,6 +530,8 @@ class Controller():
         metadata["box.z"] = self.system.box.z
         metadata["threads"] = self.system.threads
         metadata["temperature"] = self.system.temperature
+        metadata["global_exchange_ratio"] = self.system.global_exchange_ratio
+        metadata["global_exchange_epot_theshold"] = self.system.global_exchange_epot_theshold
         metadata["translation_step"] = self.system.translation()
         metadata["rotation_step"] = self.system.rotation()
         metadata["interaction.cutoff"] = self.system.interaction_cutoff

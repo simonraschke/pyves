@@ -57,23 +57,23 @@ include_directories(${CMAKE_SOURCE_DIR}/lib/pybind11/include)
 
 
 # MAKE TEST EXECUTABLE
-# add_executable("${PROJECT_NAME}_test" ${TEST_FILES})
-# target_include_directories(${PROJECT_NAME}_test PRIVATE ${CMAKE_SOURCE_DIR}/lib/catch/single_include/catch2)
-# target_compile_options(${PROJECT_NAME}_test
-#     PRIVATE
-#         $<$<CXX_COMPILER_ID:MSVC>:/W3>
-#         $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -Wextra -Wpedantic -ferror-limit=2>
-#         $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=2>
-# )
-# message(STATUS ${Python_VERSION})
-# message("Python Major Version " ${Python3_VERSION_MAJOR})
-# message("Python Minor Version " ${Python3_VERSION_MINOR})
-# target_link_options(${PROJECT_NAME}_test PRIVATE -W -Wno-undef)
-# target_link_libraries(${PROJECT_NAME}_test PRIVATE pthread ${Python3_LIBRARIES})
-# if(${TBB_FOUND})
-#     message("${PROJECT_NAME}_test linking to:  ${TBB_LIBRARIES}")
-#     target_link_libraries(${PROJECT_NAME}_test PRIVATE ${TBB_LIBRARIES} )
-# endif()
+add_executable("${PROJECT_NAME}_test" ${TEST_FILES})
+target_include_directories(${PROJECT_NAME}_test PRIVATE ${CMAKE_SOURCE_DIR}/lib/catch/single_include/catch2)
+target_compile_options(${PROJECT_NAME}_test
+    PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/W3>
+        $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -Wextra -Wpedantic -ferror-limit=2>
+        $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=2>
+)
+message(STATUS ${Python_VERSION})
+message("Python Major Version " ${Python3_VERSION_MAJOR})
+message("Python Minor Version " ${Python3_VERSION_MINOR})
+target_link_options(${PROJECT_NAME}_test PRIVATE -W -Wno-undef)
+target_link_libraries(${PROJECT_NAME}_test PRIVATE pthread ${Python3_LIBRARIES})
+if(${TBB_FOUND})
+    message("${PROJECT_NAME}_test linking to:  ${TBB_LIBRARIES}")
+    target_link_libraries(${PROJECT_NAME}_test PRIVATE ${TBB_LIBRARIES} )
+endif()
 
 
 

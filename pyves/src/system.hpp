@@ -53,6 +53,8 @@ namespace _pyves
         REAL interaction_surface_width = 0;
         REAL temperature = make_nan<REAL>();
         REAL neighbor_cutoff = make_nan<REAL>();
+        REAL global_exchange_ratio = make_nan<REAL>();
+        REAL global_exchange_epot_theshold = make_nan<REAL>();
         std::size_t threads = make_nan<std::size_t>();
         std::size_t _cell_update_step_count = 0;
         std::size_t cell_update_interval = make_nan<std::size_t>();
@@ -67,6 +69,9 @@ namespace _pyves
         void prepareSimulationStep();
         bool assertIntegrity();
         void cellStep(const Cell&);
+        void exchangeParticles(Particle&, Particle&);
+        ParticleRefContainer randomParticles(std::size_t num);
+        void globalExchange();
         void shuffle();
         void reorderCells();
         void makeNeighborLists();

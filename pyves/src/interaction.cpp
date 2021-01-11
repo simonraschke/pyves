@@ -73,7 +73,7 @@ namespace _pyves::interaction
             + std::pow(CARTESIAN(  p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - c2, 2));
             
         // std::cout << "chi " << chi << std::endl;
-        const REAL mean_epsilon = (p1.epsilon+p2.epsilon)/2;
+        const REAL mean_epsilon = std::sqrt(p1.epsilon*p2.epsilon);
         const REAL r6 = r2*r2*r2;
         // std::cout << "r6 " << r6 << std::endl;
         

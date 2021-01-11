@@ -6,6 +6,7 @@
     "system" : 
     {
         "temperature" : 0.20,
+        "global_exchange_ratio" : 0.0,
         "box" : 
         {
             "x" : 21,

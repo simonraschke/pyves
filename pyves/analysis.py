@@ -102,12 +102,15 @@ def analyzeTrajectory(
                 if not SignalHandler.ProgramState is ProgramState.SHUTDOWN:
                     key, metadata = future_to_key[future]
                     assert isinstance(metadata, dict)
-                    try:
-                        df, execution_time = future.result()
-                        if timestats: print(f"analysis took {execution_time:.2f} s | written to {outpath}{key}")
-                        utility.h5store(outpath, key, df, **metadata)
-                    except Exception as e:
-                        print(e)
+                    # try:
+                    #     df, execution_time = future.result()
+                    #     if timestats: print(f"analysis took {execution_time:.2f} s | written to {outpath}{key}")
+                    #     utility.h5store(outpath, key, df, **metadata)
+                    # except Exception as e:
+                    #     print(e)
+                    df, execution_time = future.result()
+                    if timestats: print(f"analysis took {execution_time:.2f} s | written to {outpath}{key}")
+                    utility.h5store(outpath, key, df, **metadata)
                 else:
                     break
 
@@ -138,6 +141,7 @@ def analyzeSnapshot(
     analysis_prms = prms.get("analysis")
     DBSCAN_eps = analysis_prms.get("DBSCAN_eps", 1.2)
     neighbor_cutoff = analysis_prms.get("neighbor_cutoff", 1.2)
+    curvature_cutoff = analysis_prms.get("curvature_cutoff", 1.2)
     volume_max_grid = analysis_prms.get("volume_max_grid", 80)
     volume_points_per_sigma = analysis_prms.get("volume_points_per_sigma", 3)
 
@@ -165,6 +169,8 @@ def analyzeSnapshot(
     df["volume"] = df.groupby("cluster").apply(lambda group: volume(group.name, group, volume_max_grid, DBSCAN_eps, volume_points_per_sigma))["volume"].astype(np.float32)
 
     df["clustervolume"] = df[["clustersize","volume"]].prod(axis="columns")
+
+    df["curvature"] = curvature(df, dimensions, cutoff=curvature_cutoff)
 
 
     if isinstance(system, type(None)):
@@ -338,8 +344,6 @@ def planeFit(points):
 
 
 
-
-# @numba.jit(nopython=False)
 def _volume_calculation(shiftx, shifty, shiftz, sigma, clustersize, max_points, eps, pps):
     xmin = np.min(shiftx) - np.max(shiftx)*eps 
     xmax = np.max(shiftx) + np.max(shiftx)*eps
@@ -367,7 +371,6 @@ def _volume_calculation(shiftx, shifty, shiftz, sigma, clustersize, max_points, 
     isclose = ndimage.morphology.binary_fill_holes(isclose).astype(bool)
     # calc volum from all points inside cluster
     return np.diff(x_vector)[0] * np.diff(y_vector)[0] * np.diff(z_vector)[0] * np.count_nonzero(isclose) / clustersize
-
 
 
 
@@ -413,3 +416,60 @@ def volume(label, group, max_points, eps, pps):
         #     max_points, eps, pps
         # )
         # return group
+
+
+
+def getPairs(distances_array, max_cutoff, same=False):
+    valid = distances_array < max_cutoff
+    np.fill_diagonal(valid, same)
+    pairs = np.column_stack(np.where(valid))
+    if len(pairs) == 0:
+        return []
+    pairs = np.sort(pairs, axis=1)
+    _, index = np.unique(pairs, axis=0, return_index=True)
+    return pairs[index]
+
+
+
+def curvature(particledata, dimensions, cutoff):
+    coms = particledata.filter(['shiftx','shifty','shiftz'])
+    orientations = particledata.filter(['ux','uy','uz'])
+    distances_array = distance_array(coms.values, coms.values, box=dimensions)
+    pairs = getPairs(distances_array, cutoff)
+    if len(pairs) == 0:
+        return np.nan
+    origin_orientations = orientations.values[pairs[:,0]]
+    origin_connections = np.subtract(coms.values[pairs[:,1]], coms.values[pairs[:,0]])
+    # origin_connections = np.divide(origin_connections, 10)
+    projections = np.einsum('ij,ij->i', origin_connections, origin_orientations) # same as (origin_connections * origin_orientations).sum(axis=1) BUT FASTER
+    projections_array = np.zeros_like(distances_array)
+    pairs_t = pairs.T
+    projections_array[tuple(pairs_t)] = projections
+    projections_array[tuple([pairs_t[1], pairs_t[0]])] = projections
+    sums = np.sum(projections_array, axis=1)
+    nums = np.count_nonzero(projections_array, axis=1)
+    averages = np.zeros_like(sums)
+    averages[np.where(nums>0)] = sums[np.where(nums>0)]/nums[np.where(nums>0)]
+    
+    coms = particledata.filter(['x','y','z'])
+    distances_array = distance_array(coms.values, coms.values, box=None)
+    pairs = getPairs(distances_array, cutoff)
+    if len(pairs) == 0:
+        return np.full((len(particledata.index),1), np.nan, dtype=np.float32)
+    origin_orientations = orientations.values[pairs[:,0]]
+    origin_connections = np.subtract(coms.values[pairs[:,1]], coms.values[pairs[:,0]])
+    # origin_connections = np.divide(origin_connections, 10)
+    projections = np.einsum('ij,ij->i', origin_connections, origin_orientations) # same as (origin_connections * origin_orientations).sum(axis=1) BUT FASTER
+    projections_array = np.zeros_like(distances_array)
+    pairs_t = pairs.T
+    projections_array[tuple(pairs_t)] = projections
+    projections_array[tuple([pairs_t[1], pairs_t[0]])] = projections
+    _sums = np.sum(projections_array, axis=1)
+    _nums = np.count_nonzero(projections_array, axis=1)
+    _averages = np.zeros_like(_sums)
+    _averages[np.where(_nums>0)] = _sums[np.where(_nums>0)]/nums[np.where(_nums>0)]
+
+    condition = np.where(np.logical_or(averages<-1, averages>1))
+    
+    averages[condition] = _averages[condition]
+    return np.nan_to_num(averages)
