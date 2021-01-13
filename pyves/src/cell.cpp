@@ -48,10 +48,10 @@ namespace _pyves
             return to_remove == to_compare;
         ;}), std::end(particles));
 
-        if(it == std::end(particles))
-        {
-            throw std::runtime_error("unable to remove Particle from Cell");
-        }
+        // if(it == std::end(particles))
+        // {
+        //     throw std::runtime_error("unable to remove Particle from Cell");
+        // }
     }
     
 

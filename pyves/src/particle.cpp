@@ -283,6 +283,7 @@ Particle::Particle(CARTESIAN_CREF pos, CARTESIAN_CREF orien, REAL sigma, REAL ep
 }
 
 
+
 Particle& Particle::operator=(const Particle& other)
 {
     position = other.position;
@@ -296,7 +297,7 @@ Particle& Particle::operator=(const Particle& other)
     orientation_bound_radiant = other.orientation_bound_radiant;
 
     surface_affinity_translation = other.surface_affinity_translation;
-    orientation_bound_radiant = other.orientation_bound_radiant;
+    surface_affinity_rotation = other.surface_affinity_rotation;
     
     name = other.name;
 

@@ -537,107 +537,24 @@ namespace _pyves
 
 
 
-    // std::pair<_pyves::Particle&, _pyves::Particle&> System::randomParticlePair()
-    // {
-    //     std::uniform_int_distribution<std::size_t> randint(0, particles.size()-1);
-    //     return {particles.at(randint(RandomEngine.pseudo_engine)), particles.at(randint(RandomEngine.pseudo_engine))};
-    // }
-
     void System::exchangeParticles(Particle& a, Particle& b)
     {
-        Cell& old_cell_a = cellOfParticle(a);
-        if(!old_cell_a.contains(a))
-        {
-            throw std::runtime_error(old_cell_a.repr()+" does NOT contain "+a.repr());
-        }
+        // std::cout <<"before " << box.distance(a.position, b.position) << "\n";
+        b.position = std::exchange(a.position, b.position);
+        b.orientation = std::exchange(a.orientation, b.orientation);
+        b.sigma = std::exchange(a.sigma, b.sigma);
+        b.epsilon = std::exchange(a.epsilon, b.epsilon);
+        b.kappa = std::exchange(a.kappa, b.kappa);
+        b.gamma = std::exchange(a.gamma, b.gamma);
 
-        Cell& old_cell_b = cellOfParticle(b);
-        if(!old_cell_b.contains(b))
-        {
-            throw std::runtime_error(old_cell_b.repr()+" does NOT contain "+b.repr());
-        }
+        b.position_bound_radius_squared = std::exchange(a.position_bound_radius_squared, b.position_bound_radius_squared);
+        b.orientation_bound_radiant = std::exchange(a.orientation_bound_radiant, b.orientation_bound_radiant);
 
-            // Particle proxy(a);
-            // a = Particle(b);
-            // b = proxy;
+        b.surface_affinity_translation = std::exchange(a.surface_affinity_translation, b.surface_affinity_translation);
+        b.surface_affinity_rotation = std::exchange(a.surface_affinity_rotation, b.surface_affinity_rotation);
 
-
-        // if(!old_cell_a.contains(a))
-        // {
-        //     throw std::runtime_error(old_cell_a.repr()+" does NOT contain "+a.repr());
-        // }
-        old_cell_a.removeParticle(a);
-        if(old_cell_a.contains(a))
-        {
-            throw std::runtime_error(old_cell_a.repr()+" contains "+a.repr()+", but shouldnt");
-        }
-
-        old_cell_b.removeParticle(b);
-        if(old_cell_b.contains(b))
-        {
-            throw std::runtime_error(old_cell_b.repr()+" contains "+b.repr()+", but shouldnt");
-        }
-
-        std::swap(a,b);
-        // std::cout << a.repr() << "  " << b.repr() << std::endl;
-        // b = std::exchange(a, b);
-        // std::cout << a.repr() << "  " << b.repr() << std::endl;
-
-        // Cell& new_cell_a *= *std::find_if(std::begin(cells), std::end(cells), [&](Cell& c) {});
-        if(!old_cell_b.try_add(a))
-        {
-            throw std::runtime_error("Particle "+a.repr()+" should fit in Cell "+old_cell_b.repr()+", but doesnt");
-        }
-        if(!old_cell_a.try_add(b))
-        {
-            throw std::runtime_error("Particle "+b.repr()+" should fit in Cell "+old_cell_a.repr()+", but doesnt");
-        }
-
-        for(Cell& c: old_cell_b.region)
-        {
-            c.updateRegionParticles();
-            for(Particle& p : c.region_particles)
-            {
-                p.updateNeighborList(c.region_particles, box, interaction_cutoff + 0.1);
-            }
-        }
-        for(Cell& c: old_cell_a.region)
-        {
-            c.updateRegionParticles();
-            for(Particle& p : c.region_particles)
-            {
-                p.updateNeighborList(c.region_particles, box, interaction_cutoff + 0.1);
-            }
-        }
-
-        makeNeighborLists();
-
-        if(!old_cell_a.assertIntegrity())
-        {
-            throw std::runtime_error(old_cell_a.repr()+" is not healthy");
-        }
-
-        if(!old_cell_b.assertIntegrity())
-        {
-            throw std::runtime_error(old_cell_b.repr()+" is not healthy");
-        }
-
-        // auto old_cell_b = cellOfParticle(a);
-        // cell.removeParticle(b);
-        // Cell& new_cell_b = *std::find_if(std::begin(cells), std::end(cells), [&](Cell& c) {});
-        // if(!cell.try_add(a))
-        // {
-        //     throw std::runtime_error("Particle should be in this Cell "+new_cell_a.repr()+", but isnt");
-        // }
-
-
-        // cell.updateRegionParticles();
-        // for(Particle& p : cell.particles)
-        // {
-        //     p.updateNeighborList(cell.region_particles, box, interaction_cutoff + 1);
-        // }
-        reorderCells();
-        makeNeighborLists();
+        b.name = std::exchange(a.name, b.name);
+        // std::cout <<"after  "  << box.distance(a.position, b.position) << "\n\n";
     }
 
 
@@ -676,7 +593,7 @@ namespace _pyves
                         return;
                     }
                 }
-                // std::cout << "1 not found " << not_found  << "  " << candidates[0].get().repr() << "\n";
+                // std::cout << "1 found after " << not_found << "  " << candidates[0].get().repr() << "\n";
             }
             
             {
@@ -689,7 +606,7 @@ namespace _pyves
                         return;
                     }
                 }
-                // std::cout << "2 not found " << not_found  << "  " << candidates[1].get().repr() << "\n";
+                // std::cout << "2 found after " << not_found  << "  " << candidates[1].get().repr() << "\n";
             }
             
             {
@@ -702,11 +619,12 @@ namespace _pyves
                 const bool accepted = ((epot_after - epot_before) < 0) ? true : acceptByMetropolis(epot_after - epot_before, temperature);
                 if(!accepted)
                 {
+                    // std::cout << "exchange declined. delta E " << epot_after - epot_before << " with distance " << box.distance(candidates[0].get().position, candidates[1].get().position) << "\n";
                     exchangeParticles(candidates[0], candidates[1]);
                 }
                 else
                 {
-                    // std::cout << "exchange accepted. delta E " << epot_after - epot_before << "\n";
+                    // std::cout << "exchange accepted. delta E " << epot_after - epot_before << " with distance " << box.distance(candidates[0].get().position, candidates[1].get().position) << "\n";
                 }
             }
         }

@@ -20,6 +20,8 @@
 import json
 import os
 import sys
+
+from numpy.core.numeric import array_equal
 import _pyves
 import numpy as np
 import pandas as pd
@@ -275,26 +277,26 @@ class Controller():
         for c in self.system.cells:
             assert(c.assertIntegrity())
 
-    
 
-    def makeInteractionLookupTable(self, force_zero=False):
-        particles = _pyves.ParticleContainer()
-        for name, particle_ff in self.particle_prms.items():
-            if not force_zero and particle_ff["number"] == 0:
-                continue
-            particles.append(
-                _pyves.Particle(
-                    [0,0,0], [0,1,0], 
-                    sigma=particle_ff["sigma"], 
-                    kappa=particle_ff["kappa"], 
-                    eps=particle_ff["epsilon"], 
-                    gamma=particle_ff["gamma"], 
-                    name=name
-                )
-            )
-        self.system.makeLookupTableFrom(particles)
-        # import pprint
-        # pprint.pprint(self.system.lookupTable)
+
+    # def makeInteractionLookupTable(self, force_zero=False):
+    #     particles = _pyves.ParticleContainer()
+    #     for name, particle_ff in self.particle_prms.items():
+    #         if not force_zero and particle_ff.get("number", particle_ff["ratio"]) == 0:
+    #             continue
+    #         particles.append(
+    #             _pyves.Particle(
+    #                 [0,0,0], [0,1,0], 
+    #                 sigma=particle_ff["sigma"], 
+    #                 kappa=particle_ff["kappa"], 
+    #                 eps=particle_ff["epsilon"], 
+    #                 gamma=particle_ff["gamma"], 
+    #                 name=name
+    #             )
+    #         )
+    #     self.system.makeLookupTableFrom(particles)
+    #     # import pprint
+    #     # pprint.pprint(self.system.lookupTable)
 
 
 
@@ -315,21 +317,42 @@ class Controller():
     def prepareNew(self):
         def _additional_particle_setup(particle, ff):
             if self.system.interaction_surface:
-                particle.surface_affinity_translation = particle_ff["surface_affinity_translation"]
-                particle.surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
-            if particle_ff["bound_translation"] != None:
-                particle.translation_bound_sq  = particle_ff["bound_translation"]**2
-            if particle_ff["bound_rotation"] != None:
-                particle.rotation_bound = particle_ff["bound_rotation"]
+                particle.surface_affinity_translation = ff["surface_affinity_translation"]
+                particle.surface_affinity_rotation = ff["surface_affinity_rotation"]
+            if ff["bound_translation"] != None:
+                particle.translation_bound_sq  = ff["bound_translation"]**2
+            if ff["bound_rotation"] != None:
+                particle.rotation_bound = ff["bound_rotation"]
 
         box_dims = np.array([self.system.box.x, self.system.box.y, self.system.box.z])
+
+
+        count_guv = sum([1 for _, particle_ff in self.particle_prms.items() if "guv" in particle_ff["dist"]])
+        if count_guv > 0:
+            average_sigma = sum([particle_ff["sigma"] for _, particle_ff in self.particle_prms.items() if "guv" in particle_ff["dist"]])/count_guv
+            r0 = 2.0**(1.0/6)*average_sigma
+            average_gamma = sum([particle_ff["gamma"] for _, particle_ff in self.particle_prms.items() if "guv" in particle_ff["dist"]])/count_guv
+            radius = r0/(2.0*np.sin(average_gamma))
+            surface_area = 4.0*np.pi*radius**2
+            area_per_particle = 2.0 * np.sqrt(3.0) * (r0/2)**2
+            points = sunflower_sphere_points(int(surface_area/area_per_particle))
+            possible_names = [k for k,v in self.particle_prms.items() if "guv" in v["dist"]]
+            possibilities = np.array([v["ratio"] for _,v in self.particle_prms.items() if "guv" in v["dist"]])
+            possibilities = possibilities / np.cumsum(possibilities)[-1]
+            namearray = np.random.choice(possible_names, len(points), p=possibilities)
+
+            for name, point in zip(namearray, points):
+                particle_ff = self.particle_prms[name]
+                self.system.particles.append(_pyves.Particle(point+(box_dims/2), point, 
+                    sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                _additional_particle_setup(self.system.particles[-1], particle_ff)
 
         count_hexplane = sum([1 for _, particle_ff in self.particle_prms.items() if "hexplane" in particle_ff["dist"]])
         if count_hexplane > 0:
             average_sigma = sum([particle_ff["sigma"] for _, particle_ff in self.particle_prms.items() if "hexplane" in particle_ff["dist"]])/count_hexplane
             points = hexagonal_lattice_points(x=box_dims[0], y=box_dims[1], distance=average_sigma*2.0**(1.0/6))
             possible_names = [k for k,v in self.particle_prms.items() if "hexplane" in v["dist"]]
-            possibilities = np.array([v["number"] for _,v in self.particle_prms.items() if "hexplane" in v["dist"]])
+            possibilities = np.array([v["ratio"] for _,v in self.particle_prms.items() if "hexplane" in v["dist"]])
             possibilities = possibilities / np.cumsum(possibilities)[-1]
             namearray = np.random.choice(possible_names, len(points), p=possibilities)
 
@@ -342,8 +365,10 @@ class Controller():
         
         # distribute particles
         for name, particle_ff in self.particle_prms.items():
-            
-            if "sphere" in particle_ff["dist"]:
+            if "guv" in particle_ff["dist"]:
+                continue
+
+            elif "sphere" in particle_ff["dist"]:
                 r0 = 2.0**(1.0/6)*particle_ff["sigma"]
                 points = sunflower_sphere_points(particle_ff["number"])
                 if particle_ff["dist"] == "sphere":
@@ -354,13 +379,14 @@ class Controller():
                 for point in points:
                     self.system.particles.append(_pyves.Particle(point*radius+box_dims/2, point, 
                         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
-                    if self.system.interaction_surface:
-                        self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
-                        self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
-                    if particle_ff["bound_translation"] != None:
-                        self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
-                    if particle_ff["bound_rotation"] != None:
-                        self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
+                _additional_particle_setup(self.system.particles[-1], particle_ff)
+                    # if self.system.interaction_surface:
+                    #     self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
+                    #     self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
+                    # if particle_ff["bound_translation"] != None:
+                    #     self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
+                    # if particle_ff["bound_rotation"] != None:
+                    #     self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
 
             
             elif "plane" in particle_ff["dist"]:
@@ -373,13 +399,15 @@ class Controller():
                     for point in points:
                         self.system.particles.append(_pyves.Particle(point*edge/2+box_dims/2, [0,0,1], 
                             sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
-                        if self.system.interaction_surface:
-                            self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
-                            self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
-                        if particle_ff["bound_translation"] != None:
-                            self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
-                        if particle_ff["bound_rotation"] != None:
-                            self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
+                        _additional_particle_setup(self.system.particles[-1], particle_ff)
+                            
+                        # if self.system.interaction_surface:
+                        #     self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
+                        #     self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
+                        # if particle_ff["bound_translation"] != None:
+                        #     self.system.particles[-1].translation_bound_sq  = particle_ff["bound_translation"]**2
+                        # if particle_ff["bound_rotation"] != None:
+                        #     self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
 
             elif particle_ff["dist"] == "random":
                 for _ in range(particle_ff["number"]):
@@ -452,7 +480,7 @@ class Controller():
                 print("TypeError: unable to read datafile:", e)
                 print("creating System new")
                 self.prepareNew()
-            self.makeInteractionLookupTable()
+            # self.makeInteractionLookupTable()
             self.system.makeNeighborLists()
 
 
