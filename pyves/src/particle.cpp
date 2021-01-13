@@ -291,9 +291,16 @@ Particle& Particle::operator=(const Particle& other)
     epsilon = other.epsilon;
     kappa = other.kappa;
     gamma = other.gamma;
-    name = other.name;
+
     position_bound_radius_squared = other.position_bound_radius_squared;
     orientation_bound_radiant = other.orientation_bound_radiant;
+
+    surface_affinity_translation = other.surface_affinity_translation;
+    orientation_bound_radiant = other.orientation_bound_radiant;
+    
+    name = other.name;
+
+    neighbors = other.neighbors;
     
     if(other.initial_position)
     {

@@ -1,15 +1,16 @@
 [submodule "pybind11"]
 	path = lib/pybind11
 	url = https://github.com/pybind/pybind11.git
-    branch = master
+    branch = v2.6
+	update = rebase
 [submodule "catch"]
 	path = lib/catch
 	url = https://github.com/catchorg/Catch2.git
-	branch = master
+	branch = v2.x
 [submodule "eigen"]
 	path = lib/eigen
 	url = https://gitlab.com/libeigen/eigen.git
-	branch = master
+	branch = 3.3
 [submodule "taskflow"]
 	path = lib/taskflow
 	url = https://github.com/taskflow/taskflow.git

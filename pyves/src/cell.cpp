@@ -43,11 +43,15 @@ namespace _pyves
     {
         std::lock_guard<std::shared_mutex> lock(particles_access_mutex);
         // tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, true);
-        particles.erase( std::remove_if(std::begin(particles), std::end(particles), [&](const Particle& to_compare)
+        auto it = particles.erase( std::remove_if(std::begin(particles), std::end(particles), [&](const Particle& to_compare)
         { 
             return to_remove == to_compare;
         ;}), std::end(particles));
 
+        if(it == std::end(particles))
+        {
+            throw std::runtime_error("unable to remove Particle from Cell");
+        }
     }
     
 
@@ -149,6 +153,38 @@ namespace _pyves
         std::shuffle(std::begin(particles), std::end(particles), RandomEngine.pseudo_engine);
         std::shuffle(std::begin(proximity), std::end(proximity), RandomEngine.pseudo_engine);
         std::shuffle(std::begin(region), std::end(region), RandomEngine.pseudo_engine);
+    }
+
+
+
+    void Cell::reorder()
+    {
+        // std::cout << cell.repr() << "\n";
+        auto leavers = particlesOutOfBounds();
+        
+        for(Particle& leaver : leavers)
+        {
+            bool was_added = false;
+            // std::cout << cell.proximity.size() << "\n";
+            for(Cell& proximity_cell : proximity)
+            {
+                // std::cout << " " << proximity_cell.repr() << "\n";
+                was_added = proximity_cell.try_add(leaver);
+                if(was_added) 
+                {
+                    break;
+                }
+            }
+            if(!was_added)
+            {
+                throw std::logic_error("Particle out of bound was not added to another cell\n" + leaver.repr() +" and " + repr());
+            }
+            assert(was_added);
+            removeParticle(leaver);
+            assert(!contains(leaver));
+        }
+        // cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
+        // cell.shuffle(); 
     }
 
 

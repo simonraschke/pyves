@@ -74,6 +74,7 @@ struct _pyves::Cell
     bool contains(const Particle& p);
     bool assertIntegrity();
     void shuffle();
+    void reorder();
     auto particlesOutOfBounds() -> std::deque<decltype(particles)::value_type>;
     REAL potentialEnergy(const Particle& p, REAL cutoff) const;
     // REAL potentialEnergyWithLookup(const Particle& particle, REAL cutoff, const LookupTable_t& table) const;

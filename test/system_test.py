@@ -39,6 +39,7 @@ class MainTest(unittest.TestCase):
         sys = pyves.System()
         sys.temperature = 0.3
         sys.global_exchange_ratio = 1.0
+        sys.global_exchange_epot_theshold = 100000
         sys.box = pyves.BoxPBC(10,10,10)
         sys.particles.append(pyves.Particle([1,1,1], [1,1,0], sigma=1, kappa=1, eps=1, name="A", gamma=np.pi/4))        
         sys.particles.append(pyves.Particle([2.1224,1,1], [1,-1,0], sigma=1, kappa=1, eps=1, name="B", gamma=np.pi/4))
@@ -53,9 +54,10 @@ class MainTest(unittest.TestCase):
         print("sys.particles.size", len(sys.particles))
         print("------------------------")
         sys.globalExchange()
+                
+        self.assertEqual(sys.particles[0].name, "B")
+        self.assertEqual(sys.particles[1].name, "A")
         
-        
-
         # np.array(a)
         # self.assertEqual(sys.particles[0].name, "B")
         # self.assertEqual(sys.particles[1].name, "A")

@@ -130,6 +130,38 @@ namespace _pyves
 
 
 
+    // void System::reorderCell(Cell& cell)
+    // {
+    //     // std::cout << cell.repr() << "\n";
+    //     auto leavers = cell.particlesOutOfBounds();
+        
+    //     for(Particle& leaver : leavers)
+    //     {
+    //         bool was_added = false;
+    //         // std::cout << cell.proximity.size() << "\n";
+    //         for(Cell& proximity_cell : cell.proximity)
+    //         {
+    //             // std::cout << " " << proximity_cell.repr() << "\n";
+    //             was_added = proximity_cell.try_add(leaver);
+    //             if(was_added) 
+    //             {
+    //                 break;
+    //             }
+    //         }
+    //         if(!was_added)
+    //         {
+    //             throw std::logic_error("Particle out of bound was not added to another cell\n" + leaver.repr() +" and " + cell.repr());
+    //         }
+    //         assert(was_added);
+    //         cell.removeParticle(leaver);
+    //         assert(!cell.contains(leaver));
+    //     }
+    //     // cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
+    //     // cell.shuffle(); 
+    // }
+
+
+
     void System::reorderCells()
     {
         // std::cout << __func__ << " " << internal_step_count << "  for tranlsation " << translation_alignment() << "\n";
@@ -144,32 +176,7 @@ namespace _pyves
         taskflow.for_each_static(std::begin(cells), std::end(cells), [&] (Cell& cell) 
 #endif
         {
-            // std::cout << cell.repr() << "\n";
-            auto leavers = cell.particlesOutOfBounds();
-            
-            for(Particle& leaver : leavers)
-            {
-                bool was_added = false;
-                // std::cout << cell.proximity.size() << "\n";
-                for(Cell& proximity_cell : cell.proximity)
-                {
-                    // std::cout << " " << proximity_cell.repr() << "\n";
-                    was_added = proximity_cell.try_add(leaver);
-                    if(was_added) 
-                    {
-                        break;
-                    }
-                }
-                if(!was_added)
-                {
-                    throw std::logic_error("Particle out of bound was not added to another cell\n" + leaver.repr() +" and " + cell.repr());
-                }
-                assert(was_added);
-                cell.removeParticle(leaver);
-                assert(!cell.contains(leaver));
-            }
-            // cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
-            // cell.shuffle(); 
+            cell.reorder();
         });
 #ifndef PYVES_USE_TBB
         executor->run(taskflow).get();
@@ -195,7 +202,7 @@ namespace _pyves
             cell.updateRegionParticles();
             for(Particle& p : cell.particles)
             {
-                p.updateNeighborList(cell.region_particles, box, interaction_cutoff + 1);
+                p.updateNeighborList(cell.region_particles, box, interaction_cutoff + 0.1);
             }
         });
 #ifndef PYVES_USE_TBB
@@ -207,17 +214,65 @@ namespace _pyves
 
     void System::prepareSimulationStep()
     {
-        if( _cell_update_step_count >= cell_update_interval or global_exchange_ratio > 1e-4)
+        if( _cell_update_step_count >= cell_update_interval)
         {
             reorderCells();
             shuffle();
             _cell_update_step_count = 0;
         }
-        if( _neighbor_update_step_count >= neighbor_update_interval or global_exchange_ratio > 1e-4)
+        if( _neighbor_update_step_count >= neighbor_update_interval)
         {
             makeNeighborLists();
             _neighbor_update_step_count = 0;
         }
+    }
+
+
+    
+    REAL System::totalEnergy(const Particle& p) const
+    {
+        return p.potentialEnergy(box, interaction_cutoff) + interaction::surface_potential(p, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0);
+    }
+
+
+    
+    REAL System::totalEnergy()
+    {
+#ifdef PYVES_USE_TBB
+        REAL sum = 0;
+        task_arena.execute([&]{
+            using range_type = tbb::blocked_range<ParticleContainer::iterator>;
+            sum = tbb::parallel_reduce(
+                range_type(std::begin(particles), std::end(particles)), 
+                REAL(0), 
+                [&](const range_type& r, REAL init ){ 
+                    return std::accumulate( r.begin(), r.end(), init, [&](REAL _v, const Particle& p){
+                        return _v + totalEnergy(p);
+                    }); 
+                }, 
+                std::plus<REAL>()
+            );
+        });
+        return sum/2;
+#else 
+        if(!executor)
+        {
+            setThreads(1);
+        }
+        REAL sum = 0;
+        tf::Taskflow taskflow;
+        taskflow.transform_reduce_static(
+            std::begin(particles), 
+            std::end(particles), 
+            sum, 
+            std::plus<REAL>(), 
+            [&](const Particle& p){
+                return totalEnergy(p); 
+            }
+        );
+        executor->run(taskflow).get();
+        return sum/2;
+#endif
     }
 
 
@@ -388,14 +443,12 @@ namespace _pyves
                 while(translation.squaredNorm() > translation_alignment()*translation_alignment());
 
                 // last_energy_value = cell.potentialEnergy(particle, interaction_cutoff);
-                last_energy_value = particle.potentialEnergy(box, interaction_cutoff) 
-                                  + interaction::surface_potential(particle, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0);
+                last_energy_value = totalEnergy(particle);
 
                 if(particle.trySetPosition(particle.position+translation))
                 {
                     // energy_after = cell.potentialEnergy(particle, interaction_cutoff);
-                    energy_after = particle.potentialEnergy(box, interaction_cutoff) 
-                                 + interaction::surface_potential(particle, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0);
+                    energy_after = totalEnergy(particle);
                                   
                     // rejection
                     if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
@@ -430,8 +483,9 @@ namespace _pyves
             if(particle.trySetOrientation(Eigen::AngleAxis<REAL>(dist_orientation(RandomEngine.pseudo_engine), random_vector) * particle.getOrientation()))
             {
                 // energy_after = cell.potentialEnergy(particle, interaction_cutoff);
-                energy_after = particle.potentialEnergy(box, interaction_cutoff) 
-                             + interaction::surface_potential(particle, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0);
+                energy_after = totalEnergy(particle);
+                // energy_after = particle.potentialEnergy(box, interaction_cutoff) 
+                //              + interaction::surface_potential(particle, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0);
                 // rejection
                 if(!acceptByMetropolis(energy_after - last_energy_value, temperature))
                 {
@@ -451,6 +505,22 @@ namespace _pyves
             }
         }
     }
+
+
+
+    Cell& System::cellOfParticle(const Particle& p)
+    {
+        if(auto cell_it = std::find_if(std::begin(cells), std::end(cells), [&](Cell& c){ return c.contains(p); }); cell_it != std::end(cells))
+        {
+            return *cell_it;
+        }
+        else
+        {
+            throw std::runtime_error("System::cellOfParticle Particle is in no cell");
+        }
+        
+    }
+
 
 
     ParticleRefContainer System::randomParticles(std::size_t num)
@@ -475,9 +545,99 @@ namespace _pyves
 
     void System::exchangeParticles(Particle& a, Particle& b)
     {
-        Particle proxy(a);
-        a = b;
-        b = proxy;
+        Cell& old_cell_a = cellOfParticle(a);
+        if(!old_cell_a.contains(a))
+        {
+            throw std::runtime_error(old_cell_a.repr()+" does NOT contain "+a.repr());
+        }
+
+        Cell& old_cell_b = cellOfParticle(b);
+        if(!old_cell_b.contains(b))
+        {
+            throw std::runtime_error(old_cell_b.repr()+" does NOT contain "+b.repr());
+        }
+
+            // Particle proxy(a);
+            // a = Particle(b);
+            // b = proxy;
+
+
+        // if(!old_cell_a.contains(a))
+        // {
+        //     throw std::runtime_error(old_cell_a.repr()+" does NOT contain "+a.repr());
+        // }
+        old_cell_a.removeParticle(a);
+        if(old_cell_a.contains(a))
+        {
+            throw std::runtime_error(old_cell_a.repr()+" contains "+a.repr()+", but shouldnt");
+        }
+
+        old_cell_b.removeParticle(b);
+        if(old_cell_b.contains(b))
+        {
+            throw std::runtime_error(old_cell_b.repr()+" contains "+b.repr()+", but shouldnt");
+        }
+
+        std::swap(a,b);
+        // std::cout << a.repr() << "  " << b.repr() << std::endl;
+        // b = std::exchange(a, b);
+        // std::cout << a.repr() << "  " << b.repr() << std::endl;
+
+        // Cell& new_cell_a *= *std::find_if(std::begin(cells), std::end(cells), [&](Cell& c) {});
+        if(!old_cell_b.try_add(a))
+        {
+            throw std::runtime_error("Particle "+a.repr()+" should fit in Cell "+old_cell_b.repr()+", but doesnt");
+        }
+        if(!old_cell_a.try_add(b))
+        {
+            throw std::runtime_error("Particle "+b.repr()+" should fit in Cell "+old_cell_a.repr()+", but doesnt");
+        }
+
+        for(Cell& c: old_cell_b.region)
+        {
+            c.updateRegionParticles();
+            for(Particle& p : c.region_particles)
+            {
+                p.updateNeighborList(c.region_particles, box, interaction_cutoff + 0.1);
+            }
+        }
+        for(Cell& c: old_cell_a.region)
+        {
+            c.updateRegionParticles();
+            for(Particle& p : c.region_particles)
+            {
+                p.updateNeighborList(c.region_particles, box, interaction_cutoff + 0.1);
+            }
+        }
+
+        makeNeighborLists();
+
+        if(!old_cell_a.assertIntegrity())
+        {
+            throw std::runtime_error(old_cell_a.repr()+" is not healthy");
+        }
+
+        if(!old_cell_b.assertIntegrity())
+        {
+            throw std::runtime_error(old_cell_b.repr()+" is not healthy");
+        }
+
+        // auto old_cell_b = cellOfParticle(a);
+        // cell.removeParticle(b);
+        // Cell& new_cell_b = *std::find_if(std::begin(cells), std::end(cells), [&](Cell& c) {});
+        // if(!cell.try_add(a))
+        // {
+        //     throw std::runtime_error("Particle should be in this Cell "+new_cell_a.repr()+", but isnt");
+        // }
+
+
+        // cell.updateRegionParticles();
+        // for(Particle& p : cell.particles)
+        // {
+        //     p.updateNeighborList(cell.region_particles, box, interaction_cutoff + 1);
+        // }
+        reorderCells();
+        makeNeighborLists();
     }
 
 
@@ -493,10 +653,8 @@ namespace _pyves
             throw std::runtime_error("System::global_exchange_epot_theshold is NaN");
         }
 
-        
-
         auto is_valid = [&](const Particle& p) -> bool { 
-            return p.potentialEnergy(box, interaction_cutoff) + interaction::surface_potential(p, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0)  <  global_exchange_epot_theshold  &&  p.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2  &&  p.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2;
+            return totalEnergy(p)  <  global_exchange_epot_theshold  &&  p.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2  &&  p.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2;
         };
 
         std::size_t num_particle_exchanges = particles.size()*global_exchange_ratio;
@@ -535,11 +693,11 @@ namespace _pyves
             }
             
             {
-                const auto epot_before = potentialEnergyConcurrent();
+                const auto epot_before = totalEnergy(candidates[0]) + totalEnergy(candidates[1]);
                 // std::cout << "pre exchange" << "\n" << candidates[0].get().repr() << "\n" << candidates[1].get().repr() << "\n";
                 exchangeParticles(candidates[0], candidates[1]);
                 // std::cout << "post exchange" << "\n" << candidates[0].get().repr() << "\n" << candidates[1].get().repr() << "\n";
-                const auto epot_after = potentialEnergyConcurrent();
+                const auto epot_after = totalEnergy(candidates[0]) + totalEnergy(candidates[1]);
 
                 const bool accepted = ((epot_after - epot_before) < 0) ? true : acceptByMetropolis(epot_after - epot_before, temperature);
                 if(!accepted)
@@ -638,6 +796,8 @@ namespace _pyves
             .def("randomParticles", &System::randomParticles)
             .def("makeLookupTableFrom", &System::makeInteractionLookupTable)
             .def("makeNeighborLists", &System::makeNeighborLists)
+            .def("totalEnergy", static_cast<REAL (System::*)(const Particle&) const>(&System::totalEnergy))
+            .def("totalEnergy", static_cast<REAL (System::*)(void)>(&System::totalEnergy))
             .def("potentialEnergy", &System::potentialEnergy)
             .def("potentialEnergyConcurrent", &System::potentialEnergyConcurrent)
             .def("benchmark", &System::benchmark)

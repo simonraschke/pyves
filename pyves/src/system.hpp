@@ -69,6 +69,7 @@ namespace _pyves
         void prepareSimulationStep();
         bool assertIntegrity();
         void cellStep(const Cell&);
+        Cell& cellOfParticle(const Particle&);
         void exchangeParticles(Particle&, Particle&);
         ParticleRefContainer randomParticles(std::size_t num);
         void globalExchange();
@@ -79,8 +80,9 @@ namespace _pyves
         void multipleSimulationSteps(const unsigned long);
         void makeInteractionLookupTable(ParticleContainer);
         std::size_t numParticlesInCells() const;
+        REAL totalEnergy(const Particle&) const;
+        REAL totalEnergy();
         REAL potentialEnergy() const;
-        REAL potentialEnergyBruteForce() const;
         REAL potentialEnergyConcurrent();
         REAL potentialEnergyConcurrentBruteForce();
         Eigen::Matrix<REAL, Eigen::Dynamic, 1> particleEnergies() const;
