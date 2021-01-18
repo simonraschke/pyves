@@ -1,7 +1,7 @@
 import pyves
 import os, sys
 
-ctrl = pyves.Controller.StaticFlow("hexplane.json", analysis=True)
+ctrl = pyves.Controller.Static("hexplane.json", analysis=True)
 
 print("make gro file from data")
 pyves.hdf2gro(

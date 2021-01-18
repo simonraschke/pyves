@@ -33,7 +33,7 @@ ctrl.sample(timestats=True)
 
 An even simpler example
 ```Python
-ctrl = pyves.Controller.StaticFlow("some_parameters.json")
+ctrl = pyves.Controller.Static("some_parameters.json")
 ```
 
 Using a control flow, that changes system parameters at certain time steps
@@ -66,7 +66,7 @@ path_to_submit_script = pyves.slurmSubmitScript(
     nice = 0,
     requeue = True                                # will submit the job until it exits with not SIGUSR2 (12)
     # python_path = sys.executable,               # will use current environment executable by default
-    # controller = "pyves.Controller.StaticFlow", # the default Controller
+    # controller = "pyves.Controller.Static", # the default Controller
     # controller_kwargs = dict(analysis=True)     # controller argument dict
 )
 
@@ -155,7 +155,7 @@ A parameter file `some_parameters.json` could look as follows (remember comments
                 "gamma" : 0.1914626,            // optimum interaction angle in radiants
                 "bound_translation" : 0.1,      // restrict translation from its origin position to this
                 "bound_rotation" : 0.3          // restrict rotation from its origin orientation to this
-            },  
+            }, 
             "RAND" :                            // an arbitrary name
             {   
                 "number" : 175,                 // the number of particles to be placed in the simulation box

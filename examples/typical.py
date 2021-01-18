@@ -20,7 +20,7 @@ pyves.analyzeTrajectory(
     prmspath = os.path.join(os.path.dirname(__file__),"typical.json"),
     timestats = True
 )
-# ctrl = pyves.Controller.StaticFlow("typical.json")
+# ctrl = pyves.Controller.Static("typical.json")
 
 print("make gro file from data")
 pyves.hdf2gro(

@@ -104,7 +104,7 @@ class MainTest(unittest.TestCase):
             os.remove("test/data.h5")
         except Exception as e:
             print("no data.h5 to remove",e)
-        ctrl = pyves.Controller.StaticFlow("test/parameters.json")
+        ctrl = pyves.Controller.Static("test/parameters.json")
 
 
 
@@ -140,7 +140,6 @@ class MainTest(unittest.TestCase):
         for i, time in list(enumerate(times))[1:]:
             _, metadata = utility.h5load("test/gradient.h5", f"/time{time}")
             self.assertAlmostEqual(values[i-1], metadata["temperature"], 5)
-
 
 
 

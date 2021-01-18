@@ -1,0 +1,102 @@
+{
+    "hardware" : 
+    {
+        "threads" : 6
+    },
+    "system" : 
+    {
+        "temperature" : 0.2,
+	    "global_exchange_ratio": 0.2,
+	    "global_exchange_teshold_epot": -1.0,
+        "box" : 
+        {
+            "x" : 30.0,
+            "y" : 30.0,
+            "z" : 30.0
+        },
+        "translation" :
+        {
+            "min" : 0.2,
+            "max" : 0.2,
+            "target" : 0.3,
+            "interval" : 10000
+        },
+        "rotation" :
+        {
+            "min" : 0.1,
+            "max" : 0.2,
+            "target" : 0.3,
+            "interval" : 10000
+        },
+        "particles" :
+        {
+            "CURVP" : 
+            {
+                "ratio" : 7,
+                "dist" : "guv",
+                "sigma" : 1.0,
+                "kappa" : 1.0,
+                "epsilon" : 1.0,
+                "gamma" : 0.1,
+                "bound_translation" : null,
+                "bound_rotation" : null
+            },
+            "PLANE" : 
+            {
+                "ratio" : 2,
+                "dist" : "guv",
+                "sigma" : 1.0,
+                "kappa" : 1.0,
+                "epsilon" : 1.0,
+                "gamma" : 0.0,
+                "bound_translation" : null,
+                "bound_rotation" : null
+            },
+            "CURVN" : 
+            {
+                "ratio" : 1,
+                "dist" : "guv",
+                "sigma" : 1.0,
+                "kappa" : 1.0,
+                "epsilon" : 1.0,
+                "gamma" : -0.1,
+                "bound_translation" : null,
+                "bound_rotation" : null
+            }
+        },
+        "interaction" : 
+        {
+            "cutoff" : 3.0
+        }
+    },
+    "control" : 
+    {
+        "time_delta" : 1,
+        "time_max" : 2,
+        "cell_min_size" : 3.5,
+        "cell_update_interval" : 3,
+        "neighbor_update_interval" : 3,
+        "neighbor_cutoff" : 3.5
+    },
+    "output" :
+    {
+        "dir" : ".",
+        "filename" : "hexplane.h5",
+        "mode" : "append",
+        "direct_analysis" : false
+    },
+    "input" :
+    {
+        "dir" : ".",
+        "filename" : "data.h5",
+        "key" : "HEAD"
+    },
+    "analysis":
+    {
+        "volume_max_grid" : 80,
+        "volume_points_per_sigma" : 3,
+        "DBSCAN_eps" : 1.2,
+        "neighbor_cutoff" : 1.2,
+        "curvature_cutoff" : 1.8
+    }
+}

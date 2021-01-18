@@ -14,7 +14,7 @@ path_to_submit_script = pyves.slurmSubmitScript(
     nice = 1,
     requeue = True,
     python_path = sys.executable,
-    controller = "pyves.Controller.StaticFlow",
+    controller = "pyves.Controller.Static",
     controller_kwargs = dict(analysis=True, analysis_inline=False),
     log = True
 )

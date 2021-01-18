@@ -103,7 +103,7 @@ def hdf2gro(inpath, outpath, atom_repr={}, box=[], time_range=[0,1e10], overwrit
 
 
 
-def writeVMDrc(outdir=".", traj_file_name="trajectory.gro", num_bonds=0):
+def writeVMDrc(outdir=".", traj_file_name="trajectory.gro", num_bonds=0, bond_radius=6):
     vmdrc_paths = [
         os.path.abspath(os.path.join(outdir, "vmd.rc")),
         os.path.abspath(os.path.join(outdir, ".vmdrc"))
@@ -123,11 +123,11 @@ def writeVMDrc(outdir=".", traj_file_name="trajectory.gro", num_bonds=0):
             print("display resize 1080 1080", file=VMDRC)
             print("display reposition", file=VMDRC)
             print("display projection perspective", file=VMDRC)
-            print("display rendermode GLSL", file=VMDRC)
+            # print("display rendermode GLSL", file=VMDRC)
             print("display cuedensity 0.12", file=VMDRC)
             print("color Display Background white", file=VMDRC)
             print("mol coloring 7 2 ResName", file=VMDRC)
-            print("mol modstyle 0 0 Licorice 2 10 30", file=VMDRC)
+            print(f"mol modstyle 0 0 Licorice {bond_radius} 10 30", file=VMDRC)
             print("mol modmaterial 0 0 AOChalky", file=VMDRC)
             print("# color definitions", file=VMDRC)
             print("color change rgb  0 0.07 0.20 0.48 ;# blue", file=VMDRC)

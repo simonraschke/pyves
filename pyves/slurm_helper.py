@@ -28,7 +28,7 @@ def slurmSubmitScript(
     group = None,
     requeue = None,
     python_path = sys.executable,
-    controller = "pyves.Controller.StaticFlow",
+    controller = "pyves.Controller.Static",
     controller_kwargs = dict(analysis=True),
     dryrun = False,
     mkdir = True,

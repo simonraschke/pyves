@@ -22,6 +22,7 @@ import os
 import sys
 
 from numpy.core.numeric import array_equal
+from numpy.lib.arraysetops import unique
 import _pyves
 import numpy as np
 import pandas as pd
@@ -66,18 +67,24 @@ class Controller():
 
 
     @classmethod
-    def StaticFlow(
+    def Static(
         cls, 
         prmspath,
         timestats = True,
         analysis = True,
         analysis_inline = False,
+        benchmark = True
     ):
         Controller.printRuntimeInfo()
         ctrl = cls()
         ctrl.readParameters(prmspath)
         ctrl.prepareSimulation()
+
+        if benchmark:
+            ctrl.system.benchmark(100)
+
         ctrl.sample(timestats=timestats, analysis=analysis_inline)
+
         if analysis and not analysis_inline:
             analyzeTrajectory(prmspath=prmspath, timestats=timestats, threads=-1)
         return ctrl
@@ -94,6 +101,7 @@ class Controller():
         timestats = True,
         analysis = True,
         analysis_inline = False,
+        benchmark = True
     ):
         assert len(times) == np.unique(times).size
 
@@ -102,6 +110,9 @@ class Controller():
         ctrl.readParameters(prmspath)
         ctrl.time_max = max(times)
         ctrl.prepareSimulation()
+
+        if benchmark:
+            ctrl.system.benchmark(100)
         
         assert hasattr(ctrl.system, attr), attr
 
@@ -276,6 +287,8 @@ class Controller():
         
         for c in self.system.cells:
             assert(c.assertIntegrity())
+        
+        print(f"generated {len(self.system.cells)} cells")
 
 
 
@@ -312,6 +325,11 @@ class Controller():
         assert(cell_place_counter == len(self.system.particles))
         assert(self.system.assertIntegrity())
 
+        data = [len(cell.particles) for cell in self.system.cells]
+        unique, counts = np.unique(data, return_counts=True)
+        for u, c in zip(unique, counts):
+            print(f"cells with {u:>2} particles: {c:>5}")
+
 
 
     def prepareNew(self):
@@ -325,26 +343,34 @@ class Controller():
                 particle.rotation_bound = ff["bound_rotation"]
 
         box_dims = np.array([self.system.box.x, self.system.box.y, self.system.box.z])
-
+        p_add_counter = 0
 
         count_guv = sum([1 for _, particle_ff in self.particle_prms.items() if "guv" in particle_ff["dist"]])
         if count_guv > 0:
-            average_sigma = sum([particle_ff["sigma"] for _, particle_ff in self.particle_prms.items() if "guv" in particle_ff["dist"]])/count_guv
+            possible_names = [k for k,v in self.particle_prms.items() if "guv" in v["dist"]]
+            possibilities = np.array([v["ratio"] for _,v in self.particle_prms.items() if "guv" in v["dist"]])
+            sum_possibilities = np.sum(possibilities)
+            possibilities = possibilities / sum_possibilities
+            average_sigma = sum([particle_ff["sigma"]*particle_ff["ratio"]/sum_possibilities for _, particle_ff in self.particle_prms.items() if "guv" in particle_ff["dist"]])
+            assert average_sigma > 0
             r0 = 2.0**(1.0/6)*average_sigma
-            average_gamma = sum([particle_ff["gamma"] for _, particle_ff in self.particle_prms.items() if "guv" in particle_ff["dist"]])/count_guv
+            average_gamma = sum([particle_ff["gamma"]*particle_ff["ratio"]/sum_possibilities for _, particle_ff in self.particle_prms.items() if "guv" in particle_ff["dist"]])
+            assert average_gamma > 0
             radius = r0/(2.0*np.sin(average_gamma))
             surface_area = 4.0*np.pi*radius**2
             area_per_particle = 2.0 * np.sqrt(3.0) * (r0/2)**2
             points = sunflower_sphere_points(int(surface_area/area_per_particle))
-            possible_names = [k for k,v in self.particle_prms.items() if "guv" in v["dist"]]
-            possibilities = np.array([v["ratio"] for _,v in self.particle_prms.items() if "guv" in v["dist"]])
-            possibilities = possibilities / np.cumsum(possibilities)[-1]
-            namearray = np.random.choice(possible_names, len(points), p=possibilities)
+            assert all(radius < box_dims/2)
+            namearray = np.random.choice(possible_names, len(points), p=possibilities) # basically list of names
+            if sum([1 for _,v in self.particle_prms.items() if "guvseparated" in v["dist"]]):
+                namearray = sorted(namearray)
 
             for name, point in zip(namearray, points):
                 particle_ff = self.particle_prms[name]
-                self.system.particles.append(_pyves.Particle(point+(box_dims/2), point, 
+                self.system.particles.append(_pyves.Particle(point*radius+(box_dims/2), point, 
                     sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                p_add_counter += 1
+                # print(p_add_counter, "added", self.system.particles[-1])
                 _additional_particle_setup(self.system.particles[-1], particle_ff)
 
         count_hexplane = sum([1 for _, particle_ff in self.particle_prms.items() if "hexplane" in particle_ff["dist"]])
@@ -361,6 +387,8 @@ class Controller():
                 point[2] = box_dims[2]/2
                 self.system.particles.append(_pyves.Particle(point, [0,0,1], 
                     sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                p_add_counter += 1
+                # print(p_add_counter, "added", self.system.particles[-1])
                 _additional_particle_setup(self.system.particles[-1], particle_ff)
         
         # distribute particles
@@ -379,6 +407,8 @@ class Controller():
                 for point in points:
                     self.system.particles.append(_pyves.Particle(point*radius+box_dims/2, point, 
                         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                    p_add_counter += 1
+                    # print(p_add_counter, "added", self.system.particles[-1])
                 _additional_particle_setup(self.system.particles[-1], particle_ff)
                     # if self.system.interaction_surface:
                     #     self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
@@ -399,6 +429,8 @@ class Controller():
                     for point in points:
                         self.system.particles.append(_pyves.Particle(point*edge/2+box_dims/2, [0,0,1], 
                             sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                        p_add_counter += 1
+                        # print(p_add_counter, "added", self.system.particles[-1])
                         _additional_particle_setup(self.system.particles[-1], particle_ff)
                             
                         # if self.system.interaction_surface:
@@ -413,6 +445,8 @@ class Controller():
                 for _ in range(particle_ff["number"]):
                     self.system.particles.append(_pyves.Particle(np.random.rand(3)*box_dims, np.random.uniform(-1,1,3), 
                         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
+                    p_add_counter += 1
+                    # print(p_add_counter, "added", self.system.particles[-1])
                     if self.system.interaction_surface:
                         self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
                         self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
@@ -430,6 +464,8 @@ class Controller():
                         self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
             else:
                 raise NotImplementedError(f"Particle distribution {particle_ff['dist']} not implemented.")
+
+        print(f"generated {len(self.system.particles)} particles")
 
         self.setupCells()
         self.placeParticlesInCells()
