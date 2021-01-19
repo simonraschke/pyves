@@ -11,7 +11,7 @@ def kwargs2string(**kwargs):
     if not kwargs:
         return ""
     else:
-        return ", ".join(f'{x[0]}={x[1]!r}' for x in kwargs.items())[1:]
+        return ", ".join(f'{x[0]}={x[1]!r}' for x in kwargs.items())[0:]
 
 
 def slurmSubmitScript(
