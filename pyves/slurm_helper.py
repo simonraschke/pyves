@@ -18,6 +18,7 @@ def slurmSubmitScript(
     filename = None,
     dirpath = None,
     prmspath = None,
+    forcenew = False,
     partition = None,
     threads = None,
     memory = None,
@@ -126,6 +127,7 @@ def slurmSubmitScript(
     print(f"#SBATCH --partition={partition}", file=string)
     print(f"#SBATCH --time={days:0>1}-{hours:0>2}:00:00", file=string)
     print(f"#SBATCH --time-min={mindays:0>1}-{minhours:0>2}:00:00", file=string)
+    print(f"#SBATCH --signal=12@300", file=string)
     print(f"", file=string)
     
     print(f"import os, sys, signal", file=string)
