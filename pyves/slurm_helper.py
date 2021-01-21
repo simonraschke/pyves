@@ -1,9 +1,15 @@
 import os
+from os.path import dirname
 import sys
 import io
 import re
+import json
+import pyves
 from subprocess import check_output
-from shutil import which, copy2
+from shutil import which#, copy2
+from pathlib import Path    
+import distutils.log
+import distutils.dir_util
 
 
 
@@ -17,8 +23,9 @@ def kwargs2string(**kwargs):
 def slurmSubmitScript(
     filename = None,
     dirpath = None,
+    mode = "new",
     prmspath = None,
-    forcenew = False,
+    prms = None,
     partition = None,
     threads = None,
     memory = None,
@@ -35,6 +42,7 @@ def slurmSubmitScript(
     mkdir = True,
     log = False
 ):
+
     """
     will return submit script path
     """
@@ -47,6 +55,8 @@ def slurmSubmitScript(
 
     assert(hours_min <= hours)
 
+    distutils.log.set_verbosity(distutils.log.DEBUG)
+    prmsfilename = "parameters.json"
 
     
     # make new directory
@@ -71,7 +81,7 @@ def slurmSubmitScript(
     if not mkdir and not dryrun:
         if not os.path.exists(dirpath):
             raise OSError(f"{dirpath} does not exist")
-    
+
 
 
     # define target submit script name
@@ -86,21 +96,90 @@ def slurmSubmitScript(
     if log: print("valid file:", filepath)
     
 
+    if mode == "new":
+        
+        # make new parameters.json from dict
+        if isinstance(prms, type({})):
+            if log: print("prms is given. will ignore \"prmspath\"")
+            prmspath = os.path.realpath(os.path.join(dirpath, prmsfilename))
+                
+            if Path(prmspath).is_file():
+                if log: print(f"save the old parameter file {prmspath}")
+                distutils.file_util.copy_file(prmspath, os.path.join(dirpath, "parameters_old.json"), verbose=1)
+            
+            setup_prms = pyves.default_prms
+            setup_prms.update(prms)
+            with open(prmspath, 'w') as fp:
+                json.dump(setup_prms, fp=fp, indent=4)
 
-    prmspath = os.path.realpath(prmspath)
+
+        # copy existing *.json to parameters.json
+        elif Path(os.path.realpath(prmspath)).is_file():
+            prmspath = os.path.realpath(prmspath)
+            
+            if Path(prmspath).is_file():
+                if log: print(f"save the old parameter file {os.path.join(dirpath, prmsfilename)}")
+                if Path(os.path.join(dirpath, prmsfilename)).is_file():
+                    distutils.file_util.copy_file(os.path.join(dirpath, prmsfilename), os.path.join(dirpath, "parameters_old.json"), verbose=1)
+            
+            if log: print(f"copy the input file")
+            distutils.file_util.copy_file(prmspath, dirpath, verbose=1)
+
+        else:
+            raise IOError("neither prms nor prmspath were given")
+
+
+
+
+    # if mode == "new":
+    #     if log: print("mode new")
+    #     # assert (not isinstance(prms, type(None))) or (not isinstance(prmspath, type(None)))
+        
+    #     # if (not isinstance(prms, type(None))) and (not isinstance(prmspath, type(None))):
+    #     #     raise AttributeError(f"must give either prms or prmspath in mode new {prmspath}")
+    #     # if (isinstance(prms, type(None))) and (isinstance(prmspath, type(None))):
+    #     #     raise AttributeError(f"got prms and prmspath in mode new. please choose only one")
+        
+    #     # save the old parameter file
+    #     if Path(os.path.join(dirpath, prmsfilename)).is_file():
+    #         if log: print(f"save the old parameter file {os.path.join(dirpath, prmsfilename)}")
+    #         distutils.file_util.copy_file(os.path.join(dirpath, prmsfilename), os.path.join(dirpath, "parameters_old.json"), verbose=1)
+
+    #     # copy parameters file if path is given and exists
+    #     if (not isinstance(prmspath, type(None))) and os.path.exists(prmspath):
+    #         if log: print(f"copy the input file")
+    #         distutils.file_util.copy_file(prmspath, dirpath, verbose=1)
+        
+    #     # when a prms dict is given, make input file from that
+    #     elif isinstance(prms, type({})):
+    #         default_prms = pyves.default_prms
+    #         default_prms.update(prms)
+    #         with open(os.path.join(dirpath, 'parameters.json'), 'w') as fp:
+    #             json.dump(default_prms, fp)
+
+
+
+    # elif mode == "restart":
+    # elif mode == "gro":e
+    
+
+
+    # if os.path.dirname(os.path.realpath(prmspath)) != dirpath and not dryrun:
+    #     if not os.path.isdir(dirpath):
+    #         raise OSError(f"cant copy {filename} to {dirpath} . dir does not exist")
+    #     if log: print("copy", prmspath, "to", dirpath)
+    #     if isinstance(prms, type({})):
+            
+    #     elif update_prms_file:
+    #         distutils.file_util.copy_file(prmspath, dirpath, update=1, verbose=1)
+    #     # elif not os.path.exists(os.path.join(dirpath, filename)):
+    #     #     distutils.file_util.copy_file(prmspath, dirpath, verbose=1)
+
+    
     kwargs_string = kwargs2string(**controller_kwargs)
-    command = f"{python_path} -c \\\"import pyves; {controller}('{prmspath}', {kwargs_string})\\\""
+    command = f"{python_path} -c \\\"import pyves; {controller}('{prmsfilename}', {kwargs_string})\\\""
     days, hours = divmod(hours, 24)
     mindays, minhours = divmod(hours_min, 24)
-
-
-
-    if os.path.dirname(os.path.realpath(prmspath)) != dirpath and not dryrun:
-        if not os.path.isdir(dirpath):
-            raise OSError(f"cant copy {filename} to {dirpath}  it does not exist")
-        if log: print("copy", prmspath, "to", dirpath)
-        copy2(prmspath, dirpath)
-
 
 
     string = io.StringIO()
