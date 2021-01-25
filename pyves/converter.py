@@ -21,6 +21,8 @@ import os
 import pandas as pd
 import pyves
 import re
+import json
+from pathlib import Path
 
 
 
@@ -36,9 +38,19 @@ def _verify_io_files(i, o, f):
 
 
 
-def hdf2gro(inpath, outpath, atom_repr={}, box=[], time_range=[0,1e10], overwrite=True, group_prefix="/time", with_direction=False):
+def hdf2gro(inpath, outpath, atom_repr={}, box=None, prmspath=None, time_range=[0,1e10], overwrite=True, group_prefix="/time", with_direction=True):
     input_path = os.path.abspath(inpath)
     output_path = os.path.abspath(outpath)
+    if not isinstance(prmspath, type(None)):
+        prmspath = Path(os.path.abspath(prmspath))
+        
+    if (isinstance(box, type(None))):
+        if prmspath.is_file():
+            with open(prmspath, 'r') as prms_file:
+                prms = json.loads(prms_file.read())
+                box = pyves.BoxPBC([prms["system"]["box"]["x"], prms["system"]["box"]["y"], prms["system"]["box"]["z"]])
+        else:
+            raise FileNotFoundError(f"neither box nor prmspath \"{prmspath}\" are given")
     
     _verify_io_files(input_path, output_path, overwrite)
 

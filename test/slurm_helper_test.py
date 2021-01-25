@@ -112,6 +112,24 @@ class MainTest(unittest.TestCase):
             print("but should be fine on a cluster")
 
 
+    def test_sbatch_command(self):
+        datafile = "data.h5"
+        print()
+        print()
+        print()
+        print()
+        print()
+        try:
+            jobid = pyves.sbatchCommand(
+                cmd = f"{sys.executable} -c \"import pyves; pyves.hdf2gro(inpath='{datafile}', outpath='trajectory.gro', atom_repr=dict(RAND='O', P='C', S1='S', S2='B'), prmspath='test/parameters.json', with_direction='True')\"",
+                dirpath = "test",
+                sbatch_kwargs = {"--time":"0:12:00:00", "--mem":"2G", "--ntasks":1, "--nodes":1, "--cpus-per-task":1}
+            )
+        except Exception as e:
+            print(e)
+            print("but should be fine on a cluster")
+
+
 
 if __name__ == '__main__':
     unittest.main()
