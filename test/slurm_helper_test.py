@@ -133,9 +133,18 @@ class MainTest(unittest.TestCase):
 #             print("but should be fine on a cluster")
 
     def test_sbatchGroTrajectory(self):
-        sbatch_kwargs = {"--time":"0-12:00:00", "--mem":"2G", "--ntasks":1, "--nodes":1, "--cpus-per-task":1}
+        sbatch_kwargs = {"--time":"0-02:00:00", "--mem":"2G", "--ntasks":1, "--nodes":1, "--cpus-per-task":1}
         try:
             jobid = pyves.sbatchGroTrajectory("test/parameters.json", sbatch_kwargs)
+        except Exception as e:
+            print(e)
+
+
+
+    def test_sbatchVMDRC(self):
+        sbatch_kwargs = {"--time":"0-00:30:00", "--mem":"2G", "--ntasks":1, "--nodes":1, "--cpus-per-task":1}
+        try:
+            jobid = pyves.sbatchVMDRC("test/parameters.json", sbatch_kwargs)
         except Exception as e:
             print(e)
 

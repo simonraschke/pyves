@@ -5,6 +5,8 @@ import sys
 import io
 import re
 import json
+import numpy as np
+import pandas as pd
 from subprocess import check_output
 from shutil import which#, copy2
 from pathlib import Path    
@@ -226,52 +228,11 @@ def sbatchSubmitScript(
 
 
 
-# def sbatchCommand(cmd, dirpath, sbatch_kwargs, dryrun=False):
-#     """
-#     will return job id
-#     """
-    
-#     sbatchpath = which("sbatch")
-#     print("sbatchpath", sbatchpath)
-#     # if sbatchpath == None:
-#     #     raise RuntimeError("sbatch not found")
-
-#     sbatch_string = " ".join([f"{arg}={val}" for arg, val in sbatch_kwargs.items()])
-#     print(sbatch_string)
-#     print(f"{sbatchpath}", sbatch_string, cmd)
-    
-#     cwd = os.path.realpath( os.getcwd() )
-#     if not os.path.exists(sbatchpath):
-#         raise RuntimeError(f"path does not exist: {sbatchpath}")
-#     try:
-#         if not dryrun:
-#             os.chdir(os.path.dirname( os.path.realpath( dirpath )) )
-
-#             out = check_output([f"{sbatchpath}", sbatch_string, cmd])
-#             # out should look like
-#             # Submitted batch job 7154194
-
-#             os.chdir( cwd )
-
-#             try:
-#                 id = int(re.search(r'\d+', out.decode("utf-8")).group())
-#             except Exception as e:
-#                 raise RuntimeError("no jobid in sbatch output")
-#         else:
-#             id = 1337
-#     except Exception as e:
-#         os.chdir(cwd)
-#         raise e
-
-#     assert(id>15)
-#     return id
-
-
 def sbatchGroTrajectory(prms_path, sbatch_kwargs, atom_repr=["C","O","S","H","B"], dryrun=False):
     sbatchpath = which("sbatch")
-    print("sbatchpath", sbatchpath)
-    # if sbatchpath == None:
-    #     raise RuntimeError("sbatch not found")
+    # print("sbatchpath", sbatchpath)
+    if sbatchpath == None:
+        raise RuntimeError("sbatch not found")
 
     prms_path = os.path.realpath(prms_path)
     with open(prms_path, "r") as fp:
@@ -297,7 +258,53 @@ def sbatchGroTrajectory(prms_path, sbatch_kwargs, atom_repr=["C","O","S","H","B"
 
     try:
         if not dryrun:
-            os.chdir(os.path.dirname( os.path.realpath( dirpath )) )
+            os.chdir(dirpath)
+
+            out = check_output(cmd, shell=True)
+            # out should look like
+            # Submitted batch job 7154194
+
+            os.chdir( cwd )
+
+            try:
+                id = int(re.search(r'\d+', out.decode("utf-8")).group())
+            except Exception as e:
+                raise RuntimeError("no jobid in sbatch output")
+        else:
+            id = 1337
+    except Exception as e:
+        os.chdir(cwd)
+        raise e
+
+    assert(id>15)
+    return id
+
+
+
+def sbatchVMDRC(prms_path, sbatch_kwargs, dryrun=False, bond_radius=6):
+    sbatchpath = which("sbatch")
+    print("sbatchpath", sbatchpath)
+    if sbatchpath == None:
+        raise RuntimeError("sbatch not found")
+
+    prms_path = os.path.realpath(prms_path)
+    with open(prms_path, "r") as fp:
+        prms = json.load(fp)
+
+    cwd = os.path.realpath( os.getcwd() )
+    if not os.path.exists(sbatchpath):
+        raise RuntimeError(f"path does not exist: {sbatchpath}")
+
+    dirpath = dirname(prms_path)
+    datafile = os.path.join(dirpath, prms["output"].get("filename"))
+    trajfile = os.path.join(dirpath, "trajectory.gro")
+    
+    sbatch_kwargs_string = " ".join([f"{arg}={val}" for arg, val in sbatch_kwargs.items()])
+    cmd = f"{sbatchpath} {sbatch_kwargs_string} --wrap=\"{sys.executable} -c \\\"import pyves; import pandas as pd; num=pd.read_hdf('{datafile}', key='/time0').index.size; pyves.writeVMDrc(outdir='{dirpath}', traj_file_name='{trajfile}', num_bonds=num, bond_radius={bond_radius})\\\"\""
+
+    try:
+        if not dryrun:
+            os.chdir(dirpath)
 
             out = check_output(cmd, shell=True)
             # out should look like
