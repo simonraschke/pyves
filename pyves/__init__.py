@@ -21,7 +21,7 @@ from _pyves import *
 from .controller import Controller
 from .converter import hdf2gro, writeVMDrc
 from .analysis import analyzeSnapshot, analyzeTrajectory
-from .slurm_helper import slurmSubmitScript, sbatchSubmitScript, sbatchCommand
+from .slurm_helper import slurmSubmitScript, sbatchSubmitScript, sbatchGroTrajectory
 from .utility import h5store, h5load
 from .default_input import default_prms, default_particle, deep_update
 from ._version import __version__

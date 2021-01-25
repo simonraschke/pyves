@@ -414,8 +414,6 @@ namespace _pyves
         std::cout << num << " x potentialEnergy                " << single << " s\n"; 
         std::cout << num << " x potentialEnergyConcurrent      " << concurrent << " s\n";
         std::cout << "scaling factor: " << single/(concurrent*threads) << "\n\n";
-        // std::cout << num << " x singleSimulationStep           " <<  timeFuncInvocation(num, [&]{singleSimulationStep();}) << " s\n";
-        // std::cout << "multipleSimulationSteps(" << num << ")         " <<  timeFuncInvocation(1, [&]{multipleSimulationSteps(num);}) << " s\n";
     }
 
 

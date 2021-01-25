@@ -1,16 +1,16 @@
 import os
 from os.path import dirname
+import subprocess
 import sys
 import io
 import re
 import json
-import pyves
 from subprocess import check_output
 from shutil import which#, copy2
 from pathlib import Path    
 import distutils.log
 import distutils.dir_util
-
+from .default_input import default_prms
 
 
 def kwargs2string(**kwargs):
@@ -107,7 +107,7 @@ def slurmSubmitScript(
                 if log: print(f"save the old parameter file {prmspath}")
                 distutils.file_util.copy_file(prmspath, os.path.join(dirpath, "parameters_old.json"), verbose=1)
             
-            setup_prms = pyves.default_prms
+            setup_prms = default_prms
             setup_prms.update(prms)
             with open(prmspath, 'w') as fp:
                 json.dump(setup_prms, fp=fp, indent=4)
@@ -127,53 +127,6 @@ def slurmSubmitScript(
 
         else:
             raise IOError("neither prms nor prmspath were given")
-
-
-
-
-    # if mode == "new":
-    #     if log: print("mode new")
-    #     # assert (not isinstance(prms, type(None))) or (not isinstance(prmspath, type(None)))
-        
-    #     # if (not isinstance(prms, type(None))) and (not isinstance(prmspath, type(None))):
-    #     #     raise AttributeError(f"must give either prms or prmspath in mode new {prmspath}")
-    #     # if (isinstance(prms, type(None))) and (isinstance(prmspath, type(None))):
-    #     #     raise AttributeError(f"got prms and prmspath in mode new. please choose only one")
-        
-    #     # save the old parameter file
-    #     if Path(os.path.join(dirpath, prmsfilename)).is_file():
-    #         if log: print(f"save the old parameter file {os.path.join(dirpath, prmsfilename)}")
-    #         distutils.file_util.copy_file(os.path.join(dirpath, prmsfilename), os.path.join(dirpath, "parameters_old.json"), verbose=1)
-
-    #     # copy parameters file if path is given and exists
-    #     if (not isinstance(prmspath, type(None))) and os.path.exists(prmspath):
-    #         if log: print(f"copy the input file")
-    #         distutils.file_util.copy_file(prmspath, dirpath, verbose=1)
-        
-    #     # when a prms dict is given, make input file from that
-    #     elif isinstance(prms, type({})):
-    #         default_prms = pyves.default_prms
-    #         default_prms.update(prms)
-    #         with open(os.path.join(dirpath, 'parameters.json'), 'w') as fp:
-    #             json.dump(default_prms, fp)
-
-
-
-    # elif mode == "restart":
-    # elif mode == "gro":e
-    
-
-
-    # if os.path.dirname(os.path.realpath(prmspath)) != dirpath and not dryrun:
-    #     if not os.path.isdir(dirpath):
-    #         raise OSError(f"cant copy {filename} to {dirpath} . dir does not exist")
-    #     if log: print("copy", prmspath, "to", dirpath)
-    #     if isinstance(prms, type({})):
-            
-    #     elif update_prms_file:
-    #         distutils.file_util.copy_file(prmspath, dirpath, update=1, verbose=1)
-    #     # elif not os.path.exists(os.path.join(dirpath, filename)):
-    #     #     distutils.file_util.copy_file(prmspath, dirpath, verbose=1)
 
     
     kwargs_string = kwargs2string(**controller_kwargs)
@@ -273,28 +226,81 @@ def sbatchSubmitScript(
 
 
 
-def sbatchCommand(cmd, dirpath, sbatch_kwargs, dryrun=False):
-    """
-    will return job id
-    """
+# def sbatchCommand(cmd, dirpath, sbatch_kwargs, dryrun=False):
+#     """
+#     will return job id
+#     """
     
+#     sbatchpath = which("sbatch")
+#     print("sbatchpath", sbatchpath)
+#     # if sbatchpath == None:
+#     #     raise RuntimeError("sbatch not found")
+
+#     sbatch_string = " ".join([f"{arg}={val}" for arg, val in sbatch_kwargs.items()])
+#     print(sbatch_string)
+#     print(f"{sbatchpath}", sbatch_string, cmd)
+    
+#     cwd = os.path.realpath( os.getcwd() )
+#     if not os.path.exists(sbatchpath):
+#         raise RuntimeError(f"path does not exist: {sbatchpath}")
+#     try:
+#         if not dryrun:
+#             os.chdir(os.path.dirname( os.path.realpath( dirpath )) )
+
+#             out = check_output([f"{sbatchpath}", sbatch_string, cmd])
+#             # out should look like
+#             # Submitted batch job 7154194
+
+#             os.chdir( cwd )
+
+#             try:
+#                 id = int(re.search(r'\d+', out.decode("utf-8")).group())
+#             except Exception as e:
+#                 raise RuntimeError("no jobid in sbatch output")
+#         else:
+#             id = 1337
+#     except Exception as e:
+#         os.chdir(cwd)
+#         raise e
+
+#     assert(id>15)
+#     return id
+
+
+def sbatchGroTrajectory(prms_path, sbatch_kwargs, atom_repr=["C","O","S","H","B"], dryrun=False):
     sbatchpath = which("sbatch")
     print("sbatchpath", sbatchpath)
-    # if sbatchpath == None:
-    #     raise RuntimeError("sbatch not found")
+    if sbatchpath == None:
+        raise RuntimeError("sbatch not found")
 
-    sbatch_string = " ".join([f"{arg}={val}" for arg, val in sbatch_kwargs.items()])
-    print(sbatch_string)
-    print(f"{sbatchpath}", sbatch_string, cmd)
+    with open(prms_path, "r") as fp:
+        prms = json.load(fp)
+
+    dirpath = dirname(prms_path)
+    datafile = prms["output"].get("filename")
+    trajfile = "trajectory.gro"
+
+    particles = prms["system"]["particles"]
+    names = list(particles.keys())
+    representation = "dict("
+    for i in range(len(names)):
+        representation += f"{names[i]}='{atom_repr[i]}',"
+    representation = representation[:-1]+")"
+    
+    sbatch_kwargs_string = " ".join([f"{arg}={val}" for arg, val in sbatch_kwargs.items()])
+    cmd = f"{sbatchpath} {sbatch_kwargs_string} --wrap=\"{sys.executable} -c \\\"import pyves; pyves.hdf2gro(inpath='{datafile}', outpath='{trajfile}', atom_repr={representation}, prmspath='{prms_path}', with_direction='True')\\\"\""
+
+    print(cmd)
     
     cwd = os.path.realpath( os.getcwd() )
     if not os.path.exists(sbatchpath):
         raise RuntimeError(f"path does not exist: {sbatchpath}")
+
     try:
         if not dryrun:
             os.chdir(os.path.dirname( os.path.realpath( dirpath )) )
 
-            out = check_output([f"{sbatchpath}", sbatch_string, cmd])
+            out = check_output(cmd, shell=True)
             # out should look like
             # Submitted batch job 7154194
 

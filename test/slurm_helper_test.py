@@ -110,24 +110,34 @@ class MainTest(unittest.TestCase):
         except Exception as e:
             print(e)
             print("but should be fine on a cluster")
+            
 
 
-    def test_sbatch_command(self):
-        datafile = "data.h5"
-        print()
-        print()
-        print()
-        print()
-        print()
+# sbatch --time=00:12:00 --mem=2G --ntasks=1 --nodes=1 --cpus-per-task=1 --wrap="python3 -c \"import pyves; pyves.hdf2gro(inpath='9010/data.h5', outpath='9010/trajectory.gro', atom_repr=dict(A='O', B='S'), prmspath='9010/9010.json', with_direction='True')\""
+
+#     def test_sbatch_command(self):
+#         datafile = "data.h5"
+#         print()
+#         print()
+#         print()
+#         print()
+#         print()
+#         try:
+#             jobid = pyves.sbatchCommand(
+#                 cmd = f"{sys.executable} -c \"import pyves; pyves.hdf2gro(inpath='{datafile}', outpath='trajectory.gro', atom_repr=dict(RAND='O', P='C', S1='S', S2='B'), prmspath='test/parameters.json', with_direction='True')\"",
+#                 dirpath = "test",
+#                 sbatch_kwargs = {"--time":"0-12:00:00", "--mem":"2G", "--ntasks":1, "--nodes":1, "--cpus-per-task":1}
+#             )
+#         except Exception as e:
+#             print(e)
+#             print("but should be fine on a cluster")
+
+    def test_sbatchGroTrajectory(self):
+        sbatch_kwargs = {"--time":"0-12:00:00", "--mem":"2G", "--ntasks":1, "--nodes":1, "--cpus-per-task":1}
         try:
-            jobid = pyves.sbatchCommand(
-                cmd = f"{sys.executable} -c \"import pyves; pyves.hdf2gro(inpath='{datafile}', outpath='trajectory.gro', atom_repr=dict(RAND='O', P='C', S1='S', S2='B'), prmspath='test/parameters.json', with_direction='True')\"",
-                dirpath = "test",
-                sbatch_kwargs = {"--time":"0:12:00:00", "--mem":"2G", "--ntasks":1, "--nodes":1, "--cpus-per-task":1}
-            )
+            jobid = pyves.sbatchGroTrajectory("test/parameters.json", sbatch_kwargs)
         except Exception as e:
             print(e)
-            print("but should be fine on a cluster")
 
 
 
