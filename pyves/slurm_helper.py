@@ -270,15 +270,16 @@ def sbatchSubmitScript(
 def sbatchGroTrajectory(prms_path, sbatch_kwargs, atom_repr=["C","O","S","H","B"], dryrun=False):
     sbatchpath = which("sbatch")
     print("sbatchpath", sbatchpath)
-    if sbatchpath == None:
-        raise RuntimeError("sbatch not found")
+    # if sbatchpath == None:
+    #     raise RuntimeError("sbatch not found")
 
+    prms_path = os.path.realpath(prms_path)
     with open(prms_path, "r") as fp:
         prms = json.load(fp)
 
     dirpath = dirname(prms_path)
-    datafile = prms["output"].get("filename")
-    trajfile = "trajectory.gro"
+    datafile = os.path.join(dirpath, prms["output"].get("filename"))
+    trajfile = os.path.join(dirpath, "trajectory.gro")
 
     particles = prms["system"]["particles"]
     names = list(particles.keys())
@@ -289,8 +290,6 @@ def sbatchGroTrajectory(prms_path, sbatch_kwargs, atom_repr=["C","O","S","H","B"
     
     sbatch_kwargs_string = " ".join([f"{arg}={val}" for arg, val in sbatch_kwargs.items()])
     cmd = f"{sbatchpath} {sbatch_kwargs_string} --wrap=\"{sys.executable} -c \\\"import pyves; pyves.hdf2gro(inpath='{datafile}', outpath='{trajfile}', atom_repr={representation}, prmspath='{prms_path}', with_direction='True')\\\"\""
-
-    print(cmd)
     
     cwd = os.path.realpath( os.getcwd() )
     if not os.path.exists(sbatchpath):
