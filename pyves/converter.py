@@ -116,13 +116,15 @@ def hdf2gro(inpath, outpath, atom_repr={}, box=None, prmspath=None, time_range=[
 
 
 def writeVMDrc(outdir=".", traj_file_name="trajectory.gro", num_bonds=0, bond_radius=6):
+    from pathlib import Path    
+    
     vmdrc_paths = [
         os.path.abspath(os.path.join(outdir, "vmd.rc")),
         os.path.abspath(os.path.join(outdir, ".vmdrc"))
     ]
     for path in vmdrc_paths:
         with open(path, mode="w") as VMDRC:
-            print("mol load gro",traj_file_name, file=VMDRC)
+            print("mol load gro",Path(traj_file_name).name, file=VMDRC)
             print("light 0 on", file=VMDRC)
             print("light 1 on", file=VMDRC)
             print("light 2 on", file=VMDRC)
