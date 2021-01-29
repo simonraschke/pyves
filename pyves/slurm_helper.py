@@ -37,6 +37,7 @@ def slurmSubmitScript(
     nice = None,
     group = None,
     requeue = None,
+    signal_time = 1000,
     python_path = sys.executable,
     controller = "pyves.Controller.Static",
     controller_kwargs = dict(analysis=True),
@@ -161,7 +162,7 @@ def slurmSubmitScript(
     print(f"#SBATCH --partition={partition}", file=string)
     print(f"#SBATCH --time={days:0>1}-{hours:0>2}:00:00", file=string)
     print(f"#SBATCH --time-min={mindays:0>1}-{minhours:0>2}:00:00", file=string)
-    print(f"#SBATCH --signal=12@300", file=string)
+    print(f"#SBATCH --signal=12@{int(signal_time)}", file=string)
     print(f"", file=string)
     
     print(f"import os, sys, signal", file=string)
