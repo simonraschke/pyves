@@ -32,7 +32,7 @@
         {
             "CURVP" : 
             {
-                "ratio" : 7,
+                "number" : 700,
                 "dist" : "guv",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
@@ -43,7 +43,7 @@
             },
             "PLANE" : 
             {
-                "ratio" : 2,
+                "number" : 200,
                 "dist" : "guv",
                 "sigma" : 1.0,
                 "kappa" : 1.0,
@@ -54,9 +54,9 @@
             },
             "CURVN" : 
             {
-                "ratio" : 1,
+                "number" : 100,
                 "dist" : "guv",
-                "sigma" : 1.0,
+                "sigma" : 1.1,
                 "kappa" : 1.0,
                 "epsilon" : 1.0,
                 "gamma" : -0.1,

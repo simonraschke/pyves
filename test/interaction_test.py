@@ -330,5 +330,152 @@ class MainTest(unittest.TestCase):
         self.assertTrue(pyves.external_potential(p, box, surface_width, interaction_cutoff) > 1e5 )
 
 
+
+    def test_other_affinity(self):
+        p1 = pyves.Particle([0,0,0], np.array([-1,1,0])/np.linalg.norm([-1,1,0]))
+        p2 = pyves.Particle([2**(1.0/6),0,0], np.array([1,1,0])/np.linalg.norm([1,1,0]))
+        p1.gamma = np.pi/180*45
+        p2.gamma = np.pi/180*45
+        p1.kappa = 1 
+        p2.kappa = 1
+        p1.epsilon = 1
+        p2.epsilon = 1
+        p1.sigma = 1
+        p2.sigma = 1
+        p1.name = "A"
+        p2.name = "B"
+        p1.self_affinity = 1
+        p2.self_affinity = 1
+        p1.other_affinity = 0.9
+        p2.other_affinity = 0.9
+        box = pyves.BoxPBC(10,10,10)
+        e = pyves.interaction(p1, p2, box, 3)
+        self.assertAlmostEqual(e, -0.9)
+
+        p1 = pyves.Particle([0,0,0], np.array([-1,1,0])/np.linalg.norm([-1,1,0]))
+        p2 = pyves.Particle([2**(1.0/6),0,0], np.array([1,1,0])/np.linalg.norm([1,1,0]))
+        p1.gamma = np.pi/180*45
+        p2.gamma = np.pi/180*45
+        p1.kappa = 1 
+        p2.kappa = 1
+        p1.epsilon = 1
+        p2.epsilon = 1
+        p1.sigma = 1
+        p2.sigma = 1
+        p1.name = "A"
+        p2.name = "A"
+        p1.self_affinity = 1
+        p2.self_affinity = 1
+        p1.other_affinity = 0.9
+        p2.other_affinity = 0.9
+        box = pyves.BoxPBC(10,10,10)
+        e = pyves.interaction(p1, p2, box, 3)
+        self.assertAlmostEqual(e, -1)
+
+        p1 = pyves.Particle([0,0,0], np.array([0,1,0]))
+        p2 = pyves.Particle([2**(1.0/6),0,0], np.array([0,1,0]))
+        p1.gamma = np.pi/180*0
+        p2.gamma = np.pi/180*0
+        p1.kappa = 1 
+        p2.kappa = 1
+        p1.epsilon = 1
+        p2.epsilon = 1
+        p1.sigma = 1
+        p2.sigma = 1
+        p1.name = "A"
+        p2.name = "B"
+        p1.self_affinity = 1
+        p2.self_affinity = 1
+        p1.other_affinity = 0.7
+        p2.other_affinity = 0.9
+        box = pyves.BoxPBC(10,10,10)
+        e = pyves.interaction(p1, p2, box, 3)
+        self.assertAlmostEqual(e, -0.8)
+
+        p1 = pyves.Particle([0,0,0], np.array([0,1,0]))
+        p2 = pyves.Particle([2**(1.0/6),0,0], np.array([0,1,0]))
+        p1.gamma = np.pi/180*0
+        p2.gamma = np.pi/180*0
+        p1.kappa = 1 
+        p2.kappa = 1
+        p1.epsilon = 1
+        p2.epsilon = 1
+        p1.sigma = 1
+        p2.sigma = 1
+        p1.name = "A"
+        p2.name = "B"
+        p1.self_affinity = 1
+        p2.self_affinity = 1
+        p1.other_affinity = 1.7
+        p2.other_affinity = 1.9
+        box = pyves.BoxPBC(10,10,10)
+        e = pyves.interaction(p1, p2, box, 3)
+        self.assertAlmostEqual(e, -1.8)
+
+
+
+    def test_self_affinity(self):
+        p1 = pyves.Particle([0,0,0], np.array([-1,1,0])/np.linalg.norm([-1,1,0]))
+        p2 = pyves.Particle([2**(1.0/6),0,0], np.array([1,1,0])/np.linalg.norm([1,1,0]))
+        p1.gamma = np.pi/180*45
+        p2.gamma = np.pi/180*45
+        p1.kappa = 1 
+        p2.kappa = 1
+        p1.epsilon = 1
+        p2.epsilon = 1
+        p1.sigma = 1
+        p2.sigma = 1
+        p1.name = "A"
+        p2.name = "A"
+        p1.self_affinity = 1.1
+        p2.self_affinity = 1.1
+        p1.other_affinity = 1
+        p2.other_affinity = 1
+        box = pyves.BoxPBC(10,10,10)
+        e = pyves.interaction(p1, p2, box, 3)
+        self.assertAlmostEqual(e, -1.1)
+
+        p1 = pyves.Particle([0,0,0], np.array([0,1,0]))
+        p2 = pyves.Particle([2**(1.0/6),0,0], np.array([0,1,0]))
+        p1.gamma = np.pi/180*0
+        p2.gamma = np.pi/180*0
+        p1.kappa = 1 
+        p2.kappa = 1
+        p1.epsilon = 1
+        p2.epsilon = 1
+        p1.sigma = 1
+        p2.sigma = 1
+        p1.name = "A"
+        p2.name = "A"
+        p1.self_affinity = 1
+        p2.self_affinity = 1
+        p1.other_affinity = 0.7
+        p2.other_affinity = 0.9
+        box = pyves.BoxPBC(10,10,10)
+        e = pyves.interaction(p1, p2, box, 3)
+        self.assertAlmostEqual(e, -1)
+
+        p1 = pyves.Particle([0,0,0], np.array([0,1,0]))
+        p2 = pyves.Particle([2**(1.0/6),0,0], np.array([0,1,0]))
+        p1.gamma = np.pi/180*0
+        p2.gamma = np.pi/180*0
+        p1.kappa = 1 
+        p2.kappa = 1
+        p1.epsilon = 1
+        p2.epsilon = 1
+        p1.sigma = 1
+        p2.sigma = 1
+        p1.name = "A"
+        p2.name = "A"
+        p1.self_affinity = 1.8
+        p2.self_affinity = 1.8
+        p1.other_affinity = 0.7
+        p2.other_affinity = 0.9
+        box = pyves.BoxPBC(10,10,10)
+        e = pyves.interaction(p1, p2, box, 3)
+        self.assertAlmostEqual(e, -1.8)
+
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -86,7 +86,9 @@
                 "bound_translation" : null,
                 "bound_rotation" : null,
                 "surface_affinity_translation" : 0.5,
-                "surface_affinity_rotation" : 0.5
+                "surface_affinity_rotation" : 0.5,
+                "self_affinity" : 1.1,
+                "other_affinity" : 0.9
             }
         }
     },

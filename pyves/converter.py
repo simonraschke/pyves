@@ -38,7 +38,7 @@ def _verify_io_files(i, o, f):
 
 
 
-def hdf2gro(inpath, outpath, atom_repr={}, box=None, prmspath=None, time_range=[0,1e10], overwrite=True, group_prefix="/time", with_direction=True):
+def hdf2gro(inpath, outpath, atom_repr={}, box=None, prmspath=None, time_range=[0,1e10], overwrite=True, group_prefix="/time", with_direction=True, specific_key=None):
     input_path = os.path.abspath(inpath)
     output_path = os.path.abspath(outpath)
     if not isinstance(prmspath, type(None)):
@@ -56,6 +56,10 @@ def hdf2gro(inpath, outpath, atom_repr={}, box=None, prmspath=None, time_range=[
 
     store = pd.HDFStore(input_path, mode="r")
     keys = sorted([s for s in store.keys() if s.startswith(group_prefix)], key=lambda x:int(re.findall(f"(?<={group_prefix})\d+", x)[0]))
+    if specific_key == "HEAD" or specific_key == "head":
+        keys = [keys[-1]]
+    elif specific_key != None:
+        keys = [keys.index(specific_key)]
     
     with open(output_path, "w") as GROFILE:
         snapshots = 0

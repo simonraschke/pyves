@@ -30,7 +30,7 @@ namespace _pyves::interaction
 
 
 
-    REAL potentialEnergy(const Particle& p1, const Particle& p2, const Box<PBC::ON>& box, REAL cutoff)
+    REAL potentialEnergy(const Particle& p1, const Particle& p2, const Box<PBC::ON>& box, const REAL cutoff)
     {
         CARTESIAN distance_vec = box.distanceVector(p1.position, p2.position);
         // std::cout << "\n\ndistance_vec " << distance_vec.format(ROWFORMAT) << std::endl;
@@ -76,8 +76,10 @@ namespace _pyves::interaction
         const REAL mean_epsilon = std::sqrt(p1.epsilon*p2.epsilon);
         const REAL r6 = r2*r2*r2;
         // std::cout << "r6 " << r6 << std::endl;
+
+        const REAL scaling = (p1.name == p2.name) ? (p1.self_affinity) : ((p1.other_affinity + p2.other_affinity)/2);
         
-        return 4.f*mean_epsilon*(r6*r6 - (1.f-chi)*r6);
+        return scaling*4*mean_epsilon*(r6*r6 - (1.f-chi)*r6);
     }
 
 

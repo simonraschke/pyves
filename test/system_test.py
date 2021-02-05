@@ -20,18 +20,27 @@ class MainTest(unittest.TestCase):
     def test_particle_exchange(self):
         sys = pyves.System()
         sys.box = pyves.BoxPBC(10,10,10)
-        sys.particles.append(pyves.Particle([1,1,1], [1,0,0], sigma=1, kappa=1, eps=1, name="A", gamma=0))        
-        sys.particles.append(pyves.Particle([3,1,1], [1,0,0], sigma=1, kappa=1, eps=1, name="B", gamma=0))
+        sys.particles.append(pyves.Particle([1,1,1], [1,0,0], sigma=2, kappa=1, eps=4, name="A", gamma=0))        
+        sys.particles.append(pyves.Particle([3,1,1], [1,0,0], sigma=1, kappa=3, eps=1, name="B", gamma=0))
 
         self.assertEqual(sys.particles[0].name, "A")
         self.assertEqual(sys.particles[1].name, "B")
+        print()
+        print(sys.particles[0].detailed_repr())
+        print(sys.particles[1].detailed_repr())
 
         sys.exchangeParticles(sys.particles[0], sys.particles[1])
+        print(sys.particles[0].detailed_repr())
+        print(sys.particles[1].detailed_repr())
 
         self.assertEqual(sys.particles[0].name, "B")
         self.assertEqual(sys.particles[1].name, "A")
-        self.assertEqual(sys.particles[0].position[0], 3)
-        self.assertEqual(sys.particles[1].position[0], 1)
+        self.assertAlmostEqual(sys.particles[0].sigma, 1, 1e6)
+        self.assertAlmostEqual(sys.particles[1].sigma, 2, 1e6)
+        self.assertAlmostEqual(sys.particles[0].kappa, 3, 1e6)
+        self.assertAlmostEqual(sys.particles[1].kappa, 1, 1e6)
+        # self.assertEqual(sys.particles[0].position[0], 3)
+        # self.assertEqual(sys.particles[1].position[0], 1)
 
 
 
@@ -60,13 +69,13 @@ class MainTest(unittest.TestCase):
         print("sys.particles.size", len(sys.particles))
         print("------------------------")
         sys.exchangeParticles(sys.particles[0], sys.particles[1])
-                
-        self.assertAlmostEqual(sys.particles[1].position[0], 1.0, 5)
-        self.assertAlmostEqual(sys.particles[1].position[1], 1.0, 5)
-        self.assertAlmostEqual(sys.particles[1].position[2], 1.0, 5)
-        self.assertAlmostEqual(sys.particles[1].orientation[0], 1.0/np.linalg.norm([1,1,0]), 5)
-        self.assertAlmostEqual(sys.particles[1].orientation[1], 1.0/np.linalg.norm([1,1,0]), 5)
-        self.assertAlmostEqual(sys.particles[1].orientation[2], 0.0/np.linalg.norm([1,1,0]), 5)
+
+        self.assertAlmostEqual(sys.particles[1].x, 2.1224, 5)
+        self.assertAlmostEqual(sys.particles[1].y, 1.0, 5)
+        self.assertAlmostEqual(sys.particles[1].z, 1.0, 5)
+        self.assertAlmostEqual(sys.particles[1].ux, 1.0/np.linalg.norm([1,1,0]), 5)
+        self.assertAlmostEqual(sys.particles[1].uy, -1.0/np.linalg.norm([1,1,0]), 5)
+        self.assertAlmostEqual(sys.particles[1].uz, 0.0/np.linalg.norm([1,1,0]), 5)
         self.assertEqual(sys.particles[0].name, "B")
         self.assertEqual(sys.particles[1].name, "A")
         self.assertAlmostEqual(sys.particles[0].sigma, 1.0, 5)

@@ -43,7 +43,7 @@ namespace _pyves
     {
         std::lock_guard<std::shared_mutex> lock(particles_access_mutex);
         // tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, true);
-        auto it = particles.erase( std::remove_if(std::begin(particles), std::end(particles), [&](const Particle& to_compare)
+        [[maybe_unused]] auto it = particles.erase( std::remove_if(std::begin(particles), std::end(particles), [&](const Particle& to_compare)
         { 
             return to_remove == to_compare;
         ;}), std::end(particles));

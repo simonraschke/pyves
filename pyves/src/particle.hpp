@@ -69,6 +69,9 @@ namespace _pyves
         REAL surface_affinity_translation = 0;
         REAL surface_affinity_rotation = 0;
 
+        REAL self_affinity = 1.0;
+        REAL other_affinity = 1.0;
+
         std::string name = "UNDEFINED";
 
         ParticleRefContainer neighbors;

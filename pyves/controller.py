@@ -30,6 +30,7 @@ import signal
 import time
 import h5py
 import re
+import itertools
 
 from more_itertools import windowed
 
@@ -337,6 +338,10 @@ class Controller():
             if self.system.interaction_surface:
                 particle.surface_affinity_translation = ff["surface_affinity_translation"]
                 particle.surface_affinity_rotation = ff["surface_affinity_rotation"]
+            if "self_affinity" in ff.keys():
+                particle.self_affinity = ff["self_affinity"]
+            if "other_affinity" in ff.keys():
+                particle.other_affinity = ff["other_affinity"]
             if ff["bound_translation"] != None:
                 particle.translation_bound_sq  = ff["bound_translation"]**2
             if ff["bound_rotation"] != None:
@@ -347,23 +352,39 @@ class Controller():
 
         count_guv = sum([1 for _, particle_ff in self.particle_prms.items() if "guv" in particle_ff["dist"]])
         if count_guv > 0:
-            possible_names = [k for k,v in self.particle_prms.items() if "guv" in v["dist"]]
-            possibilities = np.array([v["ratio"] for _,v in self.particle_prms.items() if "guv" in v["dist"]])
-            sum_possibilities = np.sum(possibilities)
-            possibilities = possibilities / sum_possibilities
-            average_sigma = sum([particle_ff["sigma"]*particle_ff["ratio"]/sum_possibilities for _, particle_ff in self.particle_prms.items() if "guv" in particle_ff["dist"]])
-            assert average_sigma > 0
-            r0 = 2.0**(1.0/6)*average_sigma
-            average_gamma = sum([particle_ff["gamma"]*particle_ff["ratio"]/sum_possibilities for _, particle_ff in self.particle_prms.items() if "guv" in particle_ff["dist"]])
-            assert average_gamma > 0
-            radius = r0/(2.0*np.sin(average_gamma))
-            surface_area = 4.0*np.pi*radius**2
-            area_per_particle = 2.0 * np.sqrt(3.0) * (r0/2)**2
-            points = sunflower_sphere_points(int(surface_area/area_per_particle))
+            tuples = np.array([[k,v["number"],v["sigma"]] for k,v in self.particle_prms.items() if "guv" in v["dist"]])
+            possible_names = tuples[:,0]
+            numbers = np.array(tuples[:,1], dtype="int")
+            possibilities = numbers / np.sum(numbers)
+            sigmas = np.array(tuples[:,2], dtype="float")
+
+            r0s = sigmas*2.0**(1.0/6)
+            areas_per_ptype = 2.0 * np.sqrt(3.0) * (r0s/2)**2*numbers
+            area_guv = np.sum(areas_per_ptype)
+            radius = np.sqrt(area_guv/(np.pi*4))
+            points = sunflower_sphere_points(int(np.sum(numbers)))
+            namearray = list(itertools.chain.from_iterable(itertools.repeat(name, number) for name, number in zip(possible_names, numbers)))
+            print(f"setting up a GUV with the radius = {radius:.3f} from {int(np.sum(numbers))} particles")
+
+            assert len(points) == np.sum(numbers)
             assert all(radius < box_dims/2)
-            namearray = np.random.choice(possible_names, len(points), p=possibilities) # basically list of names
+            
             if sum([1 for _,v in self.particle_prms.items() if "guvseparated" in v["dist"]]):
+                print("generating a sorted GUV")
                 namearray = sorted(namearray)
+            else:
+                import random
+                value_changes = []
+                N = 500
+                print(f"checking {N} possible combinations for largest variation")
+                for _ in range(N):
+                    random.shuffle(namearray)
+                    value_changes.append((np.where(np.roll(namearray,1)!=namearray)[0].size, namearray))
+                value_changes = np.array(value_changes, dtype='object')
+                largest_var = np.argmax(value_changes[:,0].astype(int))
+                print(f"found largest variation in {largest_var} with {value_changes[largest_var,0]} value changes")
+                namearray = value_changes[np.argmax(value_changes[:,0].astype(int)),1]
+                del value_changes
 
             for name, point in zip(namearray, points):
                 particle_ff = self.particle_prms[name]
@@ -495,6 +516,8 @@ class Controller():
             self.system.particles[-1].rotation_bound = row["rotation_bound"]
             self.system.particles[-1].surface_affinity_translation = row["surface_affinity_translation"]
             self.system.particles[-1].surface_affinity_rotation = row["surface_affinity_rotation"]
+            self.system.particles[-1].self_affinity = row["self_affinity"]
+            self.system.particles[-1].other_affinity = row["other_affinity"]
         
         self.setupCells()
         self.placeParticlesInCells()
@@ -642,7 +665,9 @@ class Controller():
             kappa = np.array([p.kappa for p in self.system.particles], dtype=np.float32),
             gamma = np.array([p.gamma for p in self.system.particles], dtype=np.float32),
             surface_affinity_translation = np.array([p.surface_affinity_translation for p in self.system.particles], dtype=np.float32),
-            surface_affinity_rotation = np.array([p.surface_affinity_rotation for p in self.system.particles], dtype=np.float32)
+            surface_affinity_rotation = np.array([p.surface_affinity_rotation for p in self.system.particles], dtype=np.float32),
+            self_affinity = np.array([p.self_affinity for p in self.system.particles], dtype=np.float32),
+            other_affinity = np.array([p.other_affinity for p in self.system.particles], dtype=np.float32)
         ))
 
         if analysis or self.direct_analysis:

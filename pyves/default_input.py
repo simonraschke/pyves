@@ -34,7 +34,9 @@ _particle_string = \
         "bound_translation" : null,
         "bound_rotation" : null,
         "surface_affinity_translation" : 0,
-        "surface_affinity_rotation" : 0
+        "surface_affinity_rotation" : 0,
+        "self_affinity" : 1.01,
+        "other_affinity" : 0.99
     }
 }
 """

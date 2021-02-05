@@ -365,6 +365,8 @@ void bind_particle(py::module& m)
         .def_readwrite("name", &Particle::name)
         .def_readwrite("surface_affinity_translation", &Particle::surface_affinity_translation)
         .def_readwrite("surface_affinity_rotation", &Particle::surface_affinity_rotation)
+        .def_readwrite("self_affinity", &Particle::self_affinity)
+        .def_readwrite("other_affinity", &Particle::other_affinity)
         .def_readonly("neighbors", &Particle::neighbors)
         .def_property_readonly("x", &Particle::getx)//, &Particle::setx)
         .def_property_readonly("y", &Particle::gety)//, &Particle::sety)
@@ -373,6 +375,7 @@ void bind_particle(py::module& m)
         .def_property_readonly("uy", &Particle::getuy)
         .def_property_readonly("uz", &Particle::getuz)
         .def("__repr__", &Particle::repr)
+        .def("detailed_repr", &Particle::detailed_repr)
     ;
 }
 

@@ -541,23 +541,67 @@ namespace _pyves
 
     void System::exchangeParticles(Particle& a, Particle& b)
     {
-        // std::cout <<"before " << box.distance(a.position, b.position) << "\n";
-        b.position = std::exchange(a.position, b.position);
-        b.orientation = std::exchange(a.orientation, b.orientation);
+        // 2 possible ways:
+        // a) either exchange position and neighbour list (too complicated combined with linked cell-lists)
+        // b) or exchange parameters and name (done here)
+
+        if(a.position_bound_radius_squared < std::numeric_limits<REAL>::max()/2  ||  a.orientation_bound_radiant < std::numeric_limits<REAL>::max()/2)
+        {
+            throw std::logic_error("cant exchange particle with restricted movement");
+        }
+        if(b.position_bound_radius_squared < std::numeric_limits<REAL>::max()/2  ||  b.orientation_bound_radiant < std::numeric_limits<REAL>::max()/2)
+        {
+            throw std::logic_error("cant exchange particle with restricted movement");
+        }
+
+        // paramters
+        // b.orientation = std::exchange(a.orientation, b.orientation);
         b.sigma = std::exchange(a.sigma, b.sigma);
         b.epsilon = std::exchange(a.epsilon, b.epsilon);
         b.kappa = std::exchange(a.kappa, b.kappa);
         b.gamma = std::exchange(a.gamma, b.gamma);
-
-        b.position_bound_radius_squared = std::exchange(a.position_bound_radius_squared, b.position_bound_radius_squared);
-        b.orientation_bound_radiant = std::exchange(a.orientation_bound_radiant, b.orientation_bound_radiant);
-
         b.surface_affinity_translation = std::exchange(a.surface_affinity_translation, b.surface_affinity_translation);
         b.surface_affinity_rotation = std::exchange(a.surface_affinity_rotation, b.surface_affinity_rotation);
+        b.self_affinity = std::exchange(a.self_affinity, b.self_affinity);
+        b.other_affinity = std::exchange(a.other_affinity, b.other_affinity);
+        
+        std::swap(a.initial_position, b.initial_position);
+        std::swap(a.initial_orientation, b.initial_orientation);
 
+        // name
         b.name = std::exchange(a.name, b.name);
-        // std::cout <<"after  "  << box.distance(a.position, b.position) << "\n\n";
+
+        // position
+        // b.position = std::exchange(a.position, b.position);
+
+        // neighbors
+        // b.neighbors = std::exchange(a.neighbors, b.neighbors);
     }
+
+
+
+    // void System::exchangeParticles(Particle& a, Particle& b)
+    // {
+    //     // std::cout <<"before " << box.distance(a.position, b.position) << "\n";
+    //     b.position = std::exchange(a.position, b.position);
+    //     b.orientation = std::exchange(a.orientation, b.orientation);
+    //     b.sigma = std::exchange(a.sigma, b.sigma);
+    //     b.epsilon = std::exchange(a.epsilon, b.epsilon);
+    //     b.kappa = std::exchange(a.kappa, b.kappa);
+    //     b.gamma = std::exchange(a.gamma, b.gamma);
+
+    //     b.position_bound_radius_squared = std::exchange(a.position_bound_radius_squared, b.position_bound_radius_squared);
+    //     b.orientation_bound_radiant = std::exchange(a.orientation_bound_radiant, b.orientation_bound_radiant);
+
+    //     b.surface_affinity_translation = std::exchange(a.surface_affinity_translation, b.surface_affinity_translation);
+    //     b.surface_affinity_rotation = std::exchange(a.surface_affinity_rotation, b.surface_affinity_rotation);
+
+    //     b.self_affinity = std::exchange(a.self_affinity, b.self_affinity);
+    //     b.other_affinity = std::exchange(a.other_affinity, b.other_affinity);
+
+    //     b.name = std::exchange(a.name, b.name);
+    //     // std::cout <<"after  "  << box.distance(a.position, b.position) << "\n\n";
+    // }
 
 
 
@@ -572,8 +616,34 @@ namespace _pyves
             throw std::runtime_error("System::global_exchange_epot_theshold is NaN");
         }
 
+        static const bool exchange_is_possible = [&](){
+            using std::string;
+            std::unordered_set<std::string> set;
+            for (const Particle& p : particles)
+            {
+                if(   p.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2  
+                   && p.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2
+                )
+                {
+                    set.insert(p.name);
+                }
+            }
+            const string explanation = (set.size() >= 2) ? string("possible") : string("impossible");
+            std::cout << "exchange is " << explanation << " with " << set.size() << " unique exchangeable particles\n";
+            return set.size() >= 2;
+        }();
+
+        if(!exchange_is_possible)
+        {
+            return;
+        }
+
         auto is_valid = [&](const Particle& p) -> bool { 
             return totalEnergy(p)  <  global_exchange_epot_theshold  &&  p.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2  &&  p.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2;
+        };
+
+        auto is_valid_partner = [&](const Particle& p, const Particle& partner) -> bool { 
+            return totalEnergy(p)  <  global_exchange_epot_theshold  &&  p.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2  &&  p.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2 && (p.name != partner.name);
         };
 
         std::size_t num_particle_exchanges = particles.size()*global_exchange_ratio;
@@ -600,7 +670,7 @@ namespace _pyves
             
             {
                 std::size_t not_found = 0;
-                while((!is_valid(candidates.at(1))) or (candidates[0].get() == candidates[1].get()))
+                while((!is_valid_partner(candidates.at(1), candidates.at(0))) or (candidates[0].get() == candidates[1].get()))
                 {
                     candidates[1] = randomParticles(1).at(0);
                     if(++not_found > particles.size())
@@ -627,6 +697,7 @@ namespace _pyves
                 else
                 {
                     // std::cout << "exchange accepted. delta E " << epot_after - epot_before << " with distance " << box.distance(candidates[0].get().position, candidates[1].get().position) << "\n";
+                    // std::cout << "exchange accepted: " << candidates[0].get().name << " and " << candidates[1].get().name << "\n";
                 }
             }
         }

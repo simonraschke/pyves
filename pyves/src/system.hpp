@@ -19,6 +19,7 @@ namespace py = pybind11;
 #include <chrono>
 #include <thread>
 #include <mutex>
+#include <unordered_set>
 
 #ifdef PYVES_USE_TBB
 #include "parallel.hpp"
