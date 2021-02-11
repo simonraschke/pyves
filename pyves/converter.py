@@ -66,7 +66,7 @@ def hdf2gro(inpath, outpath, atom_repr={}, box=None, prmspath=None, time_range=[
         for key in keys:
             time = key.split(group_prefix)[-1]
             if min(time_range) <= int(time) <= max(time_range):
-                df = store.get(key)
+                df = store.get(key).sort_values(by=['name'])
 
                 atom = 1
                 residue = 1
