@@ -211,7 +211,7 @@ bool Particle::assertIntegrity() const
 std::string Particle::repr() const
 {
     std::stringstream ss;
-    ss  << "<Particle " << name << " (REAL=" << type_name<REAL>() << ") at " << position.format(VECTORFORMAT)
+    ss  << "<Particle " << name << " at " << position.format(VECTORFORMAT)
         << " in " << orientation.format(VECTORFORMAT) << " direction>";
     return ss.str();
 }
@@ -222,9 +222,9 @@ std::string Particle::detailed_repr() const
 {
     return repr() + 
     #if __cplusplus <= 201703L
-        string_format(") direction with sigma=%f eps=%f kappa=%f gamma=%f>", sigma, epsilon, kappa, gamma);
+        string_format(" direction with sigma=%f eps=%f kappa=%f gamma=%f>", sigma, epsilon, kappa, gamma);
     #else
-        std::format(") direction with sigma={} eps={} kappa={} gamma={}>", sigma, epsilon, kappa, gamma);
+        std::format(" direction with sigma={} eps={} kappa={} gamma={}>", sigma, epsilon, kappa, gamma);
     #endif
 }  
 

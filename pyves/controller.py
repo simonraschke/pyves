@@ -20,9 +20,6 @@
 import json
 import os
 import sys
-
-from numpy.core.numeric import array_equal
-from numpy.lib.arraysetops import unique
 import _pyves
 import numpy as np
 import pandas as pd
@@ -218,9 +215,14 @@ class Controller():
         self.prms_complete = _prms
         self.system.threads = _prms["hardware"]["threads"]
 
-        self.system.temperature = _prms["system"]["temperature"]        
-        self.system.global_exchange_ratio = _prms["system"].get("global_exchange_ratio", 0.0)
-        self.system.global_exchange_epot_theshold = _prms["system"].get("global_exchange_epot_theshold", -1.0)
+        self.system.exchange_global_number = _prms["system"]["exchange"]["global"].get("number", 0)
+        self.system.exchange_global_etot_theshold = _prms["system"]["exchange"]["global"].get("etot_threshold", -1.0)
+        self.system.exchange_global_orientation = _prms["system"]["exchange"]["global"].get("orientation", False)
+        self.system.exchange_local_number = _prms["system"]["exchange"]["local"].get("number", 0)
+        self.system.exchange_local_etot_theshold = _prms["system"]["exchange"]["local"].get("etot_threshold", -1.0)
+        self.system.exchange_local_orientation = _prms["system"]["exchange"]["local"].get("orientation", False)        
+
+        self.system.temperature = _prms["system"]["temperature"]
         self.system.box.x = _prms["system"]["box"]["x"]
         self.system.box.y = _prms["system"]["box"]["y"]
         self.system.box.z = _prms["system"]["box"]["z"]
@@ -545,6 +547,7 @@ class Controller():
 
 
     def sample(self, steps=None, timestats=False, analysis=False):
+        # print("sampling")
         if not SignalHandler.ProgramState == ProgramState.SHUTDOWN:
             SignalHandler.ProgramState = ProgramState.RUNNING
 
@@ -604,8 +607,12 @@ class Controller():
         self.system.box.y = metadata["box.y"]
         self.system.box.z = metadata["box.z"]
         self.system.temperature = metadata["temperature"]
-        self.system.global_exchange_ratio = metadata["global_exchange_ratio"]
-        self.system.global_exchange_epot_theshold = metadata["global_exchange_epot_theshold"]
+        self.system.exchange_global_number = metadata["exchange.global.number"]
+        self.system.exchange_global_etot_theshold = metadata["exchange.global.etot_theshold"]
+        self.system.exchange_global_orientation = metadata["exchange.global.orientation"]
+        self.system.exchange_local_number = metadata["exchange.local.number"]
+        self.system.exchange_local_etot_theshold = metadata["exchange.local.etot_theshold"]
+        self.system.exchange_local_orientation = metadata["exchange.local.orientation"]
         self.time_actual = metadata["time"]
 
 
@@ -617,8 +624,12 @@ class Controller():
         metadata["box.z"] = self.system.box.z
         metadata["threads"] = self.system.threads
         metadata["temperature"] = self.system.temperature
-        metadata["global_exchange_ratio"] = self.system.global_exchange_ratio
-        metadata["global_exchange_epot_theshold"] = self.system.global_exchange_epot_theshold
+        metadata["exchange.global.number"] = self.system.exchange_global_number
+        metadata["exchange.global.etot_theshold"] = self.system.exchange_global_etot_theshold
+        metadata["exchange.global.orientation"] = self.system.exchange_global_orientation
+        metadata["exchange.local.number"] = self.system.exchange_local_number
+        metadata["exchange.local.etot_theshold"] = self.system.exchange_local_etot_theshold
+        metadata["exchange.local.orientation"] = self.system.exchange_local_orientation
         metadata["translation_step"] = self.system.translation()
         metadata["rotation_step"] = self.system.rotation()
         metadata["interaction.cutoff"] = self.system.interaction_cutoff

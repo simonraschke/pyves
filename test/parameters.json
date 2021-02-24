@@ -6,8 +6,21 @@
     "system" : 
     {
         "temperature" : 0.20,
-        "global_exchange_ratio" : 0.05,
-        "global_exchange_epot_theshold" : -1.0,
+        "exchange" :
+        {
+            "global" :
+            {
+                "number" : 10,
+                "etot_threshold" : -1.0,
+                "orientation" : false
+            },
+            "local" :
+            {
+                "number" : 10,
+                "etot_threshold" : -1.0,
+                "orientation" : false
+            }
+        },
         "box" : 
         {
             "x" : 20,

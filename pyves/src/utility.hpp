@@ -4,6 +4,8 @@
 #include <string>
 #include <stdexcept>
 #include <limits>
+#include <random>
+#include <iterator>
 
 
 
@@ -47,7 +49,7 @@ namespace _pyves
     { 
         return std::numeric_limits<T>::signaling_NaN(); 
     }
-
+    
 
 
 #if __cplusplus < 201703L

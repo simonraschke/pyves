@@ -54,8 +54,15 @@ namespace _pyves
         REAL interaction_surface_width = 0;
         REAL temperature = make_nan<REAL>();
         REAL neighbor_cutoff = make_nan<REAL>();
-        REAL global_exchange_ratio = make_nan<REAL>();
-        REAL global_exchange_epot_theshold = make_nan<REAL>();
+
+        std::size_t exchange_global_number = 0;
+        REAL exchange_global_etot_theshold = make_nan<REAL>();
+        bool exchange_global_orientation = false;
+
+        std::size_t exchange_local_number = 0;
+        REAL exchange_local_etot_theshold = make_nan<REAL>();
+        bool exchange_local_orientation = false;
+
         std::size_t threads = make_nan<std::size_t>();
         std::size_t _cell_update_step_count = 0;
         std::size_t cell_update_interval = make_nan<std::size_t>();
@@ -71,9 +78,14 @@ namespace _pyves
         bool assertIntegrity();
         void cellStep(const Cell&);
         Cell& cellOfParticle(const Particle&);
-        void exchangeParticles(Particle&, Particle&);
+        // void exchangeParticlesWithOrientation(Particle&, Particle&);
+        Particle& randomParticle();
         ParticleRefContainer randomParticles(std::size_t num);
+
+        void exchangeParticleParameters(Particle&, Particle&, bool);
+        void localExchange();
         void globalExchange();
+
         void shuffle();
         void reorderCells();
         void makeNeighborLists();

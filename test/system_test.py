@@ -29,7 +29,7 @@ class MainTest(unittest.TestCase):
         print(sys.particles[0].detailed_repr())
         print(sys.particles[1].detailed_repr())
 
-        sys.exchangeParticles(sys.particles[0], sys.particles[1])
+        sys.exchangeParticleParameters(sys.particles[0], sys.particles[1])
         print(sys.particles[0].detailed_repr())
         print(sys.particles[1].detailed_repr())
 
@@ -47,8 +47,8 @@ class MainTest(unittest.TestCase):
     def test_global_exchange(self):
         sys = pyves.System()
         sys.temperature = 0.3
-        sys.global_exchange_ratio = 1.0
-        sys.global_exchange_epot_theshold = 100000
+        sys.exchange_global_number = 50
+        sys.exchange_global_etot_theshold = 100000
         sys.box = pyves.BoxPBC(10,10,10)
         sys.particles.append(pyves.Particle([1,1,1], [1,1,0], sigma=1, kappa=1, eps=1, name="A", gamma=np.pi/5))        
         sys.particles.append(pyves.Particle([2.1224,1,1], [1,-1,0], sigma=1, kappa=1, eps=1, name="B", gamma=np.pi/4))
@@ -65,10 +65,10 @@ class MainTest(unittest.TestCase):
         self.assertAlmostEqual(sys.particles[0].orientation[2], 0.0/np.linalg.norm([1,1,0]), 5)
 
         print("\n------------------------")
-        print("sys.global_exchange_ratio", sys.global_exchange_ratio)
+        print("sys.exchange_global_number", sys.exchange_global_number)
         print("sys.particles.size", len(sys.particles))
         print("------------------------")
-        sys.exchangeParticles(sys.particles[0], sys.particles[1])
+        sys.exchangeParticleParameters(sys.particles[0], sys.particles[1])
 
         self.assertAlmostEqual(sys.particles[1].x, 2.1224, 5)
         self.assertAlmostEqual(sys.particles[1].y, 1.0, 5)
@@ -98,7 +98,7 @@ class MainTest(unittest.TestCase):
         #     pyves.Particle([1,1,1], [1,.5,0], sigma=1, kappa=1, eps=1, name="A", gamma=0),
         # ]
         # ctrl.system.temperature = 0.3
-        # ctrl.system.global_exchange_ratio = 1.0
+        # ctrl.system.exchange_global_ratio = 1.0
         # ctrl.system.box = pyves.BoxPBC(10,10,10)
         # ctrl.system.particles.append(pyves.Particle([1,1,1], [1,.5,0], sigma=1, kappa=1, eps=1, name="A", gamma=0))
         # ctrl.system.particles.append(pyves.Particle([2.1224,1,1], [1,-0.5,0], sigma=1, kappa=1, eps=1, name="B", gamma=0))

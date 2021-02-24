@@ -89,6 +89,7 @@ namespace _pyves
         prepareSimulationStep();
         applyToCells([&](const Cell& c){ cellStep(c);});
 #endif
+        localExchange();
         globalExchange();
 
         ++_cell_update_step_count;
@@ -127,38 +128,6 @@ namespace _pyves
         executor->run(taskflow).get();
 #endif
     }
-
-
-
-    // void System::reorderCell(Cell& cell)
-    // {
-    //     // std::cout << cell.repr() << "\n";
-    //     auto leavers = cell.particlesOutOfBounds();
-        
-    //     for(Particle& leaver : leavers)
-    //     {
-    //         bool was_added = false;
-    //         // std::cout << cell.proximity.size() << "\n";
-    //         for(Cell& proximity_cell : cell.proximity)
-    //         {
-    //             // std::cout << " " << proximity_cell.repr() << "\n";
-    //             was_added = proximity_cell.try_add(leaver);
-    //             if(was_added) 
-    //             {
-    //                 break;
-    //             }
-    //         }
-    //         if(!was_added)
-    //         {
-    //             throw std::logic_error("Particle out of bound was not added to another cell\n" + leaver.repr() +" and " + cell.repr());
-    //         }
-    //         assert(was_added);
-    //         cell.removeParticle(leaver);
-    //         assert(!cell.contains(leaver));
-    //     }
-    //     // cell.state = (cell.particles.size() > 0) ? CellState::IDLE : CellState::FINISHED;
-    //     // cell.shuffle(); 
-    // }
 
 
 
@@ -539,23 +508,38 @@ namespace _pyves
 
 
 
-    void System::exchangeParticles(Particle& a, Particle& b)
+    Particle& System::randomParticle()
+    {
+        return random(particles);
+    }
+
+
+
+    void System::exchangeParticleParameters(Particle& a, Particle& b, bool orientation = false)
     {
         // 2 possible ways:
-        // a) either exchange position and neighbour list (too complicated combined with linked cell-lists)
+        // a) either exchange position and neighbour list (too complicated with large overhead combined with linked cell-lists)
         // b) or exchange parameters and name (done here)
 
         if(a.position_bound_radius_squared < std::numeric_limits<REAL>::max()/2  ||  a.orientation_bound_radiant < std::numeric_limits<REAL>::max()/2)
         {
             throw std::logic_error("cant exchange particle with restricted movement");
         }
-        if(b.position_bound_radius_squared < std::numeric_limits<REAL>::max()/2  ||  b.orientation_bound_radiant < std::numeric_limits<REAL>::max()/2)
+        else if(b.position_bound_radius_squared < std::numeric_limits<REAL>::max()/2  ||  b.orientation_bound_radiant < std::numeric_limits<REAL>::max()/2)
         {
             throw std::logic_error("cant exchange particle with restricted movement");
         }
+        else if(a == b)
+        {
+            throw std::logic_error("cant exchange one particle with itself");
+        }
 
         // paramters
-        // b.orientation = std::exchange(a.orientation, b.orientation);
+        if(orientation)
+        {
+            b.orientation = std::exchange(a.orientation, b.orientation);
+        }
+
         b.sigma = std::exchange(a.sigma, b.sigma);
         b.epsilon = std::exchange(a.epsilon, b.epsilon);
         b.kappa = std::exchange(a.kappa, b.kappa);
@@ -570,53 +554,13 @@ namespace _pyves
 
         // name
         b.name = std::exchange(a.name, b.name);
-
-        // position
-        // b.position = std::exchange(a.position, b.position);
-
-        // neighbors
-        // b.neighbors = std::exchange(a.neighbors, b.neighbors);
     }
 
 
-
-    // void System::exchangeParticles(Particle& a, Particle& b)
-    // {
-    //     // std::cout <<"before " << box.distance(a.position, b.position) << "\n";
-    //     b.position = std::exchange(a.position, b.position);
-    //     b.orientation = std::exchange(a.orientation, b.orientation);
-    //     b.sigma = std::exchange(a.sigma, b.sigma);
-    //     b.epsilon = std::exchange(a.epsilon, b.epsilon);
-    //     b.kappa = std::exchange(a.kappa, b.kappa);
-    //     b.gamma = std::exchange(a.gamma, b.gamma);
-
-    //     b.position_bound_radius_squared = std::exchange(a.position_bound_radius_squared, b.position_bound_radius_squared);
-    //     b.orientation_bound_radiant = std::exchange(a.orientation_bound_radiant, b.orientation_bound_radiant);
-
-    //     b.surface_affinity_translation = std::exchange(a.surface_affinity_translation, b.surface_affinity_translation);
-    //     b.surface_affinity_rotation = std::exchange(a.surface_affinity_rotation, b.surface_affinity_rotation);
-
-    //     b.self_affinity = std::exchange(a.self_affinity, b.self_affinity);
-    //     b.other_affinity = std::exchange(a.other_affinity, b.other_affinity);
-
-    //     b.name = std::exchange(a.name, b.name);
-    //     // std::cout <<"after  "  << box.distance(a.position, b.position) << "\n\n";
-    // }
-
-
-
-    void System::globalExchange()
+    
+    void System::localExchange()
     {
-        if(std::isnan(global_exchange_ratio))
-        {
-            throw std::runtime_error("System::global_exchange_ratio is NaN");
-        }
-        else if(global_exchange_ratio > 1e-5 && std::isnan(global_exchange_epot_theshold))
-        {
-            throw std::runtime_error("System::global_exchange_epot_theshold is NaN");
-        }
-
-        static const bool exchange_is_possible = [&](){
+        static const bool exchange_is_possible = [&]{
             using std::string;
             std::unordered_set<std::string> set;
             for (const Particle& p : particles)
@@ -629,7 +573,143 @@ namespace _pyves
                 }
             }
             const string explanation = (set.size() >= 2) ? string("possible") : string("impossible");
-            std::cout << "exchange is " << explanation << " with " << set.size() << " unique exchangeable particles\n";
+            std::cout << "local exchange is " << explanation << " with " << set.size() << " unique exchangeable particles\n";
+            return set.size() >= 2;
+        }();
+
+        if(!exchange_is_possible)
+        {
+            // std::cout << "exchange impossible" << "\n";
+            return;
+        }
+        else if( exchange_local_number == 0 )
+        {
+            // std::cout << "exchange_local_number " << exchange_local_number << "\n";
+            return;
+        }
+        else if((exchange_local_number > 0) && std::isnan(exchange_local_etot_theshold))
+        {
+            throw std::runtime_error("System::exchange_local_etot_theshold is NaN");
+        }
+
+        auto is_valid_origin = [&](const Particle& origin) -> bool { 
+            return (totalEnergy(origin) < exchange_local_etot_theshold)
+                && (origin.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2)
+                && (origin.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2) 
+                && std::any_of(std::begin(origin.neighbors), std::end(origin.neighbors), [&origin] (const Particle& n){
+                        return (n.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2)  
+                            && (n.orientation_bound_radiant > std::numeric_limits<REAL>::max()) 
+                            && (n.name != origin.name);
+                    })
+            ;
+        };
+
+        auto is_valid_compare = [&](const Particle& compare, const Particle& origin) -> bool { 
+            return (totalEnergy(compare) < exchange_local_etot_theshold)  
+                && (compare.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2 ) 
+                && (compare.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2 )
+                && (compare.name != origin.name);
+        };
+
+
+        
+        ParticleRefContainer relevant_origins;
+        for(Particle& p : particles)
+        {
+            if(is_valid_origin(p))
+            {
+                std::cout << p.detailed_repr();
+                std::cout << " is valid";
+                relevant_origins.emplace_back(std::ref(p));
+                std::cout << "\n";
+            }
+        }
+        if(relevant_origins.empty())
+        {
+            return;
+        }
+
+        std::cout << "local exchange steps " << exchange_local_number << "\n";
+        for(decltype(exchange_local_number) i = 0; i < exchange_local_number; ++i)
+        {
+            std::cout << "trying to exchange particles locally iteration " << i << "\n";
+            // std::reference_wrapper<Particle> origin = random(relevant_origins);
+            
+            // std::copy_if(
+            //     std::begin(particles), 
+            //     std::end(particles), 
+            //     std::back_inserter(relevant_particles), 
+            //     [&](const Particle& o) { return is_valid_origin(o); }
+            // );
+            std::cout << relevant_origins.size() << "\n";
+            std::reference_wrapper<Particle> origin = random(relevant_origins);
+            std::cout <<"random " << origin.get().repr() << "\n";
+
+            {
+                auto limit = particles.size();
+                while(!is_valid_origin(origin))
+                {
+                    if(! (--limit))
+                    {
+                        std::cout << "no particle found, return\n";
+                        return;
+                    }
+                    origin = random(relevant_origins);
+                }
+            }
+
+            ParticleRefContainer relevant_neighbors;
+            std::copy_if(
+                std::begin(origin.get().neighbors), 
+                std::end(origin.get().neighbors), 
+                std::back_inserter(relevant_neighbors), 
+                [&](const Particle& c) { return is_valid_compare(c, origin); }
+            );
+            std::reference_wrapper<Particle> compare = random(relevant_neighbors);
+
+            {
+                const auto epot_before = totalEnergy(origin) + totalEnergy(compare);
+                exchangeParticleParameters(origin, compare, exchange_local_orientation);
+                const auto epot_after = totalEnergy(origin) + totalEnergy(compare);
+
+                const bool accepted = ((epot_after - epot_before) < 0) ? true : acceptByMetropolis(epot_after - epot_before, temperature);
+                if(!accepted)
+                {
+                    // std::cout << "exchange declined: " << origin.get().repr()  << compare.get().repr();
+                    exchangeParticleParameters(origin, compare, exchange_local_orientation);
+                }
+                else
+                {
+                    std::cout << "exchanged 2 neighbors\n";
+                }
+            }
+
+            // relevant_origins.erase( std::remove(std::begin(relevant_origins), std::end(relevant_origins), origin.get()), std::end(relevant_origins));
+            relevant_origins.erase( std::remove_if(std::begin(relevant_origins), std::end(relevant_origins), [&](const Particle& to_compare)
+            { 
+                return origin.get() == to_compare;
+            ;}), std::end(relevant_origins));
+        }
+    }
+
+
+    
+    void System::globalExchange()
+    {
+        static const bool exchange_is_possible = [&]{
+            using std::string;
+            std::unordered_set<std::string> set;
+            for (const Particle& p : particles)
+            {
+                if(   p.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2  
+                   && p.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2
+                )
+                {
+                    set.insert(p.name);
+                }
+            }
+            const string explanation = (set.size() >= 2) ? string("possible") : string("impossible");
+            std::cout << "global exchange is " << explanation << " with " << set.size() << " unique exchangeable particles\n";
             return set.size() >= 2;
         }();
 
@@ -637,71 +717,71 @@ namespace _pyves
         {
             return;
         }
-
-        auto is_valid = [&](const Particle& p) -> bool { 
-            return totalEnergy(p)  <  global_exchange_epot_theshold  &&  p.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2  &&  p.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2;
-        };
-
-        auto is_valid_partner = [&](const Particle& p, const Particle& partner) -> bool { 
-            return totalEnergy(p)  <  global_exchange_epot_theshold  &&  p.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2  &&  p.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2 && (p.name != partner.name);
-        };
-
-        std::size_t num_particle_exchanges = particles.size()*global_exchange_ratio;
-        // if(global_exchange_ratio > 1e-5)
-        //     std::cout << "\n\n\n" <<particles.size() << "  " << global_exchange_ratio << "  " << num_particle_exchanges << "\n";
-
-        while(num_particle_exchanges--)
+        else if( exchange_global_number == 0 )
         {
-            ParticleRefContainer candidates = randomParticles(2);
-            // std::cout << "\nnum_particle_exchanges " << num_particle_exchanges << "\n";
-            
-            {
-                std::size_t not_found = 0; 
-                while(!is_valid(candidates.at(0)))
+            return;
+        }
+        else if((exchange_global_number > 0) && std::isnan(exchange_global_etot_theshold))
+        {
+            throw std::runtime_error("System::exchange_global_etot_theshold is NaN");
+        }
+
+        auto is_valid_origin = [&](const Particle& origin) -> bool { 
+            return (totalEnergy(origin)  <  exchange_global_etot_theshold)  
+                && (origin.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2)  
+                && (origin.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2);
+        };
+
+        auto is_valid_compare = [&](const Particle& compare, const Particle& origin) -> bool { 
+            return (totalEnergy(compare)  <  exchange_global_etot_theshold)  
+                && (compare.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2)  
+                && (compare.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2) 
+                && (compare.name != origin.name);
+        };
+
+
+
+        for(decltype(exchange_global_number) i = 0; i < exchange_global_number; ++i)
+        {
+            std::reference_wrapper<Particle> origin = randomParticle();
+            std::reference_wrapper<Particle> compare = randomParticle();
+
+            {   
+                auto limit = particles.size();
+                while(!is_valid_origin(origin))
                 {
-                    candidates[0] = randomParticles(1).at(0);
-                    if(++not_found > particles.size())
+                    if(! (--limit))
                     {
                         return;
                     }
+                    origin = randomParticle();
                 }
-                // std::cout << "1 found after " << not_found << "  " << candidates[0].get().repr() << "\n";
             }
-            
+
             {
-                std::size_t not_found = 0;
-                while((!is_valid_partner(candidates.at(1), candidates.at(0))) or (candidates[0].get() == candidates[1].get()))
+                auto limit = particles.size();
+                while(!is_valid_compare(compare, origin) or (compare.get() == origin.get()))
                 {
-                    candidates[1] = randomParticles(1).at(0);
-                    if(++not_found > particles.size())
+                    if(! (--limit))
                     {
                         return;
                     }
+                    compare = randomParticle();
                 }
-                // std::cout << "2 found after " << not_found  << "  " << candidates[1].get().repr() << "\n";
             }
-            
+
             {
-                const auto epot_before = totalEnergy(candidates[0]) + totalEnergy(candidates[1]);
-                // std::cout << "pre exchange" << "\n" << candidates[0].get().repr() << "\n" << candidates[1].get().repr() << "\n";
-                exchangeParticles(candidates[0], candidates[1]);
-                // std::cout << "post exchange" << "\n" << candidates[0].get().repr() << "\n" << candidates[1].get().repr() << "\n";
-                const auto epot_after = totalEnergy(candidates[0]) + totalEnergy(candidates[1]);
+                const auto epot_before = totalEnergy(origin) + totalEnergy(compare);
+                exchangeParticleParameters(origin, compare, exchange_global_orientation);
+                const auto epot_after = totalEnergy(origin) + totalEnergy(compare);
 
                 const bool accepted = ((epot_after - epot_before) < 0) ? true : acceptByMetropolis(epot_after - epot_before, temperature);
                 if(!accepted)
                 {
-                    // std::cout << "exchange declined. delta E " << epot_after - epot_before << " with distance " << box.distance(candidates[0].get().position, candidates[1].get().position) << "\n";
-                    exchangeParticles(candidates[0], candidates[1]);
-                }
-                else
-                {
-                    // std::cout << "exchange accepted. delta E " << epot_after - epot_before << " with distance " << box.distance(candidates[0].get().position, candidates[1].get().position) << "\n";
-                    // std::cout << "exchange accepted: " << candidates[0].get().name << " and " << candidates[1].get().name << "\n";
+                    exchangeParticleParameters(origin, compare, exchange_global_orientation);
                 }
             }
         }
-        // std::cout << "\n\n";
     }
 
 
@@ -756,14 +836,20 @@ namespace _pyves
             })
         ;
 
+
+
         py::bind_map<LookupTable_t>(m, "LookupTable");
 
         py::class_<System>(m, "System", py::dynamic_attr())
             .def(py::init<>())
             .def_property("threads", [](const System& s){ return s.threads; }, &System::setThreads)
             .def_readwrite("temperature", &System::temperature)
-            .def_readwrite("global_exchange_ratio", &System::global_exchange_ratio)
-            .def_readwrite("global_exchange_epot_theshold", &System::global_exchange_epot_theshold)
+            .def_readwrite("exchange_global_number", &System::exchange_global_number)
+            .def_readwrite("exchange_global_etot_theshold", &System::exchange_global_etot_theshold)
+            .def_readwrite("exchange_global_orientation", &System::exchange_global_orientation)
+            .def_readwrite("exchange_local_number", &System::exchange_local_number)
+            .def_readwrite("exchange_local_etot_theshold", &System::exchange_local_etot_theshold)
+            .def_readwrite("exchange_local_orientation", &System::exchange_local_orientation)
             .def_readwrite("box", &System::box)
             .def_readwrite("particles", &System::particles)
             .def_readwrite("interaction_cutoff", &System::interaction_cutoff)
@@ -782,8 +868,10 @@ namespace _pyves
             .def("prepareSimulationStep", &System::prepareSimulationStep)
             .def("singleSimulationStep", &System::singleSimulationStep)
             .def("multipleSimulationSteps", &System::multipleSimulationSteps)
-            .def("exchangeParticles", &System::exchangeParticles)
+            .def("exchangeParticleParameters", &System::exchangeParticleParameters, py::arg("a"), py::arg("b"), py::arg("orientation") = bool(false))
+            .def("localExchange", &System::localExchange)
             .def("globalExchange", &System::globalExchange)
+            .def("randomParticle", &System::randomParticle, py::return_value_policy::reference)
             .def("randomParticles", &System::randomParticles)
             .def("makeLookupTableFrom", &System::makeInteractionLookupTable)
             .def("makeNeighborLists", &System::makeNeighborLists)

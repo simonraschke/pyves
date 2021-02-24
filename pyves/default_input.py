@@ -44,12 +44,33 @@ default_particle = json.loads(_particle_string)
 
 
 
+_exchange_str = \
+"""
+{
+    "global" :
+    {
+        "number" : 1,
+        "etot_threshold" : -4.0,
+        "orientation" : false
+    },
+    "local" :
+    {
+        "number" : 1,
+        "etot_threshold" : -4.0,
+        "orientation" : false
+    }
+}
+"""
+default_exchange = json.loads(_exchange_str)
+
+
+
 _system_str = \
 """
 {
+    "exchange" : {
+    },
     "temperature" : 0.20,
-    "global_exchange_ratio" : 0.05,
-    "global_exchange_epot_theshold" : -1.0,
     "box" : 
     {
         "x" : 20,
@@ -82,6 +103,7 @@ _system_str = \
 """
 default_system = json.loads(_system_str)
 deep_update(default_system, {"particles":default_particle})
+deep_update(default_system, {"exchange":default_exchange})
 
 
 

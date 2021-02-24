@@ -84,8 +84,8 @@ A parameter file `some_parameters.json` could look as follows (remember comments
     "system" :                                  // Monte Carlo system parameters
     {   
         "temperature" : 0.20,                   // global system temperature
-        "global_exchange_ratio" : 0.05,         // ratio of global exchange MC steps. 0.05 will generate an additional 5% global MC steps
-        "global_exchange_epot_theshold": -1.0,  // epot threshold below which global exchange is possible (to avoid exchange of free beads)
+        "exchange_global_ratio" : 0.05,         // ratio of global exchange MC steps. 0.05 will generate an additional 5% global MC steps
+        "exchange_global_etot_theshold": -1.0,  // epot threshold below which global exchange is possible (to avoid exchange of free beads)
         "box" :                                 // box size for periodic boundary distance calculations
         {   
             "x" : 20,   
