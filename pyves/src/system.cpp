@@ -579,12 +579,10 @@ namespace _pyves
 
         if(!exchange_is_possible)
         {
-            // std::cout << "exchange impossible" << "\n";
             return;
         }
         else if( exchange_local_number == 0 )
         {
-            // std::cout << "exchange_local_number " << exchange_local_number << "\n";
             return;
         }
         else if((exchange_local_number > 0) && std::isnan(exchange_local_etot_theshold))
@@ -592,17 +590,6 @@ namespace _pyves
             throw std::runtime_error("System::exchange_local_etot_theshold is NaN");
         }
 
-        auto is_valid_origin = [&](const Particle& origin) -> bool { 
-            return (totalEnergy(origin) < exchange_local_etot_theshold)
-                && (origin.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2)
-                && (origin.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2) 
-                && std::any_of(std::begin(origin.neighbors), std::end(origin.neighbors), [&origin] (const Particle& n){
-                        return (n.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2)  
-                            && (n.orientation_bound_radiant > std::numeric_limits<REAL>::max()) 
-                            && (n.name != origin.name);
-                    })
-            ;
-        };
 
         auto is_valid_compare = [&](const Particle& compare, const Particle& origin) -> bool { 
             return (totalEnergy(compare) < exchange_local_etot_theshold)  
@@ -611,39 +598,19 @@ namespace _pyves
                 && (compare.name != origin.name);
         };
 
+        auto is_valid_origin = [&](const Particle& origin) -> bool { 
+            return (totalEnergy(origin) < exchange_local_etot_theshold)
+                && (origin.position_bound_radius_squared > std::numeric_limits<REAL>::max()/2)
+                && (origin.orientation_bound_radiant > std::numeric_limits<REAL>::max()/2) 
+                && std::any_of(std::begin(origin.neighbors), std::end(origin.neighbors), [&] (const Particle& n){ return is_valid_compare(n, origin); })
+            ;
+        };
 
-        
-        ParticleRefContainer relevant_origins;
-        for(Particle& p : particles)
-        {
-            if(is_valid_origin(p))
-            {
-                std::cout << p.detailed_repr();
-                std::cout << " is valid";
-                relevant_origins.emplace_back(std::ref(p));
-                std::cout << "\n";
-            }
-        }
-        if(relevant_origins.empty())
-        {
-            return;
-        }
 
-        std::cout << "local exchange steps " << exchange_local_number << "\n";
+
         for(decltype(exchange_local_number) i = 0; i < exchange_local_number; ++i)
         {
-            std::cout << "trying to exchange particles locally iteration " << i << "\n";
-            // std::reference_wrapper<Particle> origin = random(relevant_origins);
-            
-            // std::copy_if(
-            //     std::begin(particles), 
-            //     std::end(particles), 
-            //     std::back_inserter(relevant_particles), 
-            //     [&](const Particle& o) { return is_valid_origin(o); }
-            // );
-            std::cout << relevant_origins.size() << "\n";
-            std::reference_wrapper<Particle> origin = random(relevant_origins);
-            std::cout <<"random " << origin.get().repr() << "\n";
+            std::reference_wrapper<Particle> origin = random(particles);
 
             {
                 auto limit = particles.size();
@@ -651,22 +618,33 @@ namespace _pyves
                 {
                     if(! (--limit))
                     {
-                        std::cout << "no particle found, return\n";
                         return;
                     }
-                    origin = random(relevant_origins);
+                    origin = random(particles);
                 }
             }
 
-            ParticleRefContainer relevant_neighbors;
-            std::copy_if(
-                std::begin(origin.get().neighbors), 
-                std::end(origin.get().neighbors), 
-                std::back_inserter(relevant_neighbors), 
-                [&](const Particle& c) { return is_valid_compare(c, origin); }
-            );
-            std::reference_wrapper<Particle> compare = random(relevant_neighbors);
+            bool no_neighbor_found = false;
+            std::reference_wrapper<Particle> compare = random(origin.get().neighbors);
 
+            {
+                auto limit = particles.size();
+                while(!is_valid_compare(compare, origin))
+                {
+                    if(! (--limit))
+                    {
+                        no_neighbor_found = true;
+                        break;
+                    }
+                    compare = random(origin.get().neighbors);
+                }
+            }
+
+            if(no_neighbor_found)
+            {
+                continue;
+            }
+            else
             {
                 const auto epot_before = totalEnergy(origin) + totalEnergy(compare);
                 exchangeParticleParameters(origin, compare, exchange_local_orientation);
@@ -675,20 +653,12 @@ namespace _pyves
                 const bool accepted = ((epot_after - epot_before) < 0) ? true : acceptByMetropolis(epot_after - epot_before, temperature);
                 if(!accepted)
                 {
-                    // std::cout << "exchange declined: " << origin.get().repr()  << compare.get().repr();
                     exchangeParticleParameters(origin, compare, exchange_local_orientation);
                 }
                 else
                 {
-                    std::cout << "exchanged 2 neighbors\n";
                 }
             }
-
-            // relevant_origins.erase( std::remove(std::begin(relevant_origins), std::end(relevant_origins), origin.get()), std::end(relevant_origins));
-            relevant_origins.erase( std::remove_if(std::begin(relevant_origins), std::end(relevant_origins), [&](const Particle& to_compare)
-            { 
-                return origin.get() == to_compare;
-            ;}), std::end(relevant_origins));
         }
     }
 
@@ -840,7 +810,7 @@ namespace _pyves
 
         py::bind_map<LookupTable_t>(m, "LookupTable");
 
-        py::class_<System>(m, "System", py::dynamic_attr())
+        py::class_<System>(m, "System")//, py::dynamic_attr())
             .def(py::init<>())
             .def_property("threads", [](const System& s){ return s.threads; }, &System::setThreads)
             .def_readwrite("temperature", &System::temperature)
@@ -857,6 +827,7 @@ namespace _pyves
             .def_readwrite("interaction_surface_width", &System::interaction_surface_width)
             .def_readwrite("cells", &System::cells)
             .def_readwrite("cell_update_interval", &System::cell_update_interval)
+            .def_readwrite("neighbor_cutoff", &System::neighbor_cutoff)
             .def_readwrite("neighbor_update_interval", &System::neighbor_update_interval)
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&) const>(&System::particleIsFree))
             .def("particleIsFree", static_cast<bool (System::*)(const Particle&, REAL) const>(&System::particleIsFree))

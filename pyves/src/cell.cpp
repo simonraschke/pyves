@@ -352,7 +352,7 @@ namespace _pyves
 
 
 
-        py::class_<Cell>(m, "Cell", py::dynamic_attr())
+        py::class_<Cell>(m, "Cell")//, py::dynamic_attr())
             .def(py::init<CARTESIAN_CREF, CARTESIAN_CREF, Box<PBC::ON>>(), py::arg("min"), py::arg("max"), py::arg("box"))
             .def_readonly("bounding_box", &Cell::bounding_box)
             .def_readwrite("proximity", &Cell::proximity)

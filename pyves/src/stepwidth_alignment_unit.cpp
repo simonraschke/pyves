@@ -170,7 +170,7 @@ namespace _pyves
 
     void bind_sw_alignment_unit(py::module& m)
     {
-        py::class_<StepwidthAlignmentUnit>(m, "StepwidthAlignmentUnit", py::dynamic_attr())
+        py::class_<StepwidthAlignmentUnit>(m, "StepwidthAlignmentUnit")//, py::dynamic_attr())
             .def(py::init<>()) 
             .def("setup", static_cast<void (StepwidthAlignmentUnit::*)(std::size_t, REAL, REAL, REAL)>(&StepwidthAlignmentUnit::setup))
             .def("setup", static_cast<void (StepwidthAlignmentUnit::*)(std::size_t, REAL, REAL, REAL, REAL)>(&StepwidthAlignmentUnit::setup))

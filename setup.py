@@ -88,12 +88,13 @@ class CMakeBuild(build_ext):
             self.distribution.get_version())
 
         import pprint
-        print("\nenv")
-        pprint.pprint(env)
+        # print("\nenv")
+        # pprint.pprint(env)
         print("\ncmake_args")
         pprint.pprint(cmake_args)
         print("\nbuild_args")
         pprint.pprint(build_args)
+        print()
 
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)

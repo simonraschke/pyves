@@ -37,9 +37,9 @@ endif()
 SET(TEST_DIR test)
 SET(SRC_DIR pyves/src)
 file(GLOB SRC_FILES ${SRC_DIR}/*.cpp ) #maybe remove bindings.cpp
-message(${SRC_FILES})
+# message(${SRC_FILES})
 string(REPLACE "${SRC_DIR}/bindings.cpp" " " SRC_FILES_NO_BIND "${SRC_FILES}")
-message(${SRC_FILES_NO_BIND})
+# message(${SRC_FILES_NO_BIND})
 file(GLOB TEST_FILES ${SRC_FILES} ${TEST_DIR}/*.cpp)
 
 

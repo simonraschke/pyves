@@ -338,7 +338,7 @@ void bind_particle(py::module& m)
         })
     ;
         
-    py::class_<Particle>(m, "Particle", py::dynamic_attr())
+    py::class_<Particle>(m, "Particle")//, py::dynamic_attr())
         .def(py::init<>())
         .def(py::init<const Particle&>())
         .def(py::init<CARTESIAN_CREF, CARTESIAN_CREF>())
