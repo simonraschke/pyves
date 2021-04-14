@@ -28,6 +28,7 @@ def slurmSubmitScript(
     mode = "new",
     prmspath = None,
     prms = None,
+    prmsfilename = "parameters.json",
     partition = None,
     threads = None,
     memory = None,
@@ -59,47 +60,49 @@ def slurmSubmitScript(
     assert(hours_min <= hours)
 
     distutils.log.set_verbosity(distutils.log.DEBUG)
-    prmsfilename = "parameters.json"
+    # prmsfilename = "parameters.json"
+
+    if log: print(f"mode is {mode}")
 
     
-    # make new directory
-    dirpath = os.path.realpath(dirpath)
-    if log: print("trying dir:", dirpath)
-    if os.path.exists(dirpath):
-        dirpath += "_0"
-        if log: print("exists. trying dir:", dirpath)
-    _it = 1
-    while os.path.exists(dirpath):
-        dirpath = dirpath.rsplit("_",1)[0] + f"_{_it}"
-        if log: print("exists. trying dir:", dirpath)
-        _it += 1
-    if log: print("valid path:", dirpath)
-    
-
-    if mkdir and not dryrun:
-        if log: print("mkdir:", dirpath)
-        os.makedirs(dirpath)
-
-    # verify that there is a directory
-    if not mkdir and not dryrun:
-        if not os.path.exists(dirpath):
-            raise OSError(f"{dirpath} does not exist")
-
-
-
-    # define target submit script name
-    filepath = os.path.join(dirpath, filename)
-    if log: print("trying filepath:", filepath)
-    _it = 0
-    while os.path.exists(filepath):
-        filepath = os.path.join(dirpath, filename)
-        filepath = filepath.rsplit(".",1)[0] + f"{_it}." + filepath.rsplit(".",1)[-1]
-        if log: print("exists. trying file:", filepath)
-        _it += 1
-    if log: print("valid file:", filepath)
-    
-
     if mode == "new":
+        # make new directory
+        dirpath = os.path.realpath(dirpath)
+        if log: print("trying dir:", dirpath)
+        if os.path.exists(dirpath):
+            dirpath += "_0"
+            if log: print("exists. trying dir:", dirpath)
+        _it = 1
+        while os.path.exists(dirpath):
+            dirpath = dirpath.rsplit("_",1)[0] + f"_{_it}"
+            if log: print("exists. trying dir:", dirpath)
+            _it += 1
+        if log: print("valid path:", dirpath)
+        
+
+        if mkdir and not dryrun:
+            if log: print("mkdir:", dirpath)
+            os.makedirs(dirpath)
+
+        # verify that there is a directory
+        if not mkdir and not dryrun:
+            if not os.path.exists(dirpath):
+                raise OSError(f"{dirpath} does not exist")
+
+
+
+        # define target submit script name
+        filepath = os.path.join(dirpath, filename)
+        if log: print("trying filepath:", filepath)
+        _it = 0
+        while os.path.exists(filepath):
+            filepath = os.path.join(dirpath, filename)
+            filepath = filepath.rsplit(".",1)[0] + f"{_it}." + filepath.rsplit(".",1)[-1]
+            if log: print("exists. trying file:", filepath)
+            _it += 1
+        if log: print("valid file:", filepath)
+        
+
         
         # make new parameters.json from dict
         if isinstance(prms, type({})):
@@ -130,6 +133,19 @@ def slurmSubmitScript(
 
         else:
             raise IOError("neither prms nor prmspath were given")
+
+
+        
+    elif mode == "change":
+        
+        if Path(os.path.realpath(prmspath)).is_file():
+            prmspath = os.path.realpath(prmspath)
+            dirpath = os.path.realpath(dirpath)
+        elif Path(os.path.join(dirpath, prmspath)).is_file():
+            prmspath = os.path.join(dirpath, prmspath)
+        else:
+            raise IOError(f"No parameter file at {prmspath}")
+
 
     
     kwargs_string = kwargs2string(**controller_kwargs)
