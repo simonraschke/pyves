@@ -58,10 +58,10 @@ namespace _pyves::interaction
 
         const Eigen::AngleAxis<REAL> rotation1 (p1.gamma, CARTESIAN::UnitZ());
         const Eigen::AngleAxis<REAL> rotation2 (p2.gamma, -CARTESIAN::UnitZ());
-        const REAL a  = (-(rotation1*(CARTESIAN::UnitY()*p1.kappa/2)) + CARTESIAN::UnitX() + (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
-        const REAL b  = (  rotation1*(CARTESIAN::UnitY()*p1.kappa/2)  + CARTESIAN::UnitX() - (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
-        const REAL c1 = (-(rotation1*(CARTESIAN::UnitY()*p1.kappa/2)) + CARTESIAN::UnitX() - (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
-        const REAL c2 = (  rotation1*(CARTESIAN::UnitY()*p1.kappa/2)  + CARTESIAN::UnitX() + (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();
+        const REAL a  = (-(rotation1*(CARTESIAN::UnitY()*p1.kappa/2)) + CARTESIAN::UnitX() + (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();  // these represent the optimum
+        const REAL b  = (  rotation1*(CARTESIAN::UnitY()*p1.kappa/2)  + CARTESIAN::UnitX() - (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();  // these represent the optimum
+        const REAL c1 = (-(rotation1*(CARTESIAN::UnitY()*p1.kappa/2)) + CARTESIAN::UnitX() - (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();  // these represent the optimum
+        const REAL c2 = (  rotation1*(CARTESIAN::UnitY()*p1.kappa/2)  + CARTESIAN::UnitX() + (rotation2*(CARTESIAN::UnitY()*p2.kappa/2))).norm();  // these represent the optimum
         // std::cout << "a  " << a << std::endl;
         // std::cout << "b  " << b << std::endl;
         // std::cout << "c1 " << c1 << std::endl;

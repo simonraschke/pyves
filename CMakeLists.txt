@@ -62,8 +62,8 @@ target_include_directories(${PROJECT_NAME}_test PRIVATE ${CMAKE_SOURCE_DIR}/lib/
 target_compile_options(${PROJECT_NAME}_test
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W3>
-        $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -Wextra -Wpedantic -ferror-limit=2>
-        $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=2>
+        $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -Wextra -Wpedantic -ferror-limit=2 -fvisibility=hidden>
+        $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -Wextra -Wpedantic -fmax-errors=2 -fvisibility=hidden>
 )
 message(STATUS ${Python_VERSION})
 message("Python Major Version " ${Python3_VERSION_MAJOR})
@@ -84,8 +84,8 @@ target_compile_definitions(_pyves PRIVATE EIGEN_FAST_MATH=1 EIGEN_MAX_CPP_VER=17
 target_compile_options(_pyves
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W3>
-        $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -O3 -Wextra -Wpedantic -ferror-limit=2>
-        $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -O3 -Wextra -Wpedantic -fmax-errors=2>
+        $<$<CXX_COMPILER_ID:Clang>:-ggdb -g -Wall -O3 -Wextra -Wpedantic -ferror-limit=2 -fvisibility=hidden>
+        $<$<CXX_COMPILER_ID:GNU>:-ggdb -g -Wall -O3 -Wextra -Wpedantic -fmax-errors=2 -fvisibility=hidden>
 )
 target_link_options(_pyves PRIVATE -W -Wno-undef -static-libgcc -static-libstdc++)
 target_link_libraries(_pyves PRIVATE pthread)

@@ -138,7 +138,7 @@ def analyzeSnapshot(
     
     starttime = time.perf_counter()
 
-    analysis_prms = prms.get("analysis")
+    analysis_prms = prms.get("analysis")    
     DBSCAN_eps = analysis_prms.get("DBSCAN_eps", 1.2)
     neighbor_cutoff = analysis_prms.get("neighbor_cutoff", 1.2)
     curvature_cutoff = analysis_prms.get("curvature_cutoff", 1.2)
