@@ -2,7 +2,9 @@ from pyves import utility
 import unittest
 import pyves
 import os
+import pathlib
 import numpy as np
+import pandas as pd
 
 
 
@@ -93,8 +95,8 @@ class MainTest(unittest.TestCase):
             threads=3
         )
         self.assertTrue(os.path.exists(os.path.join(control2.output["dir"], "data.h5")))
-        import pandas as pd
-        pd.options.display.max_rows = None
+        # import pandas as pd
+        # pd.options.display.max_rows = None
         # print(pd.read_hdf(os.path.join(control2.output["dir"], "data.h5"), key="/time1500")[["z","clustersize","surfacepot"]])
         # print(control2.system.interaction_surface_width)
 
@@ -106,6 +108,24 @@ class MainTest(unittest.TestCase):
         except Exception as e:
             print("no data.h5 to remove",e)
         ctrl = pyves.Controller.Static("test/parameters.json")
+
+        try:
+            os.remove("test/states.db")
+        except Exception as e:
+            print("no states.db to remove",e)
+        pyves.gatherStates("test", dbpath="test/states.db", filenames=["data.h5","gradient.h5"], threads=1, sys=True, clstr=True, key_prefix="/time", clstr_min_size=5)
+        
+        dfc = pyves.readStates("test/states.db", sql="SELECT * FROM cluster_states")
+        self.assertIsInstance(dfc, pd.DataFrame)
+        self.assertGreater(dfc.index.size, 0)
+        self.assertIn("x_mean", dfc.columns)
+        self.assertIn("size", dfc.columns)
+        
+        dfs = pyves.readStates("test/states.db", sql="SELECT * FROM system_states")
+        self.assertIsInstance(dfs, pd.DataFrame)
+        self.assertGreater(dfs.index.size, 0)
+        self.assertIn("x", dfs.columns)
+        self.assertIn("clustersize", dfs.columns)
 
 
 
