@@ -52,7 +52,10 @@ def analyzeStates(
         clstrdata = []
     
     path_str_for_hash = re.sub("[:]", "", str(path)).lstrip("CDEFGH").replace('\\', '/')
-    # print(path_str_for_hash)
+
+    p = hashlib.md5()
+    p.update(path_str_for_hash.encode('utf-8'))
+    path_id = p.hexdigest()
 
     for df, meta in _load_states_from_HDF(path, 1, key_prefix):
 
@@ -69,6 +72,7 @@ def analyzeStates(
             
             data = {}
             data["id"] = sys_identifier
+            data["simulation"] = path_id
             
             data["time"] = meta["time"]     
             data["gamma"] = df["gamma"].mean()
@@ -139,6 +143,7 @@ def analyzeStates(
                 data = {}
                 data["id"] = identifier
                 data["sys_id"] = sys_identifier
+                data["simulation"] = path_id
                 
                 data["time"] = meta["time"]
                 data["temperature"] = np.round(meta["temperature"], 3)
