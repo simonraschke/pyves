@@ -240,11 +240,11 @@ def sbatchSubmitScript(
         if not dryrun:
             os.chdir(os.path.dirname( os.path.realpath( scriptpath )) )
 
-            cmd = f"{sbatchpath}", "-J", f"{name}", f"{scriptpath}"
+            cmd = f"{sbatchpath} -J {name} {scriptpath}"
             if modules != None:
                 cmd = makeModuleString(modules, purge=True) + "; " + cmd
 
-            out = check_output([cmd])
+            out = check_output(cmd, shell=True)
             # out should look like
             # Submitted batch job 7154194
 
