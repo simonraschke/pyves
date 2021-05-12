@@ -26,7 +26,7 @@ def kwargs2string(**kwargs):
 def makeModuleString(modules, purge=True):
     _str = "; ".join([f"module load {m}" for m in modules])
     if purge:
-        _str = "module purge; " + _str
+        _str = "module --force purge; " + _str
     return _str
 
 
