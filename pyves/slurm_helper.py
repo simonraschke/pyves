@@ -47,7 +47,7 @@ def slurmSubmitScript(
     nice = None,
     group = None,
     requeue = None,
-    modules = None,
+    # modules = None,
     signal_time = 1000,
     python_path = sys.executable,
     controller = "pyves.Controller.Static",
@@ -193,9 +193,9 @@ def slurmSubmitScript(
     
     print(f"import os, sys, signal", file=string)
 
-    if modules != None:
-        _mod_str = "module purge; " + "; ".join([f"module load {m}" for m in modules])
-        print(f"os.system(\"{_mod_str}\")", file=string)
+    # if modules != None:
+    #     _mod_str = "module purge; " + "; ".join([f"module load {m}" for m in modules])
+    #     print(f"os.system(\"{_mod_str}\")", file=string)
 
     print(f"status = os.system(\"srun {command}\")", file=string)
     print(f"sys.stdout.flush()", file=string)
@@ -220,7 +220,8 @@ def slurmSubmitScript(
 def sbatchSubmitScript(
     scriptpath,
     name = "pyves job",
-    dryrun = False
+    dryrun = False,
+    modules = None
 ):
     """
     will return job id
@@ -239,7 +240,11 @@ def sbatchSubmitScript(
         if not dryrun:
             os.chdir(os.path.dirname( os.path.realpath( scriptpath )) )
 
-            out = check_output([f"{sbatchpath}", "-J", f"{name}", f"{scriptpath}"])
+            cmd = f"{sbatchpath}", "-J", f"{name}", f"{scriptpath}"
+            if modules != None:
+                cmd = makeModuleString(modules, purge=True) + "; " + cmd
+
+            out = check_output([cmd])
             # out should look like
             # Submitted batch job 7154194
 
@@ -260,7 +265,13 @@ def sbatchSubmitScript(
 
 
 
-def sbatchGroTrajectory(prms_path, sbatch_kwargs, atom_repr=["C","O","S","H","B"], dryrun=False, modules=None):
+def sbatchGroTrajectory(
+    prms_path, 
+    sbatch_kwargs, 
+    atom_repr=["C","O","S","H","B"], 
+    dryrun=False, 
+    modules=None
+):
     sbatchpath = which("sbatch")
     # print("sbatchpath", sbatchpath)
     if sbatchpath == None:
@@ -316,7 +327,13 @@ def sbatchGroTrajectory(prms_path, sbatch_kwargs, atom_repr=["C","O","S","H","B"
 
 
 
-def sbatchVMDRC(prms_path, sbatch_kwargs, dryrun=False, bond_radius=6, modules=None):
+def sbatchVMDRC(
+    prms_path, 
+    sbatch_kwargs, 
+    dryrun=False, 
+    bond_radius=6, 
+    modules=None
+):
     sbatchpath = which("sbatch")
     print("sbatchpath", sbatchpath)
     if sbatchpath == None:
