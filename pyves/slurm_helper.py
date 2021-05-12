@@ -38,6 +38,7 @@ def slurmSubmitScript(
     nice = None,
     group = None,
     requeue = None,
+    modules = None,
     signal_time = 1000,
     python_path = sys.executable,
     controller = "pyves.Controller.Static",
@@ -182,6 +183,11 @@ def slurmSubmitScript(
     print(f"", file=string)
     
     print(f"import os, sys, signal", file=string)
+    
+    if modules != None:
+        _mod_str = "module purge; " + "; ".join([f"module load {m}" for m in modules])
+        print(f"os.system(\"{_mod_str}\")", file=string)
+
     print(f"status = os.system(\"srun {command}\")", file=string)
     print(f"sys.stdout.flush()", file=string)
     print(f"sys.stderr.flush()", file=string)
