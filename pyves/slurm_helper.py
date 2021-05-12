@@ -22,6 +22,15 @@ def kwargs2string(**kwargs):
         return ", ".join(f'{x[0]}={x[1]!r}' for x in kwargs.items())[0:]
 
 
+
+def makeModuleString(modules, purge=True):
+    _str = "; ".join([f"module load {m}" for m in modules])
+    if purge:
+        _str = "module purge; " + _str
+    return _str
+
+
+
 def slurmSubmitScript(
     filename = None,
     dirpath = None,
@@ -183,7 +192,7 @@ def slurmSubmitScript(
     print(f"", file=string)
     
     print(f"import os, sys, signal", file=string)
-    
+
     if modules != None:
         _mod_str = "module purge; " + "; ".join([f"module load {m}" for m in modules])
         print(f"os.system(\"{_mod_str}\")", file=string)
@@ -251,7 +260,7 @@ def sbatchSubmitScript(
 
 
 
-def sbatchGroTrajectory(prms_path, sbatch_kwargs, atom_repr=["C","O","S","H","B"], dryrun=False):
+def sbatchGroTrajectory(prms_path, sbatch_kwargs, atom_repr=["C","O","S","H","B"], dryrun=False, modules=None):
     sbatchpath = which("sbatch")
     # print("sbatchpath", sbatchpath)
     if sbatchpath == None:
@@ -274,6 +283,9 @@ def sbatchGroTrajectory(prms_path, sbatch_kwargs, atom_repr=["C","O","S","H","B"
     
     sbatch_kwargs_string = " ".join([f"{arg}={val}" for arg, val in sbatch_kwargs.items()])
     cmd = f"{sbatchpath} {sbatch_kwargs_string} --wrap=\"{sys.executable} -c \\\"import pyves; pyves.hdf2gro(inpath='{datafile}', outpath='{trajfile}', atom_repr={representation}, prmspath='{prms_path}', with_direction='True')\\\"\""
+
+    if modules != None:
+        cmd = makeModuleString(modules, purge=True) + "; " + cmd
     
     cwd = os.path.realpath( os.getcwd() )
     if not os.path.exists(sbatchpath):
@@ -304,7 +316,7 @@ def sbatchGroTrajectory(prms_path, sbatch_kwargs, atom_repr=["C","O","S","H","B"
 
 
 
-def sbatchVMDRC(prms_path, sbatch_kwargs, dryrun=False, bond_radius=6):
+def sbatchVMDRC(prms_path, sbatch_kwargs, dryrun=False, bond_radius=6, modules=None):
     sbatchpath = which("sbatch")
     print("sbatchpath", sbatchpath)
     if sbatchpath == None:
@@ -324,6 +336,9 @@ def sbatchVMDRC(prms_path, sbatch_kwargs, dryrun=False, bond_radius=6):
     
     sbatch_kwargs_string = " ".join([f"{arg}={val}" for arg, val in sbatch_kwargs.items()])
     cmd = f"{sbatchpath} {sbatch_kwargs_string} --wrap=\"{sys.executable} -c \\\"import pyves; import pandas as pd; num=pd.read_hdf('{datafile}', key='/time0').index.size; pyves.writeVMDrc(outdir='{dirpath}', traj_file_name='{trajfile}', num_bonds=num, bond_radius={bond_radius})\\\"\""
+
+    if modules != None:
+        cmd = makeModuleString(modules, purge=True) + "; " + cmd
 
     try:
         if not dryrun:
