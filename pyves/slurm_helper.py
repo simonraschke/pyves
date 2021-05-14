@@ -10,8 +10,10 @@ import pandas as pd
 from subprocess import check_output
 from shutil import which#, copy2
 from pathlib import Path    
+import distutils
 import distutils.log
 import distutils.dir_util
+import distutils.file_util
 from .default_input import default_prms
 
 
