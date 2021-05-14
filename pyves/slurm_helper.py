@@ -265,6 +265,95 @@ def sbatchSubmitScript(
 
 
 
+def sbatchController(
+    sbatch_kwargs, 
+    dirpath = None,
+    prmspath = None,
+    prms = None,
+    prmsfilename = "parameters.json",
+    controller = "pyves.Controller.Static",
+    controller_kwargs = dict(analysis=True),
+    dryrun = False,
+    modules = None
+):
+    # check if sbatch exists on system
+    sbatchpath = which("sbatch")
+    # print("sbatchpath", sbatchpath)
+    if sbatchpath == None:
+        raise RuntimeError("sbatch not found")
+    
+    # make the pyves execution command
+    kwargs_string = kwargs2string(**controller_kwargs)
+    controller_command = f"import pyves; {controller}('{prmsfilename}', {kwargs_string})"
+    
+    # make the sbatch options string
+    sbatch_kwargs_string = " ".join([f"{arg}={val}" for arg, val in sbatch_kwargs.items()])
+
+    # make the complete sbatch submit command
+    cmd = f"{sbatchpath} {sbatch_kwargs_string} --wrap=\"{sys.executable} -c \\\"{controller_command}\\\"\""
+
+    # prepend modules import if necessary
+    if modules != None:
+        cmd = makeModuleString(modules, purge=True) + "; " + cmd
+
+    # get path to current dir
+    cwd = os.path.realpath( os.getcwd() )
+    
+    # verify sbatch
+    if not os.path.exists(sbatchpath):
+        raise RuntimeError(f"path does not exist: {sbatchpath}")
+
+    # make new parameters.json from dict
+    if isinstance(prms, type({})):
+        prmspath = os.path.realpath(os.path.join(dirpath, prmsfilename))
+            
+        if Path(prmspath).is_file():
+            distutils.file_util.copy_file(prmspath, os.path.join(dirpath, "parameters_old.json"), verbose=1)
+        
+        setup_prms = default_prms
+        setup_prms.update(prms)
+        with open(prmspath, 'w') as fp:
+            json.dump(setup_prms, fp=fp, indent=4)
+
+    # copy existing *.json to parameters.json
+    elif Path(os.path.realpath(prmspath)).is_file():
+        prmspath = os.path.realpath(prmspath)
+        
+        if Path(prmspath).is_file():
+            if Path(os.path.join(dirpath, prmsfilename)).is_file():
+                distutils.file_util.copy_file(os.path.join(dirpath, prmsfilename), os.path.join(dirpath, "parameters_old.json"), verbose=1)
+        
+        distutils.file_util.copy_file(prmspath, dirpath, verbose=1)
+
+    else:
+        raise IOError("neither prms nor prmspath were given")
+
+
+    try:
+        if not dryrun:
+            os.chdir(dirpath)
+
+            out = check_output(cmd, shell=True)
+            # out should look like
+            # Submitted batch job 7154194
+
+            os.chdir( cwd )
+
+            try:
+                id = int(re.search(r'\d+', out.decode("utf-8")).group())
+            except Exception as e:
+                raise RuntimeError("no jobid in sbatch output")
+        else:
+            id = 1337
+    except Exception as e:
+        os.chdir(cwd)
+        raise e
+
+    assert(id>15)
+    return id
+
+
+
 def sbatchGroTrajectory(
     prms_path, 
     sbatch_kwargs, 
