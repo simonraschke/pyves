@@ -465,7 +465,7 @@ class Controller():
                         #     self.system.particles[-1].rotation_bound = particle_ff["bound_rotation"]
 
             elif particle_ff["dist"] == "random":
-                for _ in range(particle_ff["number"]):
+                for i in range(particle_ff["number"]):
                     self.system.particles.append(_pyves.Particle(np.random.rand(3)*box_dims, np.random.uniform(-1,1,3), 
                         sigma=particle_ff["sigma"], kappa=particle_ff["kappa"], eps=particle_ff["epsilon"], gamma=particle_ff["gamma"], name=name))
                     p_add_counter += 1
@@ -473,6 +473,7 @@ class Controller():
                     if self.system.interaction_surface:
                         self.system.particles[-1].surface_affinity_translation = particle_ff["surface_affinity_translation"]
                         self.system.particles[-1].surface_affinity_rotation = particle_ff["surface_affinity_rotation"]
+
                     # repeat until particle is free
                     particle_try_set_count = 0
                     while not self.system.particleIsFree(self.system.particles[-1]):

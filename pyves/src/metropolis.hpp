@@ -17,6 +17,7 @@ namespace _pyves
         return acc;
     #else
         return energy_difference < 0.f ? true : std::exp(-energy_difference/temperature) > random<REAL>(0.0,1.0);
+        // return std::exp(-energy_difference/temperature) > random<REAL>(0.0,1.0);
     #endif
     }
 } // namespace _pyves

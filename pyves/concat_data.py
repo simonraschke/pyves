@@ -1,4 +1,6 @@
+import os
 import re
+import gc
 import time
 import hashlib
 import sqlite3
@@ -10,11 +12,11 @@ import datetime as dt
 
 from pathlib import Path
 
-from .utility import h5load
+from .utility import h5load, _h5load_inner
 
 
 
-def _load_states_from_HDF(
+def _yield_states_from_HDF(
     path,
     threads = 1,
     key_prefix = "/time",
@@ -30,6 +32,22 @@ def _load_states_from_HDF(
 
 
 
+def _load_states_from_HDF(
+    path,
+    threads = 1,
+    key_prefix = "/time",
+):
+    with pd.HDFStore(path, mode="r") as store:
+        keys = [s for s in store.keys() if s.startswith(key_prefix)]
+        keys = sorted(keys, key=lambda x:int(re.findall(f"(?<={key_prefix})\d+", x)[0]))
+
+        data_meta = [(_h5load_inner(store, key)) for key in keys]
+        
+        # print(data_meta)
+        return data_meta
+
+
+
 def analyzeStates(
     path,
     threads = 1,
@@ -38,6 +56,7 @@ def analyzeStates(
     clstr = True,
     clstr_min_size = 30
 ):
+    print("[ONGOING] ", path)
 
     store = pd.HDFStore(path, mode="r")
     keys = [s for s in store.keys() if s.startswith(key_prefix)]
@@ -74,10 +93,11 @@ def analyzeStates(
             data["id"] = sys_identifier
             data["simulation"] = path_id
             
-            data["time"] = meta["time"]     
+            data["time"] = meta["time"]
             data["gamma"] = df["gamma"].mean()
             data["sigma"] = df["sigma"].mean() 
             data["kappa"] = df["kappa"].mean()
+            data["epsilon"] = df["epsilon"].mean()
             data["x"] = meta["box.x"]
             data["y"] = meta["box.y"]
             data["z"] = meta["box.z"]
@@ -125,6 +145,8 @@ def analyzeStates(
                 data["area_occupied_z_surface"] = data["area_pP_z_surface"] * data["N_on_z_surface"]
                 data["max_coverage_z_surface"] = 1./data["area_pP_z_surface"]
                 data["coverage_z_surface"] = data["area_occupied_z_surface"] / (data["x"]*data["y"]) / data["max_coverage_z_surface"]
+                data["surface_affinity_translation"] = df["surface_affinity_translation"].mean()
+                data["surface_affinity_rotation"] = df["surface_affinity_rotation"].mean()
 
             sysdata.append(data)
 
@@ -146,6 +168,14 @@ def analyzeStates(
                 data["simulation"] = path_id
                 
                 data["time"] = meta["time"]
+                data["gamma"] = df["gamma"].mean()
+                data["sigma"] = df["sigma"].mean() 
+                data["kappa"] = df["kappa"].mean()
+                data["epsilon"] = df["epsilon"].mean()
+                data["x"] = meta["box.x"]
+                data["y"] = meta["box.y"]
+                data["z"] = meta["box.z"]
+                data["volume"] = data["x"]*data["y"]*data["z"]
                 data["temperature"] = np.round(meta["temperature"], 3)
                 data["cluster_min_size"] = clstr_min_size
                 
@@ -221,28 +251,61 @@ def _insert_or_replace(df, cur, table_name, alter=True):
 
 
 def dataToSQL(data, con):
-    if "sys" in data.keys():
-        try:
-            if data["sys"].index.size > 0:
-                cursor = con.cursor()
-                try:
-                    _insert_or_replace(data["sys"], cursor, "system_states")
-                finally:
-                    cursor.close()
-        except Exception as e:
-            print(f"Failed to write data.sys to sql connection: ", e)
+    data["sys"].to_sql(name="system_states", con=con, if_exists="append")
+    data["clstr"].to_sql(name="cluster_states", con=con, if_exists="append")
+    # if "sys" in data.keys():
+    #     try:
+    #         if data["sys"].index.size > 0:
+    #             cursor = con.cursor()
+    #             try:
+    #                 _insert_or_replace(data["sys"], cursor, "system_states")
+    #             finally:
+    #                 cursor.close()
+    #     except Exception as e:
+    #         print(f"Failed to write data.sys to sql connection: ", e)
 
-    if "clstr" in data.keys():
-        try:
-            if data["clstr"].index.size > 0:
-                cursor = con.cursor()
-                try:
-                    _insert_or_replace(data["clstr"], cursor, "cluster_states")
-                finally:
-                    cursor.close() 
-        except Exception as e:
-            print(f"Failed to write data.clstr to sql connection: ", e)
-    
+    # if "clstr" in data.keys():
+    #     try:
+    #         if data["clstr"].index.size > 0:
+    #             cursor = con.cursor()
+    #             try:
+    #                 _insert_or_replace(data["clstr"], cursor, "cluster_states")
+    #             finally:
+    #                 cursor.close() 
+    #     except Exception as e:
+    #         print(f"Failed to write data.clstr to sql connection: ", e)
+
+
+
+def dataBufferToSQL(data_buffer, con):
+    sys_df = pd.concat([d["sys"] for d in data_buffer if "sys" in d.keys()])
+    print("writing", sys_df.index.size, "system states")
+    sys_df.to_sql(name="system_states", con=con, if_exists="append")
+
+    clstr_df = pd.concat([d["clstr"] for d in data_buffer if "clstr" in d.keys()])
+    print("writing", clstr_df.index.size, "cluster states")
+    clstr_df.to_sql(name="cluster_states", con=con, if_exists="append")
+
+    # try:
+    #     if sys_df.index.size > 0:
+    #         cursor = con.cursor()
+    #         try:
+    #             _insert_or_replace(sys_df, cursor, "system_states")
+    #         finally:
+    #             cursor.close()
+    # except Exception as e:
+    #     print(f"Failed to write data.sys to sql connection: ", e)
+
+    # try:
+    #     if clstr_df.index.size > 0:
+    #         cursor = con.cursor()
+    #         try:
+    #             _insert_or_replace(clstr_df, cursor, "cluster_states")
+    #         finally:
+    #             cursor.close() 
+    # except Exception as e:
+    #     print(f"Failed to write data.clstr to sql connection: ", e)
+
 
 
 def calcProcessTime(starttime, cur_iter, max_iter):
@@ -259,6 +322,12 @@ def calcProcessTime(starttime, cur_iter, max_iter):
 
 
 
+
+def progress(status, remaining, total):
+    print(f'Copied {total-remaining} of {total} pages...')
+
+
+
 def gatherStates(
     basedir = Path("."),
     dbpath = "states.db",
@@ -267,11 +336,16 @@ def gatherStates(
     sys = True,
     clstr = True,
     key_prefix = "/time",
-    clstr_min_size = 30
+    clstr_min_size = 30,
+    timeout = 30,
+    buffer_size = 10
 ):
     # if not isinstance(basedir, type(Path("."))):
     if not isinstance(basedir, Path):
         basedir = Path(basedir)
+
+    if not isinstance(dbpath, Path):
+        dbpath = Path(dbpath)
 
     filepaths = []
     for fn in filenames:
@@ -284,28 +358,59 @@ def gatherStates(
 
     file_counter = 0
     
-    with sqlite3.connect(str(dbpath)) as con:
+    print("database path:", dbpath)
+    with sqlite3.connect(':memory:') as con:
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
-            future_to_fp = { executor.submit(analyzeStates, path=fp, threads=1, key_prefix=key_prefix, sys=sys, clstr=clstr, clstr_min_size=clstr_min_size):fp for fp in filepaths}
-            
-            START_TIME = time.time()
-            for future in concurrent.futures.as_completed(future_to_fp):
-                file_counter += 1
+        try:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
+                future_to_fp = { executor.submit(analyzeStates, path=fp, threads=1, key_prefix=key_prefix, sys=sys, clstr=clstr, clstr_min_size=clstr_min_size):fp for fp in filepaths}
+                
+                data_buffer = []
 
-                fp = future_to_fp[future]
-                print()
-                print("[LOADED ] ", fp)
-                try:
-                    data = future.result()
-                    # print(data["sys"].filter(regex="gamma"))
-                except Exception as exc:
-                    print('%r generated an exception: %s' % (fp, exc))
-                else:
-                    dataToSQL(data, con)
-                    print("[WRITTEN] ", fp)
+                START_TIME = time.time()
+                for future in concurrent.futures.as_completed(future_to_fp):
+                    file_counter += 1
+
+                    fp = future_to_fp[future]
+                    print()
+                    print("[LOADED ] ", fp)
+                    try:
+                        # data = future.result(timeout=timeout)
+                        data_buffer.append(future.result())
+                    except Exception as exc:
+                        print('%r generated an exception: %s' % (fp, exc))
+                    # else:
+                    #     dataToSQL(data, con)
+                    #     print("[WRITTEN] ", fp)
+                    #     runtime, left, eta = calcProcessTime(START_TIME, file_counter, NUM_FILES_FOUND)
+                    #     print("[RUNTIME] ", f"time elapsed: {runtime:>6.0f} s, time left: {left:>6.0f} s, estimated finish time: {eta}")
+
+                    if len(data_buffer) >= buffer_size:
+                        print("[BUFFER ] ", "full")
+                        dataBufferToSQL(data_buffer, con)
+                        print("[BUFFER ] ", "written to", dbpath)
+                        runtime, left, eta = calcProcessTime(START_TIME, file_counter, NUM_FILES_FOUND)
+                        print("[RUNTIME] ", f"time elapsed: {runtime:>6.0f} s, time left: {left:>6.0f} s, estimated finish time: {eta}")
+                        data_buffer = []
+                        # gc.collect()
+                
+                if len(data_buffer):
+                    print("[BUFFER ] ", "writing..")
+                    dataBufferToSQL(data_buffer, con)
+                    print("[BUFFER ] ", "written to", dbpath)
                     runtime, left, eta = calcProcessTime(START_TIME, file_counter, NUM_FILES_FOUND)
                     print("[RUNTIME] ", f"time elapsed: {runtime:>6.0f} s, time left: {left:>6.0f} s, estimated finish time: {eta}")
+                    data_buffer = []
+                    
+        except TimeoutError as te:
+            print(te)
+        
+        filedb = sqlite3.connect(dbpath)
+        with filedb:
+            con.backup(filedb)
+        filedb.close()
+
+
 
 
 

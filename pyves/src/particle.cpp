@@ -239,7 +239,12 @@ Particle::Particle(const Particle& other)
     , gamma(other.gamma)
     , position_bound_radius_squared(other.position_bound_radius_squared)
     , orientation_bound_radiant(other.orientation_bound_radiant)
+    , surface_affinity_translation(other.surface_affinity_translation)
+    , surface_affinity_rotation(other.surface_affinity_rotation)
+    , self_affinity(other.self_affinity)
+    , other_affinity(other.other_affinity)
     , name(other.name)
+    , neighbors(other.neighbors)
 {
     if (other.initial_position)
     {
@@ -298,6 +303,9 @@ Particle& Particle::operator=(const Particle& other)
 
     surface_affinity_translation = other.surface_affinity_translation;
     surface_affinity_rotation = other.surface_affinity_rotation;
+    
+    self_affinity = other.self_affinity;
+    other_affinity = other.other_affinity;
     
     name = other.name;
 
