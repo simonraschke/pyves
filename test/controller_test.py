@@ -113,7 +113,15 @@ class MainTest(unittest.TestCase):
             os.remove("test/states.db")
         except Exception as e:
             print("no states.db to remove",e)
-        pyves.gatherStates("test", dbpath="test/states.db", filenames=["data.h5","gradient.h5"], threads=1, sys=True, clstr=True, key_prefix="/time", clstr_min_size=3)
+        pyves.gatherStates("test", dbpath="test/states.db", filenames=["*.h5"], threads=1, sys=True, clstr=True, key_prefix="/time", clstr_min_size=2)
+        
+        dfs = pyves.readStates("test/states.db", sql="SELECT * FROM system_states")
+        self.assertIsInstance(dfs, pd.DataFrame)
+        self.assertGreater(dfs.index.size, 0)
+        self.assertGreater(dfs["id"].nunique(), 1)
+        self.assertIn("x", dfs.columns)
+        self.assertIn("clustersize", dfs.columns)
+        self.assertIn("simulation", dfs.columns)
 
         dfc = pyves.readStates("test/states.db", sql="SELECT * FROM cluster_states")
         self.assertIsInstance(dfc, pd.DataFrame)
@@ -121,14 +129,6 @@ class MainTest(unittest.TestCase):
         self.assertIn("x_mean", dfc.columns)
         self.assertIn("size", dfc.columns)
         self.assertIn("simulation", dfc.columns)
-        
-        dfs = pyves.readStates("test/states.db", sql="SELECT * FROM system_states")
-        self.assertIsInstance(dfs, pd.DataFrame)
-        self.assertGreater(dfs.index.size, 0)
-        self.assertGreater(dfs["simulation"].nunique(), 1)
-        self.assertIn("x", dfs.columns)
-        self.assertIn("clustersize", dfs.columns)
-        self.assertIn("simulation", dfs.columns)
 
 
 

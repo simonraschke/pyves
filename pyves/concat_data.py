@@ -139,12 +139,21 @@ def analyzeStates(
             data["clustervolume"] = df_clstr["clustervolume"].mean()
 
             if data['interaction_surface'] and data['interaction_surface_width']:
-                df_surface = df[(df["z"] > (meta["box.z"]-meta['interaction.surface_width']))]
+                surface_height = (meta["box.z"]-meta['interaction.surface_width'])
+                df_surface = df[(df["z"] > surface_height)]
+                df_nonsurface = df[(df["z"] <= surface_height)]
+                df_nonsurface_free = df_nonsurface[df_nonsurface["clustersize"].le(clstr_min_size)]
+                df_nonsurface_clstr = df_nonsurface[~df_nonsurface["clustersize"].le(clstr_min_size)]
                 data["N_on_z_surface"] = df_surface.index.size
                 data["area_pP_z_surface"] = df_surface["sigma"].mean() * (2.**(1./6)/2)**2 * (2.*np.sqrt(3))
                 data["area_occupied_z_surface"] = data["area_pP_z_surface"] * data["N_on_z_surface"]
                 data["max_coverage_z_surface"] = 1./data["area_pP_z_surface"]
                 data["coverage_z_surface"] = data["area_occupied_z_surface"] / (data["x"]*data["y"]) / data["max_coverage_z_surface"]
+                data["bulk_volume"] = data["x"] * data["y"] * (meta["cell_min_size"] + data['interaction_surface_width'])
+                data["bulk_density"] = float(df_nonsurface.index.size) / data["bulk_volume"]
+                data["bulk_clustervolume_cumulated"] = df_nonsurface_clstr.groupby("cluster")["clustervolume"].mean().sum() if data["size_cluster"] > 0 else 0.0
+                assert data["bulk_volume"] >= data["bulk_clustervolume_cumulated"]
+                data["bulk_density_free"] = df_nonsurface_free / (data["bulk_volume"] - data["bulk_clustervolume_cumulated"])
                 data["surface_affinity_translation"] = df["surface_affinity_translation"].mean()
                 data["surface_affinity_rotation"] = df["surface_affinity_rotation"].mean()
 
@@ -416,4 +425,4 @@ def gatherStates(
 
 def readStates(dbpath, sql):
     with sqlite3.connect(str(dbpath)) as con:
-        return pd.read_sql(con=con, sql=sql)
+        return pd.read_sql_query(con=con, sql=sql)
