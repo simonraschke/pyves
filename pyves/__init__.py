@@ -24,5 +24,5 @@ from .analysis import analyzeSnapshot, analyzeTrajectory
 from .slurm_helper import slurmSubmitScript, sbatchSubmitScript, sbatchController, sbatchGroTrajectory, sbatchVMDRC
 from .utility import h5store, h5load
 from .default_input import default_prms, default_particle, deep_update
-from .concat_data import gatherStates, readStates
+from .concat_data import gatherStates, readStates, analyzeStates
 from ._version import __version__

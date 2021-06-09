@@ -119,7 +119,7 @@ def analyzeStates(
             data["size_mobile"] = df[(df["translation_bound_sq"] >= 1e10) & (df["rotation_bound"] >= 1e10)].index.size
             data["size_cluster"] = df_clstr.index.size
             data["clustervolume_cumulated"] = df_clstr.groupby("cluster")["clustervolume"].mean().sum() if data["size_cluster"] > 0 else 0.0
-            data["density"] = data["size"]/data["volume"]
+            data["density"] = float(df.index.size)/data["volume"]
             data["density_free"] = float(data["size_free"])/(data["volume"]-data["clustervolume_cumulated"])
             
             data["epot"] = df["epot"].mean()
@@ -153,7 +153,7 @@ def analyzeStates(
                 data["bulk_density"] = float(df_nonsurface.index.size) / data["bulk_volume"]
                 data["bulk_clustervolume_cumulated"] = df_nonsurface_clstr.groupby("cluster")["clustervolume"].mean().sum() if data["size_cluster"] > 0 else 0.0
                 assert data["bulk_volume"] >= data["bulk_clustervolume_cumulated"]
-                data["bulk_density_free"] = df_nonsurface_free / (data["bulk_volume"] - data["bulk_clustervolume_cumulated"])
+                data["bulk_density_free"] = float(df_nonsurface_free.index.size) / (data["bulk_volume"] - data["bulk_clustervolume_cumulated"])
                 data["surface_affinity_translation"] = df["surface_affinity_translation"].mean()
                 data["surface_affinity_rotation"] = df["surface_affinity_rotation"].mean()
 
