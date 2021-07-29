@@ -75,12 +75,19 @@ def analyzeStates(
     p = hashlib.md5()
     p.update(path_str_for_hash.encode('utf-8'))
     path_id = p.hexdigest()
+    
+    old_z = None # surface exchange calculations
 
     for df, meta in _load_states_from_HDF(path, 1, key_prefix):
 
         df_free  = df[df["clustersize"].le(clstr_min_size)]
         df_clstr = df[~df["clustersize"].le(clstr_min_size)]
         assert(df_clstr.index.size + df_free.index.size == df.index.size)
+
+        current_z = df["z"] - meta["box.z"] # surface exchange calculations
+        if isinstance(old_z, type(None)):   # surface exchange calculations
+            old_z = current_z               # surface exchange calculations
+            continue                        # surface exchange calculations
 
         if sys:
             # print(df[["translation_bound_sq", "rotation_bound"]])
@@ -156,6 +163,16 @@ def analyzeStates(
                 data["bulk_density_free"] = float(df_nonsurface_free.index.size) / (data["bulk_volume"] - data["bulk_clustervolume_cumulated"])
                 data["surface_affinity_translation"] = df["surface_affinity_translation"].mean()
                 data["surface_affinity_rotation"] = df["surface_affinity_rotation"].mean()
+                
+                old_on_surface = old_z[old_z > -1].index
+                old_non_surface = old_z[~(old_z > -1)].index
+                current_on_surface = current_z[current_z > -1].index
+                current_non_surface = current_z[~(current_z > -1)].index
+                data["surface_desorbed"] =     (old_on_surface.isin(current_non_surface).sum())
+                data["surface_adsorbed"] =     (old_non_surface.isin(current_on_surface).sum())
+                data["surface_intersection"] = (old_on_surface.isin(current_on_surface).sum())
+                data["surface_exchange"] =     (1. - data["surface_intersection"]/old_on_surface.size)
+                old_z = current_z
 
             sysdata.append(data)
 
