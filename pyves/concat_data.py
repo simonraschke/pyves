@@ -54,7 +54,8 @@ def analyzeStates(
     key_prefix = "/time",
     sys = True,
     clstr = True,
-    clstr_min_size = 30
+    clstr_min_size = 30,
+    subsurface_slab_widht = 2.0,
 ):
     print("[ONGOING] ", path)
 
@@ -130,20 +131,20 @@ def analyzeStates(
             data["density_free"] = float(data["size_free"])/(data["volume"]-data["clustervolume_cumulated"])
             
             data["epot"] = df["epot"].mean()
-            data["epot_cluster"] = df_clstr["epot"].mean()
+            data["epot_cluster"] = df_clstr["epot"].mean() if data["size_cluster"] else np.nan
             data["surfacepot"] = df["surfacepot"].mean()
-            data["surfacepot_cluster"] = df_clstr["surfacepot"].mean()
+            data["surfacepot_cluster"] = df_clstr["surfacepot"].mean() if data["size_cluster"] else np.nan
             data["externalpot"] = df["externalpot"].mean()
-            data["externalpot_cluster"] = df_clstr["externalpot"].mean()
+            data["externalpot_cluster"] = df_clstr["externalpot"].mean() if data["size_cluster"] else np.nan
             
             data["chi"] = df["chi"].mean()
-            data["chi_cluster"] = df_clstr["chi"].mean()
+            data["chi_cluster"] = df_clstr["chi"].mean() if data["size_cluster"] else np.nan
             data["order_simple"] = df["order"].mean()
-            data["order_cluster"] = df_clstr["order"].mean()
+            data["order_cluster"] = df_clstr["order"].mean() if data["size_cluster"] else np.nan
             data["neighbors"] = df["neighbors"].mean()
-            data["neighbors_cluster"] = df_clstr["neighbors"].mean()
-            data["clustersize"] = df_clstr["clustersize"].mean()
-            data["clustervolume"] = df_clstr["clustervolume"].mean()
+            data["neighbors_cluster"] = df_clstr["neighbors"].mean() if data["size_cluster"] else np.nan
+            data["clustersize"] = df_clstr["clustersize"].mean() if data["size_cluster"] else np.nan
+            data["clustervolume"] = df_clstr["clustervolume"].mean() if data["size_cluster"] else np.nan
 
             if data['interaction_surface'] and data['interaction_surface_width']:
                 surface_height = (meta["box.z"]-meta['interaction.surface_width'])
@@ -157,22 +158,40 @@ def analyzeStates(
                 data["max_coverage_z_surface"] = 1./data["area_pP_z_surface"]
                 data["coverage_z_surface"] = data["area_occupied_z_surface"] / (data["x"]*data["y"]) / data["max_coverage_z_surface"]
                 data["bulk_volume"] = data["x"] * data["y"] * (data["z"] - meta["cell_min_size"] - data['interaction_surface_width'])
-                data["bulk_density"] = float(df_nonsurface.index.size) / data["bulk_volume"]
+                data["bulk_density"] = np.float32(df_nonsurface.index.size) / data["bulk_volume"]
                 data["bulk_clustervolume_cumulated"] = df_nonsurface_clstr.groupby("cluster")["clustervolume"].mean().sum() if data["size_cluster"] > 0 else 0.0
                 assert data["bulk_volume"] >= data["bulk_clustervolume_cumulated"]
-                data["bulk_density_free"] = float(df_nonsurface_free.index.size) / (data["bulk_volume"] - data["bulk_clustervolume_cumulated"])
+                data["bulk_density_free"] = np.float32(df_nonsurface_free.index.size) / (data["bulk_volume"] - data["bulk_clustervolume_cumulated"])
                 data["surface_affinity_translation"] = df["surface_affinity_translation"].mean()
                 data["surface_affinity_rotation"] = df["surface_affinity_rotation"].mean()
                 
-                old_on_surface = old_z[old_z > -1].index
-                old_non_surface = old_z[~(old_z > -1)].index
-                current_on_surface = current_z[current_z > -1].index
-                current_non_surface = current_z[~(current_z > -1)].index
-                data["surface_desorbed"] =     (old_on_surface.isin(current_non_surface).sum())
-                data["surface_adsorbed"] =     (old_non_surface.isin(current_on_surface).sum())
-                data["surface_intersection"] = (old_on_surface.isin(current_on_surface).sum())
-                data["surface_exchange"] =     (1. - data["surface_intersection"]/old_on_surface.size)
+                old_on_surface = old_z[old_z > -data['interaction_surface_width']].index
+                old_non_surface = old_z[~(old_z > -data['interaction_surface_width'])].index
+                current_on_surface = current_z[current_z > -data['interaction_surface_width']].index
+                current_non_surface = current_z[~(current_z > -data['interaction_surface_width'])].index
+                data["surface_desorbed"] =     np.uint16(old_on_surface.isin(current_non_surface).sum())
+                data["surface_adsorbed"] =     np.uint16(old_non_surface.isin(current_on_surface).sum())
+                data["surface_intersection"] = np.uint16(old_on_surface.isin(current_on_surface).sum())
+                if old_on_surface.size != 0:
+                    data["surface_exchange"] = np.float32(1. - data["surface_intersection"]/old_on_surface.size)
+                else:
+                    data["surface_exchange"] = np.float32(0)
                 old_z = current_z
+
+                subsurface_slab_height = (meta["box.z"] - meta['interaction.surface_width'] - subsurface_slab_widht)
+                df_subsurface = df[(df["z"] <= surface_height) & (df["z"] > subsurface_slab_height)]
+                data["subsurface_slab_particles"] = np.uint16(df_subsurface.index.size)
+                data["subsurface_slab_volume"] = np.float32(subsurface_slab_widht * data["x"] * data["y"])
+                data["subsurface_slab_density"] = np.float32(data["subsurface_slab_particles"] / data["subsurface_slab_volume"])
+
+                df_subsurface_cluster =    df_subsurface[~df_subsurface["clustersize"].le(clstr_min_size)]
+                df_subsurface_noncluster = df_subsurface[ df_subsurface["clustersize"].le(clstr_min_size)]
+                subsurface_clustervolume_cumulated = df_subsurface_cluster.groupby("cluster")["clustervolume"].mean().sum() if data["size_cluster"] > 0 else 0.0
+                
+                if df_subsurface_noncluster.index.size == 0:
+                    data["subsurface_slab_density_free"] = np.float32(0)
+                else:
+                    data["subsurface_slab_density_free"] = np.float32(df_subsurface_noncluster.index.size / (data["subsurface_slab_volume"] - subsurface_clustervolume_cumulated))
 
             sysdata.append(data)
 
