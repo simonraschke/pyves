@@ -111,7 +111,40 @@ class MainTest(unittest.TestCase):
         # self.assertEqual(ctrl.system.particles[0].name, "B")
         # self.assertEqual(ctrl.system.particles[1].name, "A")
 
+    def test_matrix(self):
+        
+        sys = pyves.System()
+        sys.interaction_cutoff = 3
+        sys.box = pyves.BoxPBC(10,10,10)
+        sys.particles.append(pyves.Particle([1,1,1], [0,1,0], sigma=1, kappa=1, eps=1, name="A", gamma=0))        
+        sys.particles.append(pyves.Particle([3,1,1], [0,1,0], sigma=1, kappa=1, eps=1, name="A", gamma=0))
+        sys.particles.append(pyves.Particle([8,1,1], [0,1,0], sigma=1, kappa=1, eps=1, name="A", gamma=0))
+
+        distances = sys.distanceMatrix()
+        self.assertAlmostEqual(distances[0,0], 0, 5)
+        self.assertAlmostEqual(distances[0,1], 2, 5)
+        self.assertAlmostEqual(distances[0,2], 3, 5)
+        self.assertAlmostEqual(distances[1,2], 5, 5)
+        
+        self.assertAlmostEqual(distances[1,0], 2, 5)
+        self.assertAlmostEqual(distances[2,0], 3, 5)
+        self.assertAlmostEqual(distances[2,1], 5, 5)
+
+    
+        energies = sys.potentialEnergyMatrix()
+        self.assertTrue(np.isnan(energies[0,0]))
+        self.assertAlmostEqual(energies[0,1], -0.06152343, 5)
+        self.assertAlmostEqual(energies[0,2], -0.00547944, 5)
+        self.assertAlmostEqual(energies[1,2], 0, 5)
+        
+        self.assertAlmostEqual(energies[1,0], -0.06152343, 5)
+        self.assertAlmostEqual(energies[2,0], -0.00547944, 5)
+        self.assertAlmostEqual(energies[2,1], 0, 5)
+
+
+        
 
 
 if __name__ == '__main__':
-    unittest.main(failfast=True)
+    # unittest.main(failfast=True)
+    unittest.main()

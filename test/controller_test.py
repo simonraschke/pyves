@@ -95,6 +95,19 @@ class MainTest(unittest.TestCase):
             threads=3
         )
         self.assertTrue(os.path.exists(os.path.join(control2.output["dir"], "data.h5")))
+
+        # import json
+        # df, metadata = pyves.h5load("test/data.h5", "time1500")
+        # # _prms = pyves.parametersToDict("parametrs.json")
+        # with open("test/parameters.json", 'r') as prms_file:
+        #     _prms = json.loads(prms_file.read())
+        # sysfromdata = pyves.makeSystem(df, _prms, metadata)
+        # print(sysfromdata.distanceMatrix())
+        # print(sysfromdata.potentialEnergyMatrix())
+
+        mysystem = pyves.generateSystem("data.h5" ,"parametrs.json", 1000)
+        mysystem.distanceMatrix()
+
         # import pandas as pd
         # pd.options.display.max_rows = None
         # print(pd.read_hdf(os.path.join(control2.output["dir"], "data.h5"), key="/time1500")[["z","clustersize","surfacepot"]])
@@ -132,7 +145,7 @@ class MainTest(unittest.TestCase):
 
 
 
-    def test_system_gradient_flow(self):
+    def test_DynamicSystemFlow(self):
         try:
             os.remove("test/gradient.h5")
         except Exception as e:
@@ -165,6 +178,35 @@ class MainTest(unittest.TestCase):
             _, metadata = utility.h5load("test/gradient.h5", f"/time{time}")
             self.assertAlmostEqual(values[i-1], metadata["temperature"], 5)
 
+
+
+
+    def test_DynamicParticleFlow(self):
+        try:
+            os.remove("test/particleflow.h5")
+        except Exception as e:
+            print("no particleflow.h5 to remove",e)
+
+
+
+        times = np.linspace(0,100,10, dtype=int)
+        attribute = "sigma"
+        values = [1.0 for i in range(5)] + [2.0 for i in range(5)]
+        
+        ctrl = pyves.Controller.DynamicParticleFlow("test/particleflow.json", attr=attribute, times=times, values=values)
+        self.assertEqual(ctrl.time_actual, 100)
+        
+
+        del ctrl
+
+
+        times = np.linspace(101,200,11, dtype=int)
+        attribute = "sigma"
+        values = [1.0 for i in range(6)] + [2.0 for i in range(5)]
+        
+        ctrl = pyves.Controller.DynamicParticleFlow("test/particleflow.json", attr=attribute, times=times, values=values)
+        self.assertEqual(ctrl.time_actual, 200)
+        
 
 
 if __name__ == '__main__':

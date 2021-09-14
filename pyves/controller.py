@@ -106,7 +106,7 @@ class Controller():
         Controller.printRuntimeInfo()
         ctrl = cls()
         ctrl.readParameters(prmspath)
-        ctrl.time_max = max(times)
+        # ctrl.time_max = max(times)
         ctrl.prepareSimulation()
 
         if benchmark:
@@ -158,44 +158,61 @@ class Controller():
         analysis = True,
         analysis_inline = False,
     ):
-        # assert len(times) == np.unique(times).size
+        assert len(times) == np.unique(times).size
 
         Controller.printRuntimeInfo()
         ctrl = cls()
-        # ctrl.readParameters(prmspath)
+        ctrl.readParameters(prmspath)
         # ctrl.time_max = max(times)
-        # ctrl.prepareSimulation()
+        ctrl.prepareSimulation()
         
-        # assert hasattr(ctrl.system, attr), attr
+        for particle in ctrl.system.particles:
+            assert hasattr(particle, attr), attr
 
-        # times = np.array(times, dtype=np.int64)
-        # values = np.array(values)
-        # time_indices = times.argsort()
-        # times = times[time_indices]
-        # values = values[time_indices]
+        times = np.array(times, dtype=np.int64)
+        values = np.array(values)
+        time_indices = times.argsort()
+        times = times[time_indices]
+        values = values[time_indices]
 
-        # print(*zip(times, values))
+        print(*zip(times, values))
 
-        # if ctrl.time_actual < min(times):
-        #     ctrl.sample(steps=min(times)-ctrl.time_actual, timestats=timestats, analysis=analysis_inline)
-        # setattr(ctrl.system, attr, values[times.tolist().index(ctrl.time_actual)])
+        if ctrl.time_actual < min(times):
+            ctrl.sample(steps=min(times)-ctrl.time_actual, timestats=timestats, analysis=analysis_inline)
 
-        # for start, end in windowed(times, 2):
-        #     if ctrl.time_actual < end and ctrl.time_actual >= start:
-        #         ctrl.sample(steps=end-ctrl.time_actual, timestats=timestats, analysis=analysis_inline)
-        #         assert ctrl.time_actual == end, ctrl.time_actual
-        #         assert end in times, end
-        #         assert hasattr(ctrl.system, attr), attr
+        # for particle in ctrl.system.particles:
+        #     setattr(particle, attr, values[times.tolist().index(ctrl.time_actual)])
+        for i, _ in enumerate(ctrl.system.particles):
+        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", i)
+        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", ctrl.system.particles[i])
+        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", values)
+        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", times)
+        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", times.tolist())
+        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", ctrl.time_actual)
+        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", times.tolist().index(ctrl.time_actual))
+            setattr(ctrl.system.particles[i], attr, values[times.tolist().index(ctrl.time_actual)])
 
-        #         setattr(ctrl.system, attr, values[times.tolist().index(ctrl.time_actual)])
+        for start, end in windowed(times, 2):
+            if ctrl.time_actual < end and ctrl.time_actual >= start:
+                ctrl.sample(steps=end-ctrl.time_actual, timestats=timestats, analysis=analysis_inline)
+                assert ctrl.time_actual == end, ctrl.time_actual
+                assert end in times, end
+                for particle in ctrl.system.particles:
+                    assert hasattr(particle, attr), attr
 
-        #         assert abs(getattr(ctrl.system, attr) - values[times.tolist().index(ctrl.time_actual)]) < 1e-5, abs(getattr(ctrl.system, attr) - values[times.tolist().index(ctrl.time_actual)])
-        #         assert abs(ctrl.getMetadata()[attr] - values[times.tolist().index(ctrl.time_actual)]) < 1e-5, abs(ctrl.getMetadata()[attr] - values[times.tolist().index(ctrl.time_actual)])                
-        #         assert attr in h5load(os.path.join(ctrl.output["dir"], ctrl.output["filename"]), f"time{ctrl.time_actual}")[1]
-        #         assert abs(h5load(os.path.join(ctrl.output["dir"], ctrl.output["filename"]), f"time{ctrl.time_actual}")[1][attr] - values[times.tolist().index(ctrl.time_actual)-1]) < 1e-5
+                for i, _ in enumerate(ctrl.system.particles):
+                    setattr(ctrl.system.particles[i], attr, values[times.tolist().index(ctrl.time_actual)])
 
-        # if analysis and not analysis_inline:
-        #     analyzeTrajectory(prmspath=prmspath, timestats=timestats, threads=-1)
+                _temp_traj_data = h5load(os.path.join(ctrl.output["dir"], ctrl.output["filename"]), f"time{ctrl.time_actual}")[0]
+                for i, particle in enumerate(ctrl.system.particles):
+                    assert abs(getattr(particle, attr) - values[times.tolist().index(ctrl.time_actual)]) < 1e-5, abs(getattr(particle, attr) - values[times.tolist().index(ctrl.time_actual)])
+                    print(getattr(particle, attr), _temp_traj_data.iloc[i][attr])
+                    assert abs(getattr(particle, attr) - _temp_traj_data.iloc[i][attr]) < 1e-5
+                    
+                # assert abs(h5load(os.path.join(ctrl.output["dir"], ctrl.output["filename"]), f"time{ctrl.time_actual}")[1][attr] - values[times.tolist().index(ctrl.time_actual)-1]) < 1e-5
+
+        if analysis and not analysis_inline:
+            analyzeTrajectory(prmspath=prmspath, timestats=timestats, threads=-1)
 
         return ctrl
 
@@ -535,11 +552,11 @@ class Controller():
                 input_data_file_path = os.path.join(self.input["dir"], self.input["filename"])
                 self.prepareFromData(input_data_file_path)
             except TypeError as e:
-                print("TypeError: unable to read input file:", e)
+                print("TypeError: unable to read input file:", e.__dict__)
                 print("creating System new")
                 self.prepareNew()
             except OSError as e:
-                print("TypeError: unable to read datafile:", e)
+                print("OSError: unable to read datafile:", e.__dict__)
                 print("creating System new")
                 self.prepareNew()
             # self.makeInteractionLookupTable()

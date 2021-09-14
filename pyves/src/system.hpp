@@ -103,6 +103,9 @@ namespace _pyves
         Eigen::Matrix<REAL, Eigen::Dynamic, 1> particleSurfacePotentialValues() const;
         Eigen::Matrix<REAL, Eigen::Dynamic, 1> particleExternalPotentialValues() const;
 
+        Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> distanceMatrix() const;
+        Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> potentialEnergyMatrix() const;
+
         void benchmark(std::size_t);
 
         template<typename FUNCTOR> void applyToCells(FUNCTOR&& func);

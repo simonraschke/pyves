@@ -55,7 +55,7 @@ def analyzeStates(
     sys = True,
     clstr = True,
     clstr_min_size = 30,
-    subsurface_slab_widht = 2.0,
+    subsurface_slab_width = 2.0,
 ):
     print("[ONGOING] ", path)
 
@@ -178,10 +178,10 @@ def analyzeStates(
                     data["surface_exchange"] = np.float32(0)
                 old_z = current_z
 
-                subsurface_slab_height = (meta["box.z"] - meta['interaction.surface_width'] - subsurface_slab_widht)
+                subsurface_slab_height = (meta["box.z"] - meta['interaction.surface_width'] - subsurface_slab_width)
                 df_subsurface = df[(df["z"] <= surface_height) & (df["z"] > subsurface_slab_height)]
                 data["subsurface_slab_particles"] = np.uint16(df_subsurface.index.size)
-                data["subsurface_slab_volume"] = np.float32(subsurface_slab_widht * data["x"] * data["y"])
+                data["subsurface_slab_volume"] = np.float32(subsurface_slab_width * data["x"] * data["y"])
                 data["subsurface_slab_density"] = np.float32(data["subsurface_slab_particles"] / data["subsurface_slab_volume"])
 
                 df_subsurface_cluster =    df_subsurface[~df_subsurface["clustersize"].le(clstr_min_size)]

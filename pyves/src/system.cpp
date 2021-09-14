@@ -364,6 +364,54 @@ namespace _pyves
 
 
 
+    Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> System::distanceMatrix() const
+    {
+        Eigen::Matrix<REAL,Eigen::Dynamic, Eigen::Dynamic> matrix (particles.size(), particles.size());
+        matrix.setZero();
+        
+        for(std::size_t i = 0; i < particles.size(); ++i)
+        {
+            for(std::size_t j = 0; j < i; ++j)
+            {
+                matrix(i,j) = box.distance(particles[i].getPosition(), particles[j].getPosition());
+                matrix(j,i) = matrix(i,j);
+            }
+        }
+
+        return matrix;
+    }
+
+
+
+    Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> System::potentialEnergyMatrix() const
+    {
+        Eigen::Matrix<REAL,Eigen::Dynamic, Eigen::Dynamic> matrix (particles.size(), particles.size());
+        matrix.setZero();
+
+        for(std::size_t i = 0; i < particles.size(); ++i)
+        {
+            matrix(i,i) = std::numeric_limits<REAL>::quiet_NaN();
+            // matrix(i,i) = std::numeric_limits<REAL>::infinity();
+        }
+        
+        for(std::size_t i = 0; i < particles.size(); ++i)
+        {
+            for(std::size_t j = 0; j < i; ++j)
+            {
+                matrix(i,j) = interaction::potentialEnergy(particles[i], particles[j], box, interaction_cutoff);
+                matrix(j,i) = matrix(i,j);
+            }
+        }
+
+        return matrix;
+    }
+
+
+    
+
+
+
+
     void System::benchmark(std::size_t num)
     {
         auto timeFuncInvocation = [](std::size_t num, auto&& func, auto&&... params) {
@@ -855,6 +903,8 @@ namespace _pyves
             .def("particleChiValues", &System::particleChiValues)
             .def("particleSurfacePotentialValues", &System::particleSurfacePotentialValues)
             .def("particleExternalPotentialValues", &System::particleExternalPotentialValues)
+            .def("distanceMatrix", &System::distanceMatrix)
+            .def("potentialEnergyMatrix", &System::potentialEnergyMatrix)
         ;
     }
 }

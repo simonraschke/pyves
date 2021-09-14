@@ -1,0 +1,93 @@
+{
+    "hardware" : 
+    {
+        "threads" : 6
+    },
+    "system" : 
+    {
+        "temperature" : 1.0,
+        "exchange" :
+        {
+            "global" :
+            {
+                "number" : 10,
+                "etot_threshold" : -1.0,
+                "orientation" : false
+            },
+            "local" :
+            {
+                "number" : 10,
+                "etot_threshold" : -1.0,
+                "orientation" : false
+            }
+        },
+        "box" : 
+        {
+            "x" : 20.0,
+            "y" : 20.0,
+            "z" : 20.0
+        },
+        "translation" :
+        {
+            "min" : 0.2,
+            "max" : 0.2,
+            "target" : 0.3,
+            "interval" : 10000
+        },
+        "rotation" :
+        {
+            "min" : 0.2,
+            "max" : 0.2,
+            "target" : 0.3,
+            "interval" : 10000
+        },
+        "particles" :
+        {
+            "A" : 
+            {
+                "number" : 100,
+                "dist" : "sphere100",
+                "sigma" : 1.0,
+                "kappa" : 1.0,
+                "epsilon" : 4.5,
+                "gamma" : 0.1914626,
+                "bound_translation" : null,
+                "bound_rotation" : null
+            }
+        },
+        "interaction" : 
+        {
+            "cutoff" : 3.0
+        }
+    },
+    "control" : 
+    {
+        "time_delta" : 10,
+        "time_max" : 210,
+        "cell_min_size" : 3.5,
+        "cell_update_interval" : 3,
+        "neighbor_update_interval" : 3,
+        "neighbor_cutoff" : 3.2
+    },
+    "output" :
+    {
+        "dir" : ".",
+        "filename" : "particleflow.h5",
+        "mode" : "append",
+        "direct_analysis" : false
+    },
+    "input" :
+    {
+        "dir" : ".",
+        "filename" : "particleflow.h5",
+        "key" : "HEAD"
+    },
+    "analysis":
+    {
+        "volume_max_grid" : 30,
+        "volume_points_per_sigma" : 3,
+        "DBSCAN_eps" : 1.2,
+        "neighbor_cutoff" : 1.2,
+        "curvature_cutoff" : 1.8
+    }
+}
