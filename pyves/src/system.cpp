@@ -200,7 +200,7 @@ namespace _pyves
     
     REAL System::totalEnergy(const Particle& p) const
     {
-        return p.potentialEnergy(box, interaction_cutoff) + interaction::surface_potential(p, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0);
+        return p.potentialEnergy(box, interaction_cutoff) + interaction::external_potential(p, box, interaction_surface_width, interaction_cutoff) * (interaction_surface ? 1 : 0);
     }
 
 

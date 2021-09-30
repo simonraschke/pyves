@@ -38,7 +38,20 @@ def _verify_io_files(i, o, f):
 
 
 
-def hdf2gro(inpath, outpath, atom_repr={}, box=None, prmspath=None, time_range=[0,1e10], overwrite=True, group_prefix="/time", with_direction=True, specific_key=None):
+def hdf2gro(
+        inpath, 
+        outpath, 
+        atom_repr={},
+        uplus = None,
+        uminus = None,
+        box=None, 
+        prmspath=None, 
+        time_range=[0,1e10], 
+        overwrite=True, 
+        group_prefix="/time", 
+        with_direction=True, 
+        specific_key=None
+    ):
     input_path = os.path.abspath(inpath)
     output_path = os.path.abspath(outpath)
     if not isinstance(prmspath, type(None)):
@@ -81,7 +94,10 @@ def hdf2gro(inpath, outpath, atom_repr={}, box=None, prmspath=None, time_range=[
                         # print(row)
                         line = f"{residue:>5}"
                         line += str(f"{row.name}         ")[:5]
-                        line += str(f"{atom_repr[row.name]:>5}       ")[:5]
+                        if isinstance(uplus, type(None)):
+                            line += str(f"{atom_repr[row.name]:>5}       ")[:5]
+                        else:
+                            line += str(f"{uplus:>5}       ")[:5]
                         line += f"{atom:>5}"
                         line += f"{plus[0]:>8.3f}{plus[1]:>8.3f}{plus[2]:>8.3f}"
                         line += "  0.0000  0.0000  0.0000"
@@ -90,7 +106,10 @@ def hdf2gro(inpath, outpath, atom_repr={}, box=None, prmspath=None, time_range=[
 
                         line = f"{i+1:>5}"
                         line += str(f"{row.name}         ")[:5]
-                        line += str(f"{atom_repr[row.name]:>5}       ")[:5]
+                        if isinstance(uminus, type(None)):
+                            line += str(f"{atom_repr[row.name]:>5}       ")[:5]
+                        else:
+                            line += str(f"{uminus:>5}       ")[:5]
                         line += f"{atom:>5}"
                         line += f"{minus[0]:>8.3f}{minus[1]:>8.3f}{minus[2]:>8.3f}"
                         line += "  0.0000  0.0000  0.0000"

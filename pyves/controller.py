@@ -163,7 +163,6 @@ class Controller():
         Controller.printRuntimeInfo()
         ctrl = cls()
         ctrl.readParameters(prmspath)
-        # ctrl.time_max = max(times)
         ctrl.prepareSimulation()
         
         for particle in ctrl.system.particles:
@@ -175,22 +174,15 @@ class Controller():
         times = times[time_indices]
         values = values[time_indices]
 
-        print(*zip(times, values))
+        def value_from_times(vals, ts, actual):
+            return vals[ts.tolist().index(actual)]
 
         if ctrl.time_actual < min(times):
             ctrl.sample(steps=min(times)-ctrl.time_actual, timestats=timestats, analysis=analysis_inline)
 
-        # for particle in ctrl.system.particles:
-        #     setattr(particle, attr, values[times.tolist().index(ctrl.time_actual)])
         for i, _ in enumerate(ctrl.system.particles):
-        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", i)
-        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", ctrl.system.particles[i])
-        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", values)
-        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", times)
-        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", times.tolist())
-        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", ctrl.time_actual)
-        #     print("HHHHHHHIIIIIIIIIIIIIEEEEEEEEEEEEEERRRRRRRRRR", times.tolist().index(ctrl.time_actual))
-            setattr(ctrl.system.particles[i], attr, values[times.tolist().index(ctrl.time_actual)])
+            if ctrl.time_actual in times:
+                setattr(ctrl.system.particles[i], attr, value_from_times(values, times, ctrl.time_actual))
 
         for start, end in windowed(times, 2):
             if ctrl.time_actual < end and ctrl.time_actual >= start:
@@ -201,15 +193,11 @@ class Controller():
                     assert hasattr(particle, attr), attr
 
                 for i, _ in enumerate(ctrl.system.particles):
-                    setattr(ctrl.system.particles[i], attr, values[times.tolist().index(ctrl.time_actual)])
+                    setattr(ctrl.system.particles[i], attr, value_from_times(values, times, ctrl.time_actual))
 
                 _temp_traj_data = h5load(os.path.join(ctrl.output["dir"], ctrl.output["filename"]), f"time{ctrl.time_actual}")[0]
                 for i, particle in enumerate(ctrl.system.particles):
-                    assert abs(getattr(particle, attr) - values[times.tolist().index(ctrl.time_actual)]) < 1e-5, abs(getattr(particle, attr) - values[times.tolist().index(ctrl.time_actual)])
-                    print(getattr(particle, attr), _temp_traj_data.iloc[i][attr])
-                    assert abs(getattr(particle, attr) - _temp_traj_data.iloc[i][attr]) < 1e-5
-                    
-                # assert abs(h5load(os.path.join(ctrl.output["dir"], ctrl.output["filename"]), f"time{ctrl.time_actual}")[1][attr] - values[times.tolist().index(ctrl.time_actual)-1]) < 1e-5
+                    assert abs(getattr(particle, attr) - value_from_times(values, times, ctrl.time_actual)) < 1e-5, abs(getattr(particle, attr) - value_from_times(values, times, ctrl.time_actual))
 
         if analysis and not analysis_inline:
             analyzeTrajectory(prmspath=prmspath, timestats=timestats, threads=-1)

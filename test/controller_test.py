@@ -189,23 +189,15 @@ class MainTest(unittest.TestCase):
 
 
 
-        times = np.linspace(0,100,10, dtype=int)
+        times = np.linspace(0,200,10, dtype=int)
         attribute = "sigma"
-        values = [1.0 for i in range(5)] + [2.0 for i in range(5)]
-        
-        ctrl = pyves.Controller.DynamicParticleFlow("test/particleflow.json", attr=attribute, times=times, values=values)
-        self.assertEqual(ctrl.time_actual, 100)
-        
-
-        del ctrl
-
-
-        times = np.linspace(101,200,11, dtype=int)
-        attribute = "sigma"
-        values = [1.0 for i in range(6)] + [2.0 for i in range(5)]
+        values = [1.0+i/13 for i in range(5)] + [2.0 +i/10 for i in range(5)]
         
         ctrl = pyves.Controller.DynamicParticleFlow("test/particleflow.json", attr=attribute, times=times, values=values)
         self.assertEqual(ctrl.time_actual, 200)
+        for p in ctrl.system.particles:
+            print(getattr(p, attribute), values[-1], 1e-5)
+            self.assertAlmostEqual(getattr(p, attribute), values[-1], 5)
         
 
 
